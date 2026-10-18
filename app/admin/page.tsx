@@ -891,15 +891,6 @@ export default function AdminDashboardPage() {
           </nav>
 
           <div className="mt-6 pt-4 border-t border-slate-100 px-2 space-y-2">
-            <a
-              href="/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-emerald-700 font-bold hover:underline flex items-center justify-center gap-1 bg-emerald-50 py-2 rounded-lg"
-            >
-              <span>ওয়েবসাইটের মূল রূপ দেখুন ↗</span>
-            </a>
-
             <button
               onClick={() => {
                 logoutAdmin();
