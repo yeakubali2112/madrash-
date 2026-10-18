@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { usePathname } from 'next/navigation';
 import { useMadrasah } from '@/context/MadrasahContext';
 import {
   Phone,
@@ -15,7 +16,13 @@ import {
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
+  const pathname = usePathname();
   const { info } = useMadrasah();
+
+  // Hide footer on admin routes
+  if (pathname?.startsWith('/admin')) {
+    return null;
+  }
 
   return (
     <footer className="bg-gradient-to-b from-[#001f4d] via-[#001533] to-[#000d20] text-slate-300 border-t-4 border-[#DDAA00] pt-12 pb-6">
