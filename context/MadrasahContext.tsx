@@ -129,6 +129,32 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGallery(getStoredGallery());
     setIsAdmin(isAdminLoggedIn());
     setIsLoaded(true);
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'padm_hero_settings' || !e.key) {
+        setHeroSettings(getStoredHeroSettings());
+      }
+      if (e.key === 'padm_madrasah_info') setInfo(getStoredInfo());
+      if (e.key === 'padm_notices') setNotices(getStoredNotices());
+      if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
+      if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
+    };
+
+    const handleHeroSync = (e: any) => {
+      if (e?.detail) {
+        setHeroSettings(e.detail);
+      } else {
+        setHeroSettings(getStoredHeroSettings());
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('padm_hero_sync', handleHeroSync);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('padm_hero_sync', handleHeroSync);
+    };
   }, []);
 
   const updateInfo = (newInfo: MadrasahInfo) => {

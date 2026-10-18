@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useMadrasah } from '@/context/MadrasahContext';
-import { defaultHeroSettings } from '@/lib/data';
+import { defaultHeroSettings, HeroSettings } from '@/lib/data';
+import { getStoredHeroSettings } from '@/lib/storage';
 import { NoticeTicker } from './NoticeTicker';
 import {
   GraduationCap,
@@ -21,9 +21,50 @@ import {
 
 export const HeroSlider: React.FC = () => {
   const { info, heroSettings } = useMadrasah();
-  const hero = heroSettings || defaultHeroSettings;
+  const [currentHero, setCurrentHero] = useState<HeroSettings>(heroSettings || defaultHeroSettings);
 
-  const activeSlides = (hero.slides || []).filter((s) => s.isActive);
+  // Sync with context
+  useEffect(() => {
+    if (heroSettings) {
+      setCurrentHero(heroSettings);
+    }
+  }, [heroSettings]);
+
+  // Real-time synchronization with localStorage & admin updates across tabs/windows
+  useEffect(() => {
+    const syncFromStorage = () => {
+      try {
+        const stored = getStoredHeroSettings();
+        if (stored) {
+          setCurrentHero(stored);
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+
+    const handleCustomSync = (e: any) => {
+      if (e?.detail) {
+        setCurrentHero(e.detail);
+      } else {
+        syncFromStorage();
+      }
+    };
+
+    window.addEventListener('storage', syncFromStorage);
+    window.addEventListener('padm_hero_sync', handleCustomSync);
+
+    return () => {
+      window.removeEventListener('storage', syncFromStorage);
+      window.removeEventListener('padm_hero_sync', handleCustomSync);
+    };
+  }, []);
+
+  const hero = currentHero || defaultHeroSettings;
+  const allSlides = hero?.slides && hero.slides.length > 0 ? hero.slides : defaultHeroSettings.slides;
+  const filteredActive = allSlides.filter((s) => s.isActive);
+  const activeSlides = filteredActive.length > 0 ? filteredActive : allSlides;
+
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
@@ -64,29 +105,29 @@ export const HeroSlider: React.FC = () => {
     <section
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
-      className="relative bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white overflow-hidden islamic-bg-pattern min-h-[520px] lg:min-h-[580px] flex flex-col justify-between"
+      className="relative bg-slate-950 text-white overflow-hidden min-h-[520px] lg:min-h-[580px] flex flex-col justify-between"
     >
       {/* Background Slideshow Images */}
       {hero.slideshowEnabled && activeSlides.length > 0 && (
         <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
           {activeSlides.map((slide, idx) => (
             <div
-              key={slide.id}
+              key={slide.id || idx}
               className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
-                idx === currentSlideIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                idx === currentSlideIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none z-0'
               }`}
             >
-              <Image
+              {/* Standard HTML img for 100% reliable local/remote/base64 banner photos */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={slide.imageUrl}
                 alt={slide.title || 'মাদ্রাসা ব্যানার'}
-                fill
-                priority={idx === 0}
-                className="object-cover object-center transform scale-105 transition-transform duration-[8000ms]"
-                unoptimized
+                className="w-full h-full object-cover object-center transform scale-105 transition-transform duration-[10000ms]"
+                loading={idx === 0 ? 'eager' : 'lazy'}
               />
-              {/* Dark Gradient Overlay for optimal text readability */}
-              <div className="absolute inset-0 bg-gradient-to-br from-[#002d18]/94 via-[#00381e]/88 to-[#001f4d]/94" />
-              <div className="absolute inset-0 bg-black/40" />
+              {/* Cinematic Vignette Overlay: Darker at top & bottom for text/buttons, clear in center for vivid photo */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/35 to-slate-950/60" />
+              <div className="absolute inset-0 bg-black/20" />
             </div>
           ))}
         </div>
@@ -130,16 +171,16 @@ export const HeroSlider: React.FC = () => {
 
             {/* Main Headline & Slogan with smooth key transition */}
             <div key={`title-${currentSlideIndex}`} className="space-y-3 animate-in fade-in duration-500">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-md">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-[0_4px_16px_rgba(0,0,0,0.95)]">
                 {currentHeadline}
               </h1>
-              <p className="text-xl md:text-2xl lg:text-3xl text-[#DDAA00] font-bold drop-shadow">
+              <p className="text-xl md:text-2xl lg:text-3xl text-[#DDAA00] font-bold drop-shadow-[0_3px_10px_rgba(0,0,0,0.9)]">
                 {currentSlogan}
               </p>
             </div>
 
             {/* Description */}
-            <p key={`desc-${currentSlideIndex}`} className="text-base md:text-lg text-slate-100 max-w-2xl mx-auto leading-relaxed drop-shadow animate-in fade-in duration-500">
+            <p key={`desc-${currentSlideIndex}`} className="text-base md:text-lg text-slate-100 max-w-2xl mx-auto leading-relaxed drop-shadow-[0_2px_8px_rgba(0,0,0,0.9)] animate-in fade-in duration-500 font-medium">
               {currentDescription}
             </p>
 

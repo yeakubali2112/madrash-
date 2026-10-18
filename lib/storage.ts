@@ -220,7 +220,12 @@ export const getStoredHeroSettings = (): HeroSettings => {
 
 export const saveStoredHeroSettings = (settings: HeroSettings) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.HERO_SETTINGS, JSON.stringify(settings));
+  try {
+    localStorage.setItem(STORAGE_KEYS.HERO_SETTINGS, JSON.stringify(settings));
+    window.dispatchEvent(new CustomEvent('padm_hero_sync', { detail: settings }));
+  } catch (err) {
+    console.error('Error saving hero settings:', err);
+  }
 };
 
 export const resetAllData = () => {
