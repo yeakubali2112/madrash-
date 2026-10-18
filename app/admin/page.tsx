@@ -1015,8 +1015,8 @@ export default function AdminDashboardPage() {
 
                 {/* Ticker bar preview */}
                 {tickerSettings?.isEnabled && urgentNotices.filter(n => n.isActive).length > 0 ? (
-                  <div className="bg-[#DDAA00] text-slate-950 py-2 px-3 rounded-xl border border-[#bf9300] shadow-inner overflow-hidden flex items-center">
-                    <div className="flex items-center gap-1.5 bg-[#003580] text-[#DDAA00] font-black px-3 py-1 rounded text-xs shrink-0 shadow mr-3 z-10">
+                  <div className="bg-[#002d18] text-white py-2 px-3 rounded-xl border border-emerald-800 shadow-inner overflow-hidden flex items-center">
+                    <div className="flex items-center gap-1.5 bg-[#003580] text-[#DDAA00] font-black px-3 py-1 rounded text-xs shrink-0 shadow mr-3 z-10 border border-[#DDAA00]/30">
                       <Bell className="w-3.5 h-3.5 animate-pulse text-[#DDAA00]" />
                       <span>{tickerSettings?.label || "জরুরি নোটিশ:"}</span>
                     </div>
@@ -1028,15 +1028,15 @@ export default function AdminDashboardPage() {
                         {[...urgentNotices.filter(n => n.isActive), ...urgentNotices.filter(n => n.isActive)].map((n, idx) => (
                           <div key={`${n.id}-${idx}`} className="inline-flex items-center gap-2 shrink-0">
                             {n.category && (
-                              <span className="bg-[#006837] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm">
+                              <span className="bg-[#006837] text-white text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-emerald-600/50">
                                 {n.category}
                               </span>
                             )}
-                            <span className="text-slate-950">{n.title}</span>
+                            <span className="text-slate-100">{n.title}</span>
                             {n.date && (
-                              <span className="text-slate-800 text-[11px] font-normal">({n.date})</span>
+                              <span className="text-emerald-300 text-[11px] font-normal">({n.date})</span>
                             )}
-                            <span className="text-[#003580] font-black ml-4">✦</span>
+                            <span className="text-[#DDAA00] font-black ml-4">✦</span>
                           </div>
                         ))}
                       </div>

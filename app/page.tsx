@@ -1,5 +1,4 @@
 import React from 'react';
-import { NoticeTicker } from '@/components/NoticeTicker';
 import { HeroSlider } from '@/components/HeroSlider';
 import { PrincipalMessage } from '@/components/PrincipalMessage';
 import { Departments } from '@/components/Departments';
@@ -10,7 +9,6 @@ import { QuickAdmissionCta } from '@/components/QuickAdmissionCta';
 export default function HomePage() {
   return (
     <div className="space-y-0">
-      <NoticeTicker />
       <HeroSlider />
       <PrincipalMessage />
       <Departments />

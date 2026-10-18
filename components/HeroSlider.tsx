@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useMadrasah } from '@/context/MadrasahContext';
+import { NoticeTicker } from './NoticeTicker';
 import {
   GraduationCap,
   Award,
@@ -13,12 +14,15 @@ export const HeroSlider: React.FC = () => {
   const { info } = useMadrasah();
 
   return (
-    <section className="relative bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white overflow-hidden py-16 lg:py-28 islamic-bg-pattern">
+    <section className="relative bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white overflow-hidden islamic-bg-pattern">
+      {/* Notice Ticker seamlessly embedded with transparent background */}
+      <NoticeTicker />
+
       {/* Decorative Blur Orbs */}
       <div className="absolute top-0 right-10 w-96 h-96 bg-[#006837]/30 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-10 w-96 h-96 bg-[#003580]/30 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="relative max-w-4xl mx-auto px-4 text-center space-y-8">
+      <div className="relative max-w-4xl mx-auto px-4 text-center space-y-8 py-16 lg:py-24">
         {/* Main Headline */}
         <div className="space-y-4">
           <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
