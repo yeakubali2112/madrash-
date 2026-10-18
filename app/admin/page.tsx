@@ -1427,58 +1427,7 @@ export default function AdminDashboardPage() {
 
               {/* Form Container */}
               <form onSubmit={handleHeroSubmit} className="space-y-6">
-                {/* 1. মূল টেক্সট ও শিরোনাম */}
-                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 space-y-4">
-                  <div className="border-b border-slate-200 pb-2">
-                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                      <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                      মূল শিরোনাম, স্লোগান ও বিবরণ
-                    </h3>
-                  </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        মূল শিরোনাম (ব্যানার টাইটেল)
-                      </label>
-                      <input
-                        type="text"
-                        value={heroForm.headline}
-                        onChange={(e) => setHeroForm({ ...heroForm, headline: e.target.value })}
-                        placeholder="মাদ্রাসার পুরো নাম..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
-                      />
-                      <p className="text-[10px] text-slate-500 mt-1">হোমপেজের কেন্দ্রে বড় হরফে প্রদর্শিত প্রধান নাম</p>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1">
-                        উপ-শিরোনাম / স্লোগান
-                      </label>
-                      <input
-                        type="text"
-                        value={heroForm.slogan}
-                        onChange={(e) => setHeroForm({ ...heroForm, slogan: e.target.value })}
-                        placeholder="দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়..."
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
-                      />
-                      <p className="text-[10px] text-slate-500 mt-1">শিরোনামের নিচে গোল্ডেন রঙে প্রদর্শিত স্লোগান</p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      মাদ্রাসার সংক্ষিপ্ত বিবরণ (প্যারাগ্রাফ)
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={heroForm.description}
-                      onChange={(e) => setHeroForm({ ...heroForm, description: e.target.value })}
-                      placeholder="মাদ্রাসার সংক্ষিপ্ত ইতিহাস বা লক্ষ্য..."
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
-                    />
-                  </div>
-                </div>
 
                 {/* 2. অ্যাকশন বাটনদ্বয় */}
                 <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 space-y-4">
