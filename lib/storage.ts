@@ -1,0 +1,228 @@
+import {
+  MadrasahInfo,
+  Notice,
+  Teacher,
+  AdmissionApplication,
+  ResultRecord,
+  ContactMessage,
+  UrgentNoticeItem,
+  TickerSettings,
+  FacilityItem,
+  GalleryItem,
+  defaultMadrasahInfo,
+  defaultNotices,
+  defaultTeachers,
+  defaultApplications,
+  defaultResults,
+  defaultMessages,
+  defaultTickerSettings,
+  defaultUrgentNotices,
+  defaultFacilities,
+  defaultGallery
+} from './data';
+
+const STORAGE_KEYS = {
+  INFO: 'padm_madrasah_info',
+  NOTICES: 'padm_notices',
+  TEACHERS: 'padm_teachers',
+  APPLICATIONS: 'padm_applications',
+  RESULTS: 'padm_results',
+  MESSAGES: 'padm_messages',
+  AUTH: 'padm_admin_logged_in',
+  URGENT_NOTICES: 'padm_urgent_notices',
+  TICKER_SETTINGS: 'padm_ticker_settings',
+  FACILITIES: 'padm_facilities',
+  GALLERY: 'padm_gallery'
+};
+
+export const getStoredInfo = (): MadrasahInfo => {
+  if (typeof window === 'undefined') return defaultMadrasahInfo;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.INFO);
+    return data ? JSON.parse(data) : defaultMadrasahInfo;
+  } catch {
+    return defaultMadrasahInfo;
+  }
+};
+
+export const saveStoredInfo = (info: MadrasahInfo) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(info));
+};
+
+export const getStoredNotices = (): Notice[] => {
+  if (typeof window === 'undefined') return defaultNotices;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.NOTICES);
+    return data ? JSON.parse(data) : defaultNotices;
+  } catch {
+    return defaultNotices;
+  }
+};
+
+export const saveStoredNotices = (notices: Notice[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(notices));
+};
+
+export const getStoredTeachers = (): Teacher[] => {
+  if (typeof window === 'undefined') return defaultTeachers;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.TEACHERS);
+    return data ? JSON.parse(data) : defaultTeachers;
+  } catch {
+    return defaultTeachers;
+  }
+};
+
+export const saveStoredTeachers = (teachers: Teacher[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+};
+
+export const getStoredApplications = (): AdmissionApplication[] => {
+  if (typeof window === 'undefined') return defaultApplications;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.APPLICATIONS);
+    return data ? JSON.parse(data) : defaultApplications;
+  } catch {
+    return defaultApplications;
+  }
+};
+
+export const saveStoredApplications = (apps: AdmissionApplication[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(apps));
+};
+
+export const addAdmissionApplication = (app: AdmissionApplication) => {
+  const current = getStoredApplications();
+  const updated = [app, ...current];
+  saveStoredApplications(updated);
+  return updated;
+};
+
+export const getStoredResults = (): ResultRecord[] => {
+  if (typeof window === 'undefined') return defaultResults;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.RESULTS);
+    return data ? JSON.parse(data) : defaultResults;
+  } catch {
+    return defaultResults;
+  }
+};
+
+export const saveStoredResults = (results: ResultRecord[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+};
+
+export const getStoredMessages = (): ContactMessage[] => {
+  if (typeof window === 'undefined') return defaultMessages;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.MESSAGES);
+    return data ? JSON.parse(data) : defaultMessages;
+  } catch {
+    return defaultMessages;
+  }
+};
+
+export const saveStoredMessages = (messages: ContactMessage[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+};
+
+export const addContactMessage = (msg: ContactMessage) => {
+  const current = getStoredMessages();
+  const updated = [msg, ...current];
+  saveStoredMessages(updated);
+  return updated;
+};
+
+export const getStoredTickerSettings = (): TickerSettings => {
+  if (typeof window === 'undefined') return defaultTickerSettings;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.TICKER_SETTINGS);
+    return data ? JSON.parse(data) : defaultTickerSettings;
+  } catch {
+    return defaultTickerSettings;
+  }
+};
+
+export const saveStoredTickerSettings = (settings: TickerSettings) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.TICKER_SETTINGS, JSON.stringify(settings));
+};
+
+export const getStoredUrgentNotices = (): UrgentNoticeItem[] => {
+  if (typeof window === 'undefined') return defaultUrgentNotices;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.URGENT_NOTICES);
+    return data ? JSON.parse(data) : defaultUrgentNotices;
+  } catch {
+    return defaultUrgentNotices;
+  }
+};
+
+export const saveStoredUrgentNotices = (notices: UrgentNoticeItem[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.URGENT_NOTICES, JSON.stringify(notices));
+};
+
+export const getStoredFacilities = (): FacilityItem[] => {
+  if (typeof window === 'undefined') return defaultFacilities;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.FACILITIES);
+    return data ? JSON.parse(data) : defaultFacilities;
+  } catch {
+    return defaultFacilities;
+  }
+};
+
+export const saveStoredFacilities = (facilities: FacilityItem[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(facilities));
+};
+
+export const getStoredGallery = (): GalleryItem[] => {
+  if (typeof window === 'undefined') return defaultGallery;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.GALLERY);
+    return data ? JSON.parse(data) : defaultGallery;
+  } catch {
+    return defaultGallery;
+  }
+};
+
+export const saveStoredGallery = (gallery: GalleryItem[]) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
+};
+
+export const resetAllData = () => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(defaultMadrasahInfo));
+  localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(defaultNotices));
+  localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(defaultTeachers));
+  localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(defaultApplications));
+  localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(defaultResults));
+  localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(defaultMessages));
+  localStorage.setItem(STORAGE_KEYS.URGENT_NOTICES, JSON.stringify(defaultUrgentNotices));
+  localStorage.setItem(STORAGE_KEYS.TICKER_SETTINGS, JSON.stringify(defaultTickerSettings));
+  localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(defaultFacilities));
+  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(defaultGallery));
+};
+
+export const isAdminLoggedIn = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEYS.AUTH) === 'true';
+};
+
+export const setAdminLoggedIn = (status: boolean) => {
+  if (typeof window === 'undefined') return;
+  if (status) {
+    localStorage.setItem(STORAGE_KEYS.AUTH, 'true');
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.AUTH);
+  }
+};

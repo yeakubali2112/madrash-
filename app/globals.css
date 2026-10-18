@@ -1,0 +1,113 @@
+@import url('https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Hind+Siliguri:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-green: #006837;
+  --brand-gold: #DDAA00;
+  --brand-blue: #003580;
+}
+
+body {
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1e293b;
+  background-color: #f8fafc;
+}
+
+.arabic-font {
+  font-family: 'Amiri', 'Traditional Arabic', serif;
+}
+
+/* Islamic pattern background using exact brand colors */
+.islamic-bg-pattern {
+  background-color: #004525;
+  background-image: radial-gradient(rgba(221, 170, 0, 0.18) 1.2px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.islamic-pattern-light {
+  background-color: #f0fdf4;
+  background-image: radial-gradient(rgba(0, 104, 55, 0.12) 1px, transparent 0);
+  background-size: 20px 20px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #006837;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00542c;
+}
+
+/* Print styling for Admission Slips & Marksheets */
+@media print {
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  
+  .no-print, header, footer, nav, .print-hide {
+    display: none !important;
+  }
+  
+  .print-area {
+    display: block !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+
+/* Notice Ticker Marquee Animation */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+  will-change: transform;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Button & Micro-animation utilities */
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 4px 14px 0 rgba(0, 104, 55, 0.28);
+  }
+  50% {
+    box-shadow: 0 6px 20px 2px rgba(0, 104, 55, 0.45);
+  }
+}
+
+.btn-pulse-glow {
+  animation: pulseGlow 3s ease-in-out infinite;
+}
+
