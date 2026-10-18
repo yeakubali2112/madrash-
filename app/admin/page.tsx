@@ -15,7 +15,9 @@ import {
   FacilityItem,
   GalleryItem,
   HeroSettings,
-  defaultHeroSettings
+  defaultHeroSettings,
+  HeroBannerSlide,
+  defaultHeroSlides
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -58,7 +60,13 @@ import {
   UserCheck,
   Sliders,
   CheckCircle,
-  MapPin
+  MapPin,
+  Image as ImageIcon,
+  Layers,
+  Info,
+  ArrowUp,
+  ArrowDown,
+  Play
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -138,6 +146,188 @@ export default function AdminDashboardPage() {
       setHeroSettingsSaved(true);
       setTimeout(() => setHeroSettingsSaved(false), 3000);
     }
+  };
+
+  // Hero Slide Management State
+  const [showSlideModal, setShowSlideModal] = useState(false);
+  const [editingSlide, setEditingSlide] = useState<HeroBannerSlide | null>(null);
+  const [slideForm, setSlideForm] = useState<{
+    imageUrl: string;
+    title: string;
+    subtitle: string;
+    description: string;
+    isActive: boolean;
+  }>({
+    imageUrl: '',
+    title: '',
+    subtitle: '',
+    description: '',
+    isActive: true
+  });
+
+  const sampleBanners = [
+    {
+      name: 'মাদ্রাসা ক্যাম্পাস',
+      url: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=1920'
+    },
+    {
+      name: 'হিফজ ও কুরআন পাঠ',
+      url: 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=1920'
+    },
+    {
+      name: 'কম্পিউটার ও বিজ্ঞান ল্যাব',
+      url: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1920'
+    },
+    {
+      name: 'সমাবেশ ও দোয়া মাহফিল',
+      url: 'https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?auto=format&fit=crop&q=80&w=1920'
+    }
+  ];
+
+  // Specialized image compressor for widescreen hero banners (max width 1600px, 0.82 quality)
+  const handleBannerImageUpload = (file: File, callback: (dataUrl: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (uploadEvent) => {
+      const rawDataUrl = uploadEvent.target?.result as string;
+      if (!rawDataUrl) return;
+
+      const img = document.createElement('img');
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.naturalWidth || img.width;
+        let height = img.naturalHeight || img.height;
+        const maxWidth = 1600;
+
+        if (width > maxWidth) {
+          height = Math.round((height * maxWidth) / width);
+          width = maxWidth;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL('image/jpeg', 0.82);
+          callback(compressed);
+        } else {
+          callback(rawDataUrl);
+        }
+      };
+      img.onerror = () => {
+        callback(rawDataUrl);
+      };
+      img.src = rawDataUrl;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleOpenAddSlide = () => {
+    setEditingSlide(null);
+    setSlideForm({
+      imageUrl: '',
+      title: '',
+      subtitle: '',
+      description: '',
+      isActive: true
+    });
+    setShowSlideModal(true);
+  };
+
+  const handleOpenEditSlide = (slide: HeroBannerSlide) => {
+    setEditingSlide(slide);
+    setSlideForm({
+      imageUrl: slide.imageUrl,
+      title: slide.title || '',
+      subtitle: slide.subtitle || '',
+      description: slide.description || '',
+      isActive: slide.isActive
+    });
+    setShowSlideModal(true);
+  };
+
+  const handleSaveSlide = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!slideForm.imageUrl.trim()) {
+      alert('অনুগ্রহ করে ব্যানারের ছবির লিংক দিন অথবা ডিভাইস থেকে ছবি আপলোড করুন।');
+      return;
+    }
+
+    const currentSlides = heroForm.slides || defaultHeroSlides;
+
+    if (editingSlide) {
+      const updatedSlides = currentSlides.map(s =>
+        s.id === editingSlide.id
+          ? {
+              ...s,
+              imageUrl: slideForm.imageUrl.trim(),
+              title: slideForm.title.trim(),
+              subtitle: slideForm.subtitle.trim(),
+              description: slideForm.description.trim(),
+              isActive: slideForm.isActive
+            }
+          : s
+      );
+      const updatedHeroForm = { ...heroForm, slides: updatedSlides };
+      setHeroForm(updatedHeroForm);
+      updateHeroSettings(updatedHeroForm);
+    } else {
+      const newSlide: HeroBannerSlide = {
+        id: `slide-${Date.now()}`,
+        imageUrl: slideForm.imageUrl.trim(),
+        title: slideForm.title.trim(),
+        subtitle: slideForm.subtitle.trim(),
+        description: slideForm.description.trim(),
+        isActive: slideForm.isActive,
+        order: (currentSlides.length || 0) + 1
+      };
+      const updatedSlides = [...currentSlides, newSlide];
+      const updatedHeroForm = { ...heroForm, slides: updatedSlides };
+      setHeroForm(updatedHeroForm);
+      updateHeroSettings(updatedHeroForm);
+    }
+
+    setShowSlideModal(false);
+    setEditingSlide(null);
+    setHeroSettingsSaved(true);
+    setTimeout(() => setHeroSettingsSaved(false), 3000);
+  };
+
+  const handleDeleteSlide = (id: string) => {
+    if (window.confirm('আপনি কি এই ফটো ব্যানারটি মুছে ফেলতে চান?')) {
+      const currentSlides = heroForm.slides || defaultHeroSlides;
+      const updatedSlides = currentSlides.filter(s => s.id !== id);
+      const updatedHeroForm = { ...heroForm, slides: updatedSlides };
+      setHeroForm(updatedHeroForm);
+      updateHeroSettings(updatedHeroForm);
+      setHeroSettingsSaved(true);
+      setTimeout(() => setHeroSettingsSaved(false), 3000);
+    }
+  };
+
+  const handleToggleSlideStatus = (id: string) => {
+    const currentSlides = heroForm.slides || defaultHeroSlides;
+    const updatedSlides = currentSlides.map(s =>
+      s.id === id ? { ...s, isActive: !s.isActive } : s
+    );
+    const updatedHeroForm = { ...heroForm, slides: updatedSlides };
+    setHeroForm(updatedHeroForm);
+    updateHeroSettings(updatedHeroForm);
+  };
+
+  const handleMoveSlide = (index: number, direction: 'up' | 'down') => {
+    const currentSlides = [...(heroForm.slides || defaultHeroSlides)];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= currentSlides.length) return;
+
+    const temp = currentSlides[index];
+    currentSlides[index] = currentSlides[targetIndex];
+    currentSlides[targetIndex] = temp;
+
+    const reordered = currentSlides.map((s, idx) => ({ ...s, order: idx + 1 }));
+    const updatedHeroForm = { ...heroForm, slides: reordered };
+    setHeroForm(updatedHeroForm);
+    updateHeroSettings(updatedHeroForm);
   };
 
   // Notice Form State
@@ -848,7 +1038,21 @@ export default function AdminDashboardPage() {
 
               {/* Live Preview Card */}
               <div className="bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white rounded-2xl p-6 shadow-xl border border-emerald-800/60 relative overflow-hidden">
-                <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/10">
+                {/* Active Slide Image Background in Preview */}
+                {heroForm.slides && heroForm.slides.find((s) => s.isActive) && (
+                  <div className="absolute inset-0 z-0">
+                    <Image
+                      src={heroForm.slides.find((s) => s.isActive)?.imageUrl || ''}
+                      alt="Banner Preview"
+                      fill
+                      className="object-cover opacity-30"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#001f4d]/90 via-[#002d18]/80 to-[#002d18]/90" />
+                  </div>
+                )}
+
+                <div className="relative z-10 flex justify-between items-center mb-4 pb-3 border-b border-white/10">
                   <span className="text-xs font-black text-[#DDAA00] tracking-wider uppercase flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#DDAA00]" /> লাইভ ভিউ প্রিভিউ
                   </span>
@@ -857,7 +1061,7 @@ export default function AdminDashboardPage() {
                   </span>
                 </div>
 
-                <div className="text-center space-y-4 py-4 max-w-2xl mx-auto">
+                <div className="relative z-10 text-center space-y-4 py-4 max-w-2xl mx-auto">
                   {heroForm.showAyahCallout && (
                     <div className="inline-flex flex-col items-center bg-[#002d18]/90 border border-[#DDAA00]/40 rounded-xl px-4 py-2 shadow-sm">
                       <span className="font-arabic text-lg text-[#DDAA00] font-bold">
@@ -913,6 +1117,250 @@ export default function AdminDashboardPage() {
                       <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight1}</span>
                       <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight2}</span>
                       <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight3}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* 📐 ব্যানার ছবির আদর্শ পরিমাপ ও সাইজ গাইডলাইন (Size Specifications Callout) */}
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border-2 border-emerald-300 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-emerald-200/80 pb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center text-lg font-bold shadow-sm shrink-0">
+                      📐
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-extrabold text-emerald-950 flex items-center gap-2 flex-wrap">
+                        <span>ব্যানার ছবির আদর্শ পরিমাপ ও সাইজ গাইডলাইন</span>
+                        <span className="text-[10px] bg-emerald-700 text-white px-2 py-0.5 rounded-full font-bold">
+                          প্রস্তাবিত মাপ
+                        </span>
+                      </h4>
+                      <p className="text-xs text-emerald-800">
+                        ওয়েবসাইটের হিরো সেকশনে ছবি ও লেখা নিখুঁতভাবে প্রদর্শনের জন্য নিচের সাইজ মেনে ছবি যুক্ত করুন
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-white/95 border border-emerald-200 rounded-xl p-3 text-center shadow-xs">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase">রেজোলিউশন / সাইজ</span>
+                    <span className="text-base font-black text-emerald-900 block mt-0.5">১৯২০ × ৭৫০ px</span>
+                    <span className="text-[10px] text-emerald-700">বা ১৬০০ × ৬২৫ px</span>
+                  </div>
+
+                  <div className="bg-white/95 border border-emerald-200 rounded-xl p-3 text-center shadow-xs">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase">অ্যাসপেক্ট রেশিও</span>
+                    <span className="text-base font-black text-emerald-900 block mt-0.5">১৬:৯ বা ২১:৯</span>
+                    <span className="text-[10px] text-emerald-700">ওয়াইডস্ক্রিন ল্যান্ডস্কেপ</span>
+                  </div>
+
+                  <div className="bg-white/95 border border-emerald-200 rounded-xl p-3 text-center shadow-xs">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase">ছবি ফরম্যাট</span>
+                    <span className="text-base font-black text-emerald-900 block mt-0.5">JPG, PNG, WebP</span>
+                    <span className="text-[10px] text-emerald-700">সরাসরি আপলোড সাপোর্টেড</span>
+                  </div>
+
+                  <div className="bg-white/95 border border-emerald-200 rounded-xl p-3 text-center shadow-xs">
+                    <span className="text-[10px] font-bold text-slate-500 block uppercase">সর্বোচ্চ ফাইল সাইজ</span>
+                    <span className="text-base font-black text-emerald-900 block mt-0.5">সর্বোচ্চ ৫ MB</span>
+                    <span className="text-[10px] text-emerald-700">অটো-অপ্টিমাইজ হয়</span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-emerald-200/70 flex items-start gap-2 text-xs text-emerald-900">
+                  <Info className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+                  <p className="leading-relaxed">
+                    <strong>গুরুত্বপূর্ণ পরামর্শ:</strong> ছবির মূল বিষয়বস্তু বা মাদ্রাসা ভবনের দৃশ্য ছবির কেন্দ্রস্থলে (Center) রাখলে মোবাইল, ট্যাবলেট এবং কম্পিউটার সব ডিভাইসেই কোনো অংশ কাটা না পড়ে চমৎকারভাবে প্রদর্শিত হবে।
+                  </p>
+                </div>
+              </div>
+
+              {/* 🖼️ ফটো ব্যানার ও স্লাইডশো ব্যবস্থাপনা (Photo Banner & Slideshow Management) */}
+              <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                      <span>ফটো ব্যানার স্লাইডশো ব্যবস্থাপনা</span>
+                      <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">
+                        {(heroForm.slides || defaultHeroSlides).length}টি ফটো স্লাইড
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      ওয়েবসাইটের হিরো ব্যানারে প্রদর্শিত ফটোগুলো যোগ, পরিবর্তন, স্লাইডশো নিয়ন্ত্রণ ও সক্রিয়/নিষ্ক্রিয় করুন
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenAddSlide}
+                    className="inline-flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন ব্যানার ফটো যোগ করুন</span>
+                  </button>
+                </div>
+
+                {/* Slideshow Controls Bar */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                  {/* Enable Slideshow Toggle */}
+                  <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <Play className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>অটো স্লাইডশো (স্বয়ংক্রিয় পরিবর্তন)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">হোমপেজে একা একা ব্যানার পরিবর্তন হবে</div>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={heroForm.slideshowEnabled ?? true}
+                        onChange={(e) => {
+                          const updated = { ...heroForm, slideshowEnabled: e.target.checked };
+                          setHeroForm(updated);
+                          updateHeroSettings(updated);
+                        }}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                    </label>
+                  </div>
+
+                  {/* Interval Selector */}
+                  <div className="flex items-center justify-between bg-white p-3 rounded-lg border border-slate-200">
+                    <div>
+                      <div className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                        <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>স্লাইড পরিবর্তনের গতি (Interval)</span>
+                      </div>
+                      <div className="text-[11px] text-slate-500">প্রতি স্লাইড কতক্ষণ পর্দায় থাকবে</div>
+                    </div>
+                    <select
+                      value={heroForm.slideInterval || 5}
+                      onChange={(e) => {
+                        const updated = { ...heroForm, slideInterval: Number(e.target.value) };
+                        setHeroForm(updated);
+                        updateHeroSettings(updated);
+                      }}
+                      className="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-600"
+                    >
+                      <option value={3}>৩ সেকেন্ড (দ্রুত)</option>
+                      <option value={5}>৫ সেকেন্ড (প্রস্তাবিত)</option>
+                      <option value={7}>৭ সেকেন্ড (স্বাভাবিক)</option>
+                      <option value={10}>১০ সেকেন্ড (ধীর)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Slides List Grid */}
+                <div className="space-y-3">
+                  {(heroForm.slides || defaultHeroSlides).length === 0 ? (
+                    <div className="text-center py-8 bg-slate-50 rounded-xl border border-dashed border-slate-300 p-6">
+                      <ImageIcon className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                      <p className="text-xs font-bold text-slate-700">বর্তমানে কোনো ব্যানার ফটো যোগ করা নেই</p>
+                      <p className="text-[11px] text-slate-500 mt-1">উপরে &quot;নতুন ব্যানার ফটো যোগ করুন&quot; বাটনে ক্লিক করে ফটো ব্যানার যুক্ত করুন</p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {(heroForm.slides || defaultHeroSlides).map((slide, index) => (
+                        <div
+                          key={slide.id}
+                          className={`bg-white border rounded-xl overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between ${
+                            slide.isActive ? 'border-emerald-200 ring-1 ring-emerald-500/20' : 'border-slate-200 opacity-60'
+                          }`}
+                        >
+                          {/* Image preview box with 16:9 aspect */}
+                          <div className="relative aspect-[16/8] bg-slate-900 overflow-hidden group">
+                            <Image
+                              src={slide.imageUrl}
+                              alt={slide.title || `ব্যানার #${index + 1}`}
+                              fill
+                              className="object-cover group-hover:scale-105 transition-transform duration-300"
+                              unoptimized
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+
+                            {/* Badge showing slide number */}
+                            <span className="absolute top-2 left-2 bg-black/70 backdrop-blur-xs text-white text-[10px] font-black px-2 py-0.5 rounded-md flex items-center gap-1">
+                              <span>#{index + 1}</span>
+                              {slide.isActive && (
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                              )}
+                            </span>
+
+                            {/* Active/Inactive badge */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleSlideStatus(slide.id)}
+                              className={`absolute top-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full cursor-pointer transition-colors shadow-sm ${
+                                slide.isActive
+                                  ? 'bg-emerald-600 text-white hover:bg-emerald-700'
+                                  : 'bg-slate-700 text-slate-200 hover:bg-slate-800'
+                              }`}
+                            >
+                              {slide.isActive ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                            </button>
+
+                            {/* Slide Title preview over image */}
+                            <div className="absolute bottom-2 left-2 right-2 text-white">
+                              <p className="text-xs font-bold truncate">
+                                {slide.title || heroForm.headline || 'ডিফল্ট শিরোনাম'}
+                              </p>
+                              <p className="text-[10px] text-[#DDAA00] truncate">
+                                {slide.subtitle || heroForm.slogan || 'ডিফল্ট স্লোগান'}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Slide actions & reorder */}
+                          <div className="p-3 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-1">
+                            {/* Reorder buttons */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                disabled={index === 0}
+                                onClick={() => handleMoveSlide(index, 'up')}
+                                title="উপরে বা বামে নিন"
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700"
+                              >
+                                <ArrowUp className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                disabled={index === (heroForm.slides || defaultHeroSlides).length - 1}
+                                onClick={() => handleMoveSlide(index, 'down')}
+                                title="নিচে বা ডানে নিন"
+                                className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed text-slate-700"
+                              >
+                                <ArrowDown className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+
+                            {/* Edit & Delete */}
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenEditSlide(slide)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold transition-colors"
+                              >
+                                <Edit className="w-3 h-3" />
+                                <span>এডিট</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteSlide(slide.id)}
+                                title="মুছে ফেলুন"
+                                className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -3802,6 +4250,207 @@ export default function AdminDashboardPage() {
                     <span>{editingGalleryItem ? 'সংরক্ষণ করুন' : 'গ্যালারিতে যুক্ত করুন'}</span>
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Add / Edit Hero Banner Slide Modal */}
+      {showSlideModal && (
+        <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                  <ImageIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">
+                    {editingSlide ? 'ব্যানার ফটো সম্পাদনা করুন' : 'নতুন ব্যানার ফটো যুক্ত করুন'}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    ওয়েবসাইটের মূল হিরো স্লাইডশোতে প্রদর্শিত হবে
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setShowSlideModal(false)}
+                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveSlide} className="p-6 space-y-5">
+              {/* Size Callout inside modal */}
+              <div className="bg-emerald-50 border border-emerald-300 rounded-xl p-3 flex items-center gap-3 text-xs text-emerald-950 font-medium">
+                <span className="text-xl">📐</span>
+                <div>
+                  <span className="font-bold">প্রস্তাবিত মাপ: ১৯২০ × ৭৫০ পিক্সেল</span> (অ্যাসপেক্ট রেশিও ১৬:৯ বা ২১:৯)।
+                  <span className="text-emerald-800 text-[11px] block mt-0.5">ছবি আপলোড করলে স্বয়ংক্রিয়ভাবে সর্বোত্তম কোয়ালিটিতে প্রস্তুত হবে।</span>
+                </div>
+              </div>
+
+              {/* Upload from device OR enter URL */}
+              <div className="space-y-3">
+                <label className="block text-xs font-bold text-slate-800">
+                  ব্যানার ফটো নির্বাচন করুন *
+                </label>
+
+                {/* Direct file upload */}
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <label className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl cursor-pointer shadow-sm transition-all active:scale-95">
+                    <Upload className="w-4 h-4" />
+                    <span>ডিভাইস থেকে ছবি আপলোড করুন</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleBannerImageUpload(file, (dataUrl) => {
+                            setSlideForm({ ...slideForm, imageUrl: dataUrl });
+                          });
+                        }
+                      }}
+                    />
+                  </label>
+                  <span className="text-xs text-slate-400 font-bold">অথবা ছবির লিংক পেস্ট করুন</span>
+                </div>
+
+                {/* URL Input */}
+                <input
+                  type="url"
+                  value={slideForm.imageUrl}
+                  onChange={(e) => setSlideForm({ ...slideForm, imageUrl: e.target.value })}
+                  placeholder="https://images.unsplash.com/... বা অন্য কোনো ছবির সরাসরি লিংক"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 bg-white"
+                />
+
+                {/* Quick Sample Selector */}
+                <div className="space-y-1.5">
+                  <span className="text-[11px] font-bold text-slate-500">দ্রুত ব্যবহারের জন্য ডেমো ফটো ব্যানার:</span>
+                  <div className="flex flex-wrap gap-2">
+                    {sampleBanners.map((sample, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSlideForm({ ...slideForm, imageUrl: sample.url })}
+                        className="text-[11px] font-bold px-2.5 py-1 bg-slate-100 hover:bg-emerald-100 hover:text-emerald-900 border border-slate-200 rounded-lg text-slate-700 transition-colors"
+                      >
+                        + {sample.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Image Live Preview */}
+                {slideForm.imageUrl && (
+                  <div className="mt-3 relative aspect-[21/9] rounded-xl overflow-hidden border border-slate-300 bg-slate-900 shadow-inner">
+                    <Image
+                      src={slideForm.imageUrl}
+                      alt="Banner Preview"
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-3">
+                      <span className="text-white text-xs font-bold drop-shadow">
+                        লাইভ প্রিভিউ: {slideForm.title || 'ব্যানার শিরোনাম'}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Optional Custom Texts for this slide */}
+              <div className="border-t border-slate-200 pt-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800">
+                    স্লাইড-নির্দিষ্ট টেক্সট (ঐচ্ছিক)
+                  </span>
+                  <span className="text-[11px] text-slate-500">
+                    ফাঁকা রাখলে সাধারণ মূল শিরোনাম ও স্লোগান দেখাবে
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    ব্যানার শিরোনাম (Title)
+                  </label>
+                  <input
+                    type="text"
+                    value={slideForm.title}
+                    onChange={(e) => setSlideForm({ ...slideForm, title: e.target.value })}
+                    placeholder="যেমন: হিফজুল কুরআন ও নূরানী একাডেমি শাখা"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    উপ-শিরোনাম / স্লোগান (Subtitle)
+                  </label>
+                  <input
+                    type="text"
+                    value={slideForm.subtitle}
+                    onChange={(e) => setSlideForm({ ...slideForm, subtitle: e.target.value })}
+                    placeholder="যেমন: তাজবীদসহ বিশুদ্ধ কুরআন তিলাওয়াত ও হিফজের সুব্যবস্থা"
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1">
+                    সংক্ষিপ্ত বিবরণ (Description)
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={slideForm.description}
+                    onChange={(e) => setSlideForm({ ...slideForm, description: e.target.value })}
+                    placeholder="এই স্লাইডের জন্য বিশেষ বিবরণ..."
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600"
+                  />
+                </div>
+
+                {/* Active switch */}
+                <div className="flex items-center justify-between pt-2">
+                  <span className="text-xs font-bold text-slate-800">
+                    এই ফটো ব্যানারটি ওয়েবসাইটে সক্রিয় রাখুন
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={slideForm.isActive}
+                      onChange={(e) => setSlideForm({ ...slideForm, isActive: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                  </label>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="border-t border-slate-200 pt-4 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowSlideModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md transition-all active:scale-95 flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingSlide ? 'পরিবর্তন সংরক্ষণ করুন' : 'ব্যানারে যুক্ত করুন'}</span>
+                </button>
               </div>
             </form>
           </div>

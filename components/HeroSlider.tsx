@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useMadrasah } from '@/context/MadrasahContext';
@@ -14,26 +14,98 @@ import {
   MapPin,
   Users,
   BookOpen,
-  Sparkles
+  Sparkles,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export const HeroSlider: React.FC = () => {
   const { info, heroSettings } = useMadrasah();
   const hero = heroSettings || defaultHeroSettings;
 
+  const activeSlides = (hero.slides || []).filter((s) => s.isActive);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+
+  // Auto slide effect
+  useEffect(() => {
+    if (!hero.slideshowEnabled || activeSlides.length <= 1 || isPaused) return;
+    const interval = setInterval(() => {
+      setCurrentSlideIndex((prev) => (prev + 1) % activeSlides.length);
+    }, (hero.slideInterval || 5) * 1000);
+    return () => clearInterval(interval);
+  }, [hero.slideshowEnabled, activeSlides.length, hero.slideInterval, isPaused]);
+
+  // Handle bounds
+  useEffect(() => {
+    if (currentSlideIndex >= activeSlides.length && activeSlides.length > 0) {
+      setCurrentSlideIndex(0);
+    }
+  }, [activeSlides.length, currentSlideIndex]);
+
+  const handleNextSlide = () => {
+    if (activeSlides.length > 0) {
+      setCurrentSlideIndex((prev) => (prev + 1) % activeSlides.length);
+    }
+  };
+
+  const handlePrevSlide = () => {
+    if (activeSlides.length > 0) {
+      setCurrentSlideIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
+    }
+  };
+
+  const currentSlide = activeSlides[currentSlideIndex] || null;
+  const currentHeadline = currentSlide?.title || hero.headline || info.name;
+  const currentSlogan = currentSlide?.subtitle || hero.slogan || info.slogan;
+  const currentDescription = currentSlide?.description || hero.description;
+
   return (
-    <section className="relative bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white overflow-hidden islamic-bg-pattern">
-      {/* Notice Ticker if enabled */}
-      {hero.showNoticeTicker && <NoticeTicker />}
+    <section
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      className="relative bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white overflow-hidden islamic-bg-pattern min-h-[520px] lg:min-h-[580px] flex flex-col justify-between"
+    >
+      {/* Background Slideshow Images */}
+      {hero.slideshowEnabled && activeSlides.length > 0 && (
+        <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+          {activeSlides.map((slide, idx) => (
+            <div
+              key={slide.id}
+              className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+                idx === currentSlideIndex ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
+            >
+              <Image
+                src={slide.imageUrl}
+                alt={slide.title || 'মাদ্রাসা ব্যানার'}
+                fill
+                priority={idx === 0}
+                className="object-cover object-center transform scale-105 transition-transform duration-[8000ms]"
+                unoptimized
+              />
+              {/* Dark Gradient Overlay for optimal text readability */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[#002d18]/94 via-[#00381e]/88 to-[#001f4d]/94" />
+              <div className="absolute inset-0 bg-black/40" />
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Decorative Blur Orbs */}
-      <div className="absolute top-0 right-10 w-96 h-96 bg-[#006837]/30 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute bottom-0 left-10 w-96 h-96 bg-[#003580]/30 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-10 w-96 h-96 bg-[#006837]/30 rounded-full blur-3xl pointer-events-none z-[1]" />
+      <div className="absolute bottom-0 left-10 w-96 h-96 bg-[#003580]/30 rounded-full blur-3xl pointer-events-none z-[1]" />
 
-      <div className="relative max-w-7xl mx-auto px-4 py-14 lg:py-24">
+      {/* Notice Ticker if enabled */}
+      <div className="relative z-10 w-full">
+        {hero.showNoticeTicker && <NoticeTicker />}
+      </div>
+
+      {/* Main Content Area */}
+      <div className="relative z-10 max-w-7xl mx-auto px-4 py-12 lg:py-20 w-full my-auto">
         <div className={`grid grid-cols-1 ${hero.showStatsCard ? 'lg:grid-cols-12 gap-10 items-center' : 'max-w-4xl mx-auto text-center'}`}>
           {/* Main Hero Column */}
-          <div className={`${hero.showStatsCard ? 'lg:col-span-7 space-y-6 text-center lg:text-left' : 'space-y-8'}`}>
+          <div className={`${hero.showStatsCard ? 'lg:col-span-7 space-y-6 text-center lg:text-left' : 'space-y-7'}`}>
             {/* Arabic Ayah Callout */}
             {hero.showAyahCallout && (
               <div className="inline-flex flex-col items-center bg-[#002d18]/90 border border-[#DDAA00]/40 rounded-2xl px-6 py-3.5 shadow-xl backdrop-blur-md">
@@ -56,19 +128,19 @@ export const HeroSlider: React.FC = () => {
               </div>
             )}
 
-            {/* Main Headline & Slogan */}
-            <div className="space-y-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight">
-                {hero.headline || info.name}
+            {/* Main Headline & Slogan with smooth key transition */}
+            <div key={`title-${currentSlideIndex}`} className="space-y-3 animate-in fade-in duration-500">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-white leading-tight drop-shadow-md">
+                {currentHeadline}
               </h1>
-              <p className="text-xl md:text-2xl lg:text-3xl text-[#DDAA00] font-bold">
-                {hero.slogan || info.slogan}
+              <p className="text-xl md:text-2xl lg:text-3xl text-[#DDAA00] font-bold drop-shadow">
+                {currentSlogan}
               </p>
             </div>
 
             {/* Description */}
-            <p className="text-base md:text-lg text-slate-200 max-w-2xl mx-auto leading-relaxed">
-              {hero.description}
+            <p key={`desc-${currentSlideIndex}`} className="text-base md:text-lg text-slate-100 max-w-2xl mx-auto leading-relaxed drop-shadow animate-in fade-in duration-500">
+              {currentDescription}
             </p>
 
             {/* Action Buttons */}
@@ -100,15 +172,15 @@ export const HeroSlider: React.FC = () => {
             {/* Highlights checkmarks */}
             {hero.showHighlights && (
               <div className={`flex flex-wrap items-center gap-3 text-xs md:text-sm text-emerald-200 pt-3 ${hero.showStatsCard ? 'justify-center lg:justify-start' : 'justify-center'}`}>
-                <span className="flex items-center gap-1.5 bg-[#002d18]/60 px-3.5 py-1.5 rounded-full border border-emerald-800">
+                <span className="flex items-center gap-1.5 bg-[#002d18]/80 px-3.5 py-1.5 rounded-full border border-emerald-800 backdrop-blur-sm shadow">
                   <CheckCircle className="w-4 h-4 text-[#DDAA00]" />
                   <span>{hero.highlight1}</span>
                 </span>
-                <span className="flex items-center gap-1.5 bg-[#002d18]/60 px-3.5 py-1.5 rounded-full border border-emerald-800">
+                <span className="flex items-center gap-1.5 bg-[#002d18]/80 px-3.5 py-1.5 rounded-full border border-emerald-800 backdrop-blur-sm shadow">
                   <CheckCircle className="w-4 h-4 text-[#DDAA00]" />
                   <span>{hero.highlight2}</span>
                 </span>
-                <span className="flex items-center gap-1.5 bg-[#002d18]/60 px-3.5 py-1.5 rounded-full border border-emerald-800">
+                <span className="flex items-center gap-1.5 bg-[#002d18]/80 px-3.5 py-1.5 rounded-full border border-emerald-800 backdrop-blur-sm shadow">
                   <CheckCircle className="w-4 h-4 text-[#DDAA00]" />
                   <span>{hero.highlight3}</span>
                 </span>
@@ -196,6 +268,49 @@ export const HeroSlider: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Slideshow Arrow Navigation */}
+      {hero.slideshowEnabled && activeSlides.length > 1 && (
+        <>
+          <button
+            onClick={handlePrevSlide}
+            aria-label="Previous Slide"
+            className="absolute left-3 lg:left-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 hover:bg-[#DDAA00] text-white hover:text-slate-950 border border-white/20 hover:border-[#DDAA00] flex items-center justify-center backdrop-blur-md transition-all shadow-xl active:scale-90"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
+          <button
+            onClick={handleNextSlide}
+            aria-label="Next Slide"
+            className="absolute right-3 lg:right-6 top-1/2 -translate-y-1/2 z-20 w-11 h-11 rounded-full bg-black/40 hover:bg-[#DDAA00] text-white hover:text-slate-950 border border-white/20 hover:border-[#DDAA00] flex items-center justify-center backdrop-blur-md transition-all shadow-xl active:scale-90"
+          >
+            <ChevronRight className="w-6 h-6" />
+          </button>
+        </>
+      )}
+
+      {/* Slideshow Bottom Dots Indicator */}
+      {hero.slideshowEnabled && activeSlides.length > 1 && (
+        <div className="relative z-20 pb-4 flex justify-center items-center gap-2">
+          <div className="inline-flex items-center gap-2 bg-black/50 px-4 py-1.5 rounded-full border border-white/10 backdrop-blur-md shadow-lg">
+            {activeSlides.map((slide, idx) => (
+              <button
+                key={slide.id}
+                onClick={() => setCurrentSlideIndex(idx)}
+                aria-label={`Slide ${idx + 1}`}
+                className={`transition-all duration-300 rounded-full ${
+                  idx === currentSlideIndex
+                    ? 'w-7 h-2 bg-[#DDAA00]'
+                    : 'w-2 h-2 bg-white/40 hover:bg-white/80'
+                }`}
+              />
+            ))}
+            <span className="text-[11px] font-mono text-emerald-200 ml-1.5 font-bold">
+              {currentSlideIndex + 1}/{activeSlides.length}
+            </span>
+          </div>
+        </div>
+      )}
     </section>
   );
 };

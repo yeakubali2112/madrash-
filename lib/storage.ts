@@ -206,7 +206,13 @@ export const getStoredHeroSettings = (): HeroSettings => {
   if (typeof window === 'undefined') return defaultHeroSettings;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.HERO_SETTINGS);
-    return data ? { ...defaultHeroSettings, ...JSON.parse(data) } : defaultHeroSettings;
+    if (!data) return defaultHeroSettings;
+    const parsed = JSON.parse(data);
+    return {
+      ...defaultHeroSettings,
+      ...parsed,
+      slides: parsed.slides && parsed.slides.length > 0 ? parsed.slides : defaultHeroSettings.slides
+    };
   } catch {
     return defaultHeroSettings;
   }

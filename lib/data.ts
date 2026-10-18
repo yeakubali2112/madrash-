@@ -58,6 +58,16 @@ export interface TickerSettings {
   speed: 'slow' | 'normal' | 'fast';
 }
 
+export interface HeroBannerSlide {
+  id: string;
+  imageUrl: string;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  isActive: boolean;
+  order: number;
+}
+
 export interface HeroSettings {
   headline: string;
   slogan: string;
@@ -79,6 +89,11 @@ export interface HeroSettings {
   highlight2: string;
   highlight3: string;
   showStatsCard: boolean;
+
+  // Slideshow Banners
+  slideshowEnabled: boolean;
+  slideInterval: number; // in seconds
+  slides: HeroBannerSlide[];
 }
 
 export interface FacilityItem {
@@ -266,6 +281,36 @@ export const defaultTickerSettings: TickerSettings = {
   speed: "normal"
 };
 
+export const defaultHeroSlides: HeroBannerSlide[] = [
+  {
+    id: "slide-1",
+    imageUrl: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=1920",
+    title: "পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসা",
+    subtitle: "দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়",
+    description: "১৯৯৫ সাল থেকে নিষ্ঠা ও সুশৃঙ্খল পরিবেশে দুপচাঁচিয়া, বগুড়ায় দ্বীনি মূল্যবোধ, কুরআন-হাদিসের আদর্শ শিক্ষা এবং বোর্ড নির্ধারিত আধুনিক বিজ্ঞান ও প্রযুক্তির সমন্বয়ে গড়ে তুলছি সৎ, দক্ষ ও আলোকিত প্রজন্ম।",
+    isActive: true,
+    order: 1
+  },
+  {
+    id: "slide-2",
+    imageUrl: "https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&q=80&w=1920",
+    title: "হিফজুল কুরআন ও নূরানী একাডেমি শাখা",
+    subtitle: "তাজবীদসহ বিশুদ্ধ কুরআন তিলাওয়াত ও হিফজের সুব্যবস্থা",
+    description: "অভিজ্ঞ হাফেজ ও কারীগণের সার্বক্ষণিক তত্ত্বাবধানে সুন্দর ও আধ্যাত্মিক পরিবেশে কুরআন শিক্ষার বিশেষ ব্যবস্থা।",
+    isActive: true,
+    order: 2
+  },
+  {
+    id: "slide-3",
+    imageUrl: "https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&q=80&w=1920",
+    title: "আধুনিক বিজ্ঞান ও কম্পিউটার ল্যাব",
+    subtitle: "ডিজিটাল বাংলাদেশ বিনির্মাণে তথ্যপ্রযুক্তি নির্ভর যুগোপযোগী শিক্ষা",
+    description: "দাখিল বিজ্ঞান বিভাগের শিক্ষার্থীদের জন্য বোর্ড নির্ধারিত আধুনিক বিজ্ঞানাগার ও সার্বক্ষণিক কম্পিউটার প্রশিক্ষণ।",
+    isActive: true,
+    order: 3
+  }
+];
+
 export const defaultHeroSettings: HeroSettings = {
   headline: "পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসা",
   slogan: "দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়",
@@ -287,6 +332,9 @@ export const defaultHeroSettings: HeroSettings = {
   highlight2: "হিফজ ও নূরানী আবাসিক সুবিধা",
   highlight3: "বিজ্ঞান ও কম্পিউটার ল্যাব",
   showStatsCard: false,
+  slideshowEnabled: true,
+  slideInterval: 5,
+  slides: defaultHeroSlides,
 };
 
 export const defaultUrgentNotices: UrgentNoticeItem[] = [
