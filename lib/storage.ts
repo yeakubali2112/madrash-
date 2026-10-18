@@ -7,6 +7,7 @@ import {
   ContactMessage,
   UrgentNoticeItem,
   TickerSettings,
+  HeroSettings,
   FacilityItem,
   GalleryItem,
   defaultMadrasahInfo,
@@ -16,6 +17,7 @@ import {
   defaultResults,
   defaultMessages,
   defaultTickerSettings,
+  defaultHeroSettings,
   defaultUrgentNotices,
   defaultFacilities,
   defaultGallery
@@ -31,6 +33,7 @@ const STORAGE_KEYS = {
   AUTH: 'padm_admin_logged_in',
   URGENT_NOTICES: 'padm_urgent_notices',
   TICKER_SETTINGS: 'padm_ticker_settings',
+  HERO_SETTINGS: 'padm_hero_settings',
   FACILITIES: 'padm_facilities',
   GALLERY: 'padm_gallery'
 };
@@ -199,6 +202,21 @@ export const saveStoredGallery = (gallery: GalleryItem[]) => {
   localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
 };
 
+export const getStoredHeroSettings = (): HeroSettings => {
+  if (typeof window === 'undefined') return defaultHeroSettings;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.HERO_SETTINGS);
+    return data ? { ...defaultHeroSettings, ...JSON.parse(data) } : defaultHeroSettings;
+  } catch {
+    return defaultHeroSettings;
+  }
+};
+
+export const saveStoredHeroSettings = (settings: HeroSettings) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.HERO_SETTINGS, JSON.stringify(settings));
+};
+
 export const resetAllData = () => {
   if (typeof window === 'undefined') return;
   localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(defaultMadrasahInfo));
@@ -209,6 +227,7 @@ export const resetAllData = () => {
   localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(defaultMessages));
   localStorage.setItem(STORAGE_KEYS.URGENT_NOTICES, JSON.stringify(defaultUrgentNotices));
   localStorage.setItem(STORAGE_KEYS.TICKER_SETTINGS, JSON.stringify(defaultTickerSettings));
+  localStorage.setItem(STORAGE_KEYS.HERO_SETTINGS, JSON.stringify(defaultHeroSettings));
   localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(defaultFacilities));
   localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(defaultGallery));
 };

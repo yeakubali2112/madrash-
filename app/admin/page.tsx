@@ -13,7 +13,9 @@ import {
   MadrasahInfo,
   UrgentNoticeItem,
   FacilityItem,
-  GalleryItem
+  GalleryItem,
+  HeroSettings,
+  defaultHeroSettings
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -53,7 +55,10 @@ import {
   Building,
   Camera,
   Quote,
-  UserCheck
+  UserCheck,
+  Sliders,
+  CheckCircle,
+  MapPin
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -63,6 +68,8 @@ export default function AdminDashboardPage() {
     logoutAdmin,
     info,
     updateInfo,
+    heroSettings,
+    updateHeroSettings,
     notices,
     addNotice,
     updateNotice,
@@ -98,7 +105,7 @@ export default function AdminDashboardPage() {
     resetToDefaults
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'authorities' | 'results' | 'settings' | 'messages' | 'backup'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'authorities' | 'results' | 'settings' | 'messages' | 'backup'>('overview');
 
   // Check auth
   useEffect(() => {
@@ -106,6 +113,32 @@ export default function AdminDashboardPage() {
       router.push('/admin/login');
     }
   }, [isAdmin, router]);
+
+  // Hero Section Form State
+  const [heroForm, setHeroForm] = useState<HeroSettings>(heroSettings || defaultHeroSettings);
+  const [heroSettingsSaved, setHeroSettingsSaved] = useState(false);
+
+  useEffect(() => {
+    if (heroSettings) {
+      setHeroForm(heroSettings);
+    }
+  }, [heroSettings]);
+
+  const handleHeroSubmit = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    updateHeroSettings(heroForm);
+    setHeroSettingsSaved(true);
+    setTimeout(() => setHeroSettingsSaved(false), 3000);
+  };
+
+  const handleHeroReset = () => {
+    if (window.confirm('আপনি কি হিরো সেকশনের সেটিংস ডিফল্ট অবস্থায় ফিরিয়ে নিতে চান?')) {
+      setHeroForm(defaultHeroSettings);
+      updateHeroSettings(defaultHeroSettings);
+      setHeroSettingsSaved(true);
+      setTimeout(() => setHeroSettingsSaved(false), 3000);
+    }
+  };
 
   // Notice Form State
   const [showNoticeModal, setShowNoticeModal] = useState(false);
@@ -406,6 +439,23 @@ export default function AdminDashboardPage() {
                 <LayoutDashboard className="w-4 h-4" />
                 <span>ওভারভিউ</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('hero')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                activeTab === 'hero'
+                  ? 'bg-emerald-800 text-white shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Sliders className="w-4 h-4 text-emerald-400" />
+                <span>হিরো ব্যানার</span>
+              </div>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                হোমপেজ
+              </span>
             </button>
 
             <button
@@ -747,6 +797,471 @@ export default function AdminDashboardPage() {
                   </table>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* TAB: HERO SECTION MANAGEMENT */}
+          {activeTab === 'hero' && (
+            <div className="space-y-6">
+              {/* Top Banner Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <Sliders className="w-3.5 h-3.5" /> হোমপেজ
+                    </span>
+                    <h2 className="text-xl font-bold text-slate-900">হিরো ব্যানার ব্যবস্থাপনা</h2>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    হোমপেজের মূল ব্যানার শিরোনাম, স্লোগান, বর্ণনা, বাটন ও উপাদানসমূহ নিয়ন্ত্রণ ও কাস্টমাইজ করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5">
+                  <a
+                    href="/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>লাইভ হোমপেজ দেখুন</span>
+                  </a>
+
+                  <button
+                    onClick={handleHeroSubmit}
+                    className="btn-pulse-glow inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-black text-white bg-emerald-700 hover:bg-emerald-800 shadow-md transition-all active:scale-95"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>সংরক্ষণ করুন</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Notification if saved */}
+              {heroSettingsSaved && (
+                <div className="p-3.5 bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-bold rounded-xl flex items-center gap-2 animate-in fade-in duration-200 shadow-sm">
+                  <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>হিরো সেকশনের সেটিংস সফলভাবে সংরক্ষিত হয়েছে এবং ওয়েবসাইটে তৎক্ষণাৎ কার্যকর হয়েছে!</span>
+                </div>
+              )}
+
+              {/* Live Preview Card */}
+              <div className="bg-gradient-to-br from-[#002d18] via-[#004022] to-[#001f4d] text-white rounded-2xl p-6 shadow-xl border border-emerald-800/60 relative overflow-hidden">
+                <div className="flex justify-between items-center mb-4 pb-3 border-b border-white/10">
+                  <span className="text-xs font-black text-[#DDAA00] tracking-wider uppercase flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-[#DDAA00]" /> লাইভ ভিউ প্রিভিউ
+                  </span>
+                  <span className="text-[11px] text-emerald-200">
+                    নিচের সেটিংস অনুযায়ী তাৎক্ষণিক প্রিভিউ
+                  </span>
+                </div>
+
+                <div className="text-center space-y-4 py-4 max-w-2xl mx-auto">
+                  {heroForm.showAyahCallout && (
+                    <div className="inline-flex flex-col items-center bg-[#002d18]/90 border border-[#DDAA00]/40 rounded-xl px-4 py-2 shadow-sm">
+                      <span className="font-arabic text-lg text-[#DDAA00] font-bold">
+                        {heroForm.ayahArabic}
+                      </span>
+                      <span className="text-[11px] text-emerald-200 mt-0.5">
+                        &quot;{heroForm.ayahBangla}&quot;
+                      </span>
+                    </div>
+                  )}
+
+                  {heroForm.showLocationBadge && (
+                    <div>
+                      <span className="inline-flex items-center gap-1 bg-[#DDAA00] text-slate-950 text-[10px] font-black px-3 py-1 rounded-full uppercase">
+                        <MapPin className="w-3 h-3" />
+                        {heroForm.locationBadgeText}
+                      </span>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-xl sm:text-2xl font-black text-white leading-snug">
+                      {heroForm.headline || info.name}
+                    </h3>
+                    <p className="text-sm sm:text-base text-[#DDAA00] font-bold mt-1">
+                      {heroForm.slogan || info.slogan}
+                    </p>
+                  </div>
+
+                  <p className="text-xs sm:text-sm text-slate-200 line-clamp-3 leading-relaxed">
+                    {heroForm.description}
+                  </p>
+
+                  {(heroForm.showButton1 || heroForm.showButton2) && (
+                    <div className="flex flex-wrap items-center justify-center gap-2.5 pt-2">
+                      {heroForm.showButton1 && (
+                        <span className="inline-flex items-center gap-1.5 bg-[#DDAA00] text-slate-950 font-bold px-4 py-2 rounded-lg text-xs shadow">
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          <span>{heroForm.button1Text || "বাটন ১"}</span>
+                        </span>
+                      )}
+                      {heroForm.showButton2 && (
+                        <span className="inline-flex items-center gap-1.5 bg-[#003580] text-white font-bold px-4 py-2 rounded-lg text-xs border border-[#DDAA00]/40 shadow">
+                          <Award className="w-3.5 h-3.5 text-[#DDAA00]" />
+                          <span>{heroForm.button2Text || "বাটন ২"}</span>
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {heroForm.showHighlights && (
+                    <div className="flex flex-wrap items-center justify-center gap-2 text-[10px] text-emerald-200 pt-2">
+                      <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight1}</span>
+                      <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight2}</span>
+                      <span className="bg-[#002d18]/70 px-2 py-0.5 rounded border border-emerald-800">✓ {heroForm.highlight3}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Form Container */}
+              <form onSubmit={handleHeroSubmit} className="space-y-6">
+                {/* 1. মূল টেক্সট ও শিরোনাম */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-slate-200 pb-2">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                      মূল শিরোনাম, স্লোগান ও বিবরণ
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        মূল শিরোনাম (ব্যানার টাইটেল)
+                      </label>
+                      <input
+                        type="text"
+                        value={heroForm.headline}
+                        onChange={(e) => setHeroForm({ ...heroForm, headline: e.target.value })}
+                        placeholder="মাদ্রাসার পুরো নাম..."
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">হোমপেজের কেন্দ্রে বড় হরফে প্রদর্শিত প্রধান নাম</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        উপ-শিরোনাম / স্লোগান
+                      </label>
+                      <input
+                        type="text"
+                        value={heroForm.slogan}
+                        onChange={(e) => setHeroForm({ ...heroForm, slogan: e.target.value })}
+                        placeholder="দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়..."
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+                      />
+                      <p className="text-[10px] text-slate-500 mt-1">শিরোনামের নিচে গোল্ডেন রঙে প্রদর্শিত স্লোগান</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      মাদ্রাসার সংক্ষিপ্ত বিবরণ (প্যারাগ্রাফ)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={heroForm.description}
+                      onChange={(e) => setHeroForm({ ...heroForm, description: e.target.value })}
+                      placeholder="মাদ্রাসার সংক্ষিপ্ত ইতিহাস বা লক্ষ্য..."
+                      className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-emerald-600 bg-white"
+                    />
+                  </div>
+                </div>
+
+                {/* 2. অ্যাকশন বাটনদ্বয় */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-slate-200 pb-2">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-[#DDAA00]"></span>
+                      কল-টু-অ্যাকশন বাটন নিয়ন্ত্রণ
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    {/* Button 1 (Golden Button) */}
+                    <div className="bg-white border border-amber-200/80 rounded-xl p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-[#DDAA00]"></span>
+                          বাটন ১ (প্রাথমিক বাটন)
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.showButton1}
+                            onChange={(e) => setHeroForm({ ...heroForm, showButton1: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                          <span className="ml-2 text-[11px] font-bold text-slate-600">
+                            {heroForm.showButton1 ? 'চালু' : 'বন্ধ'}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">বাটনের টেক্সট</label>
+                        <input
+                          type="text"
+                          value={heroForm.button1Text}
+                          onChange={(e) => setHeroForm({ ...heroForm, button1Text: e.target.value })}
+                          placeholder="অনলাইন ভর্তি আবেদন করুন"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">বাটনের লিংক</label>
+                        <input
+                          type="text"
+                          value={heroForm.button1Link}
+                          onChange={(e) => setHeroForm({ ...heroForm, button1Link: e.target.value })}
+                          placeholder="/admission"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Button 2 (Blue Button) */}
+                    <div className="bg-white border border-blue-200/80 rounded-xl p-4 space-y-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-[#003580]"></span>
+                          বাটন ২ (মাধ্যমিক বাটন)
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.showButton2}
+                            onChange={(e) => setHeroForm({ ...heroForm, showButton2: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                          <span className="ml-2 text-[11px] font-bold text-slate-600">
+                            {heroForm.showButton2 ? 'চালু' : 'বন্ধ'}
+                          </span>
+                        </label>
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">বাটনের টেক্সট</label>
+                        <input
+                          type="text"
+                          value={heroForm.button2Text}
+                          onChange={(e) => setHeroForm({ ...heroForm, button2Text: e.target.value })}
+                          placeholder="পরীক্ষার ফলাফল অনুসন্ধান"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">বাটনের লিংক</label>
+                        <input
+                          type="text"
+                          value={heroForm.button2Link}
+                          onChange={(e) => setHeroForm({ ...heroForm, button2Link: e.target.value })}
+                          placeholder="/results"
+                          className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. দৃশ্যমান উপাদানসমূহ ও টগল */}
+                <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-5 space-y-4">
+                  <div className="border-b border-slate-200 pb-2">
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+                      দৃশ্যমান উপাদানসমূহের অন/অফ নিয়ন্ত্রণ
+                    </h3>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ticker on/off */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">জরুরি নোটিশ স্ক্রলার</div>
+                        <div className="text-[11px] text-slate-500">ব্যানারের শীর্ষে নোটিশের রানিং টেক্সট</div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={heroForm.showNoticeTicker}
+                          onChange={(e) => setHeroForm({ ...heroForm, showNoticeTicker: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Stats Box on/off */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-bold text-slate-900">ডানপাশের পরিসংখ্যান ও লোগো কার্ড</div>
+                        <div className="text-[11px] text-slate-500">শিক্ষার্থী ও শিক্ষক সংখ্যা সংবলিত কার্ড</div>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={heroForm.showStatsCard}
+                          onChange={(e) => setHeroForm({ ...heroForm, showStatsCard: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                      </label>
+                    </div>
+
+                    {/* Ayah Callout */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2 md:col-span-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">কুরআনের আয়াত কলআউট বক্স</div>
+                          <div className="text-[11px] text-slate-500">শিরোনামের উপরে আরবি আয়াত ও অর্থ</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.showAyahCallout}
+                            onChange={(e) => setHeroForm({ ...heroForm, showAyahCallout: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+
+                      {heroForm.showAyahCallout && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">আরবি আয়াত</label>
+                            <input
+                              type="text"
+                              value={heroForm.ayahArabic}
+                              onChange={(e) => setHeroForm({ ...heroForm, ayahArabic: e.target.value })}
+                              className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-arabic"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-[11px] font-bold text-slate-600 mb-1">বাংলা অর্থ</label>
+                            <input
+                              type="text"
+                              value={heroForm.ayahBangla}
+                              onChange={(e) => setHeroForm({ ...heroForm, ayahBangla: e.target.value })}
+                              className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs"
+                            />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Location Badge */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">লোকেশন ব্যাজ পিল</div>
+                          <div className="text-[11px] text-slate-500">শিরোনামের উপরে লোকেশন ট্যাগ</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.showLocationBadge}
+                            onChange={(e) => setHeroForm({ ...heroForm, showLocationBadge: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+
+                      {heroForm.showLocationBadge && (
+                        <div>
+                          <label className="block text-[11px] font-bold text-slate-600 mb-1">ব্যাজের লেখা</label>
+                          <input
+                            type="text"
+                            value={heroForm.locationBadgeText}
+                            onChange={(e) => setHeroForm({ ...heroForm, locationBadgeText: e.target.value })}
+                            className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Highlights checkmarks */}
+                    <div className="bg-white border border-slate-200 rounded-xl p-3.5 space-y-2">
+                      <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">বৈশিষ্ট্য ব্যাজ তালিকা</div>
+                          <div className="text-[11px] text-slate-500">বাটনের নিচে ৩টি চেকমার্ক ট্যাগ</div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.showHighlights}
+                            onChange={(e) => setHeroForm({ ...heroForm, showHighlights: e.target.checked })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+                        </label>
+                      </div>
+
+                      {heroForm.showHighlights && (
+                        <div className="space-y-1.5">
+                          <input
+                            type="text"
+                            value={heroForm.highlight1}
+                            onChange={(e) => setHeroForm({ ...heroForm, highlight1: e.target.value })}
+                            className="w-full px-2.5 py-1 rounded border border-slate-300 text-xs"
+                          />
+                          <input
+                            type="text"
+                            value={heroForm.highlight2}
+                            onChange={(e) => setHeroForm({ ...heroForm, highlight2: e.target.value })}
+                            className="w-full px-2.5 py-1 rounded border border-slate-300 text-xs"
+                          />
+                          <input
+                            type="text"
+                            value={heroForm.highlight3}
+                            onChange={(e) => setHeroForm({ ...heroForm, highlight3: e.target.value })}
+                            className="w-full px-2.5 py-1 rounded border border-slate-300 text-xs"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Save Bar */}
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={handleHeroReset}
+                    className="text-xs text-rose-600 hover:text-rose-800 font-bold hover:underline flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>ডিফল্ট সেটিংসে ফিরিয়ে নিন</span>
+                  </button>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    {heroSettingsSaved && (
+                      <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
+                        <Check className="w-4 h-4" /> সংরক্ষিত হয়েছে!
+                      </span>
+                    )}
+
+                    <button
+                      type="submit"
+                      className="btn-pulse-glow w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black py-3 px-6 rounded-xl transition-all shadow-md active:scale-95"
+                    >
+                      <Save className="w-4 h-4" />
+                      <span>পরিবর্তন সংরক্ষণ করুন</span>
+                    </button>
+                  </div>
+                </div>
+              </form>
             </div>
           )}
 

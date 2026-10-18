@@ -58,6 +58,29 @@ export interface TickerSettings {
   speed: 'slow' | 'normal' | 'fast';
 }
 
+export interface HeroSettings {
+  headline: string;
+  slogan: string;
+  description: string;
+  showButton1: boolean;
+  button1Text: string;
+  button1Link: string;
+  showButton2: boolean;
+  button2Text: string;
+  button2Link: string;
+  showNoticeTicker: boolean;
+  showAyahCallout: boolean;
+  ayahArabic: string;
+  ayahBangla: string;
+  showLocationBadge: boolean;
+  locationBadgeText: string;
+  showHighlights: boolean;
+  highlight1: string;
+  highlight2: string;
+  highlight3: string;
+  showStatsCard: boolean;
+}
+
 export interface FacilityItem {
   id: string;
   title: string;
@@ -241,6 +264,29 @@ export const defaultTickerSettings: TickerSettings = {
   isEnabled: true,
   label: "জরুরি নোটিশ:",
   speed: "normal"
+};
+
+export const defaultHeroSettings: HeroSettings = {
+  headline: "পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসা",
+  slogan: "দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়",
+  description: "১৯৯৫ সাল থেকে নিষ্ঠা ও সুশৃঙ্খল পরিবেশে দুপচাঁচিয়া, বগুড়ায় দ্বীনি মূল্যবোধ, কুরআন-হাদিসের আদর্শ শিক্ষা এবং বোর্ড নির্ধারিত আধুনিক বিজ্ঞান ও প্রযুক্তির সমন্বয়ে গড়ে তুলছি সৎ, দক্ষ ও আলোকিত প্রজন্ম।",
+  showButton1: true,
+  button1Text: "অনলাইন ভর্তি আবেদন করুন",
+  button1Link: "/admission",
+  showButton2: true,
+  button2Text: "পরীক্ষার ফলাফল অনুসন্ধান",
+  button2Link: "/results",
+  showNoticeTicker: true,
+  showAyahCallout: false,
+  ayahArabic: "اقْرَأْ بِاسْمِ رَبِّكَ الَّذِي خَلَقَ",
+  ayahBangla: "পড় তোমার রবের নামে যিনি সৃষ্টি করেছেন। (সূরা আলাক: ১)",
+  showLocationBadge: false,
+  locationBadgeText: "দুপচাঁচিয়া, বগুড়া • দ্বীনি শিক্ষার অনন্য প্রতিষ্ঠান",
+  showHighlights: false,
+  highlight1: "বোর্ড অনুমোদিত পূর্ণাঙ্গ মাদ্রাসা",
+  highlight2: "হিফজ ও নূরানী আবাসিক সুবিধা",
+  highlight3: "বিজ্ঞান ও কম্পিউটার ল্যাব",
+  showStatsCard: false,
 };
 
 export const defaultUrgentNotices: UrgentNoticeItem[] = [

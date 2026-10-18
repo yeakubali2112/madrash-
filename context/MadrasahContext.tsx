@@ -10,6 +10,7 @@ import {
   ContactMessage,
   UrgentNoticeItem,
   TickerSettings,
+  HeroSettings,
   FacilityItem,
   GalleryItem,
   defaultMadrasahInfo,
@@ -19,6 +20,7 @@ import {
   defaultResults,
   defaultMessages,
   defaultTickerSettings,
+  defaultHeroSettings,
   defaultUrgentNotices,
   defaultFacilities,
   defaultGallery
@@ -38,6 +40,8 @@ import {
   saveStoredMessages,
   getStoredTickerSettings,
   saveStoredTickerSettings,
+  getStoredHeroSettings,
+  saveStoredHeroSettings,
   getStoredUrgentNotices,
   saveStoredUrgentNotices,
   getStoredFacilities,
@@ -58,10 +62,12 @@ interface MadrasahContextType {
   messages: ContactMessage[];
   urgentNotices: UrgentNoticeItem[];
   tickerSettings: TickerSettings;
+  heroSettings: HeroSettings;
   facilities: FacilityItem[];
   gallery: GalleryItem[];
   isAdmin: boolean;
   updateInfo: (newInfo: MadrasahInfo) => void;
+  updateHeroSettings: (newSettings: Partial<HeroSettings>) => void;
   addNotice: (notice: Omit<Notice, 'id'>) => void;
   updateNotice: (id: string, notice: Partial<Notice>) => void;
   deleteNotice: (id: string) => void;
@@ -103,6 +109,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [messages, setMessages] = useState<ContactMessage[]>(defaultMessages);
   const [urgentNotices, setUrgentNotices] = useState<UrgentNoticeItem[]>(defaultUrgentNotices);
   const [tickerSettings, setTickerSettings] = useState<TickerSettings>(defaultTickerSettings);
+  const [heroSettings, setHeroSettings] = useState<HeroSettings>(defaultHeroSettings);
   const [facilities, setFacilities] = useState<FacilityItem[]>(defaultFacilities);
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
@@ -117,6 +124,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setMessages(getStoredMessages());
     setUrgentNotices(getStoredUrgentNotices());
     setTickerSettings(getStoredTickerSettings());
+    setHeroSettings(getStoredHeroSettings());
     setFacilities(getStoredFacilities());
     setGallery(getStoredGallery());
     setIsAdmin(isAdminLoggedIn());
@@ -154,6 +162,12 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = { ...tickerSettings, ...newSettings };
     setTickerSettings(updated);
     saveStoredTickerSettings(updated);
+  };
+
+  const updateHeroSettings = (newSettings: Partial<HeroSettings>) => {
+    const updated = { ...heroSettings, ...newSettings };
+    setHeroSettings(updated);
+    saveStoredHeroSettings(updated);
   };
 
   const addUrgentNotice = (noticeData: Omit<UrgentNoticeItem, 'id'>) => {
@@ -355,6 +369,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setMessages(defaultMessages);
     setUrgentNotices(defaultUrgentNotices);
     setTickerSettings(defaultTickerSettings);
+    setHeroSettings(defaultHeroSettings);
     setFacilities(defaultFacilities);
     setGallery(defaultGallery);
   };
@@ -366,6 +381,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         notices,
         urgentNotices,
         tickerSettings,
+        heroSettings,
         facilities,
         gallery,
         teachers,
@@ -374,6 +390,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         messages,
         isAdmin,
         updateInfo,
+        updateHeroSettings,
         addNotice,
         updateNotice,
         deleteNotice,
