@@ -3,7 +3,6 @@
 import React from 'react';
 import Link from 'next/link';
 import { useMadrasah } from '@/context/MadrasahContext';
-import { Bell } from 'lucide-react';
 
 export const NoticeTicker: React.FC = () => {
   const { urgentNotices, tickerSettings } = useMadrasah();
@@ -23,12 +22,6 @@ export const NoticeTicker: React.FC = () => {
   return (
     <div className="bg-transparent text-white py-2.5 border-b border-emerald-800/40 overflow-hidden relative z-20">
       <div className="max-w-7xl mx-auto px-4 flex items-center">
-        {/* Label */}
-        <div className="flex items-center gap-1.5 bg-[#003580] text-[#DDAA00] font-black px-3 py-1 rounded text-xs shrink-0 shadow mr-4 z-10 border border-[#DDAA00]/30">
-          <Bell className="w-3.5 h-3.5 animate-pulse text-[#DDAA00]" />
-          <span>{tickerSettings?.label || "জরুরি নোটিশ:"}</span>
-        </div>
-
         {/* Marquee Animated Scrolling content */}
         <div className="flex-1 overflow-hidden relative cursor-pointer" title="পড়তে মাউস ধরুন">
           <div

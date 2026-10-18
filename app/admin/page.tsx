@@ -1016,10 +1016,6 @@ export default function AdminDashboardPage() {
                 {/* Ticker bar preview */}
                 {tickerSettings?.isEnabled && urgentNotices.filter(n => n.isActive).length > 0 ? (
                   <div className="bg-[#002d18] text-white py-2 px-3 rounded-xl border border-emerald-800 shadow-inner overflow-hidden flex items-center">
-                    <div className="flex items-center gap-1.5 bg-[#003580] text-[#DDAA00] font-black px-3 py-1 rounded text-xs shrink-0 shadow mr-3 z-10 border border-[#DDAA00]/30">
-                      <Bell className="w-3.5 h-3.5 animate-pulse text-[#DDAA00]" />
-                      <span>{tickerSettings?.label || "জরুরি নোটিশ:"}</span>
-                    </div>
                     <div className="flex-1 overflow-hidden relative">
                       <div
                         className="animate-marquee flex items-center gap-8 whitespace-nowrap text-xs md:text-sm font-bold py-0.5"
