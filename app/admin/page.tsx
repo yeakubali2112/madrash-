@@ -66,7 +66,8 @@ import {
   Info,
   ArrowUp,
   ArrowDown,
-  Play
+  Play,
+  AlertTriangle
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -122,6 +123,48 @@ export default function AdminDashboardPage() {
     }
   }, [isAdmin, router]);
 
+  // Universal Centered Confirmation Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmLabel: 'হ্যাঁ, নিশ্চিত করুন',
+    cancelLabel: 'বাতিল',
+    type: 'danger',
+    onConfirm: () => {}
+  });
+
+  const openConfirmModal = (options: {
+    title: string;
+    message: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    type?: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }) => {
+    setConfirmModal({
+      isOpen: true,
+      title: options.title,
+      message: options.message,
+      confirmLabel: options.confirmLabel || 'হ্যাঁ, নিশ্চিত করুন',
+      cancelLabel: options.cancelLabel || 'বাতিল',
+      type: options.type || 'danger',
+      onConfirm: options.onConfirm
+    });
+  };
+
+  const closeConfirmModal = () => {
+    setConfirmModal(prev => ({ ...prev, isOpen: false }));
+  };
+
   // Hero Section Form State
   const [heroForm, setHeroForm] = useState<HeroSettings>(heroSettings || defaultHeroSettings);
   const [heroSettingsSaved, setHeroSettingsSaved] = useState(false);
@@ -140,12 +183,20 @@ export default function AdminDashboardPage() {
   };
 
   const handleHeroReset = () => {
-    if (window.confirm('আপনি কি হিরো সেকশনের সেটিংস ডিফল্ট অবস্থায় ফিরিয়ে নিতে চান?')) {
-      setHeroForm(defaultHeroSettings);
-      updateHeroSettings(defaultHeroSettings);
-      setHeroSettingsSaved(true);
-      setTimeout(() => setHeroSettingsSaved(false), 3000);
-    }
+    openConfirmModal({
+      title: 'ডিফল্ট সেটিংসে ফিরিয়ে নেওয়ার নিশ্চিতকরণ',
+      message: 'আপনি কি হিরো সেকশনের সকল সেটিংস ও ব্যানার ডিফল্ট অবস্থায় ফিরিয়ে নিতে চান? এতে আপনার কাস্টমাইজেশন রিসেট হয়ে যাবে।',
+      confirmLabel: 'হ্যাঁ, রিসেট করুন',
+      cancelLabel: 'বাতিল',
+      type: 'warning',
+      onConfirm: () => {
+        setHeroForm(defaultHeroSettings);
+        updateHeroSettings(defaultHeroSettings);
+        setHeroSettingsSaved(true);
+        setTimeout(() => setHeroSettingsSaved(false), 3000);
+        closeConfirmModal();
+      }
+    });
   };
 
   // Hero Slide Management State
@@ -294,15 +345,23 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteSlide = (id: string) => {
-    if (window.confirm('আপনি কি এই ফটো ব্যানারটি মুছে ফেলতে চান?')) {
-      const currentSlides = heroForm.slides || defaultHeroSlides;
-      const updatedSlides = currentSlides.filter(s => s.id !== id);
-      const updatedHeroForm = { ...heroForm, slides: updatedSlides };
-      setHeroForm(updatedHeroForm);
-      updateHeroSettings(updatedHeroForm);
-      setHeroSettingsSaved(true);
-      setTimeout(() => setHeroSettingsSaved(false), 3000);
-    }
+    openConfirmModal({
+      title: 'ফটো ব্যানার মুছে ফেলার নিশ্চিতকরণ',
+      message: 'আপনি কি এই ফটো ব্যানারটি মুছে ফেলতে চান? মুছে ফেললে এটি ওয়েবসাইট ও ব্যানার স্লাইডশো থেকে স্থায়ীভাবে অপসারিত হবে।',
+      confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+      cancelLabel: 'বাতিল',
+      type: 'danger',
+      onConfirm: () => {
+        const currentSlides = heroForm.slides || defaultHeroSlides;
+        const updatedSlides = currentSlides.filter(s => s.id !== id);
+        const updatedHeroForm = { ...heroForm, slides: updatedSlides };
+        setHeroForm(updatedHeroForm);
+        updateHeroSettings(updatedHeroForm);
+        setHeroSettingsSaved(true);
+        setTimeout(() => setHeroSettingsSaved(false), 3000);
+        closeConfirmModal();
+      }
+    });
   };
 
   const handleToggleSlideStatus = (id: string) => {
@@ -1819,11 +1878,19 @@ export default function AdminDashboardPage() {
                             </button>
                             <button
                               onClick={() => {
-                                if (confirm(`আপনি কি "${app.studentNameBn}"-এর আবেদনটি মুছে ফেলতে চান?`)) {
-                                  deleteApplication(app.id);
-                                }
+                                openConfirmModal({
+                                  title: 'আবেদন মুছে ফেলার নিশ্চিতকরণ',
+                                  message: `আপনি কি "${app.studentNameBn}"-এর ভর্তি আবেদনটি মুছে ফেলতে চান?`,
+                                  confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                                  cancelLabel: 'বাতিল',
+                                  type: 'danger',
+                                  onConfirm: () => {
+                                    deleteApplication(app.id);
+                                    closeConfirmModal();
+                                  }
+                                });
                               }}
-                              className="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 p-1.5 rounded"
+                              className="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 p-1.5 rounded cursor-pointer"
                               title="মুছে ফেলুন"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -1911,11 +1978,19 @@ export default function AdminDashboardPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`আপনি কি "${n.title}" নোটিশটি মুছে ফেলতে চান?`)) {
-                            deleteNotice(n.id);
-                          }
+                          openConfirmModal({
+                            title: 'নোটিশ মুছে ফেলার নিশ্চিতকরণ',
+                            message: `আপনি কি "${n.title}" নোটিশটি মুছে ফেলতে চান?`,
+                            confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                            cancelLabel: 'বাতিল',
+                            type: 'danger',
+                            onConfirm: () => {
+                              deleteNotice(n.id);
+                              closeConfirmModal();
+                            }
+                          });
                         }}
-                        className="p-2 bg-white text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200"
+                        className="p-2 bg-white text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 cursor-pointer"
                         title="মুছে ফেলুন"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -2247,11 +2322,19 @@ export default function AdminDashboardPage() {
                           <button
                             type="button"
                             onClick={() => {
-                              if (confirm(`আপনি কি "${un.title}" জরুরি নোটিশটি মুছে ফেলতে চান?`)) {
-                                deleteUrgentNotice(un.id);
-                              }
+                              openConfirmModal({
+                                title: 'জরুরি নোটিশ মুছে ফেলার নিশ্চিতকরণ',
+                                message: `আপনি কি "${un.title}" জরুরি নোটিশটি মুছে ফেলতে চান?`,
+                                confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                                cancelLabel: 'বাতিল',
+                                type: 'danger',
+                                onConfirm: () => {
+                                  deleteUrgentNotice(un.id);
+                                  closeConfirmModal();
+                                }
+                              });
                             }}
-                            className="p-2 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors"
+                            className="p-2 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors cursor-pointer"
                             title="মুছে ফেলুন"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -2372,11 +2455,19 @@ export default function AdminDashboardPage() {
                             <button
                               type="button"
                               onClick={() => {
-                                if (confirm(`আপনি কি "${fac.title}" সুবিধাটি মুছে ফেলতে চান?`)) {
-                                  deleteFacility(fac.id);
-                                }
+                                openConfirmModal({
+                                  title: 'সুবিধা মুছে ফেলার নিশ্চিতকরণ',
+                                  message: `আপনি কি "${fac.title}" সুবিধাটি তালিকা থেকে মুছে ফেলতে চান?`,
+                                  confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                                  cancelLabel: 'বাতিল',
+                                  type: 'danger',
+                                  onConfirm: () => {
+                                    deleteFacility(fac.id);
+                                    closeConfirmModal();
+                                  }
+                                });
                               }}
-                              className="p-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors"
+                              className="p-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors cursor-pointer"
                               title="মুছে ফেলুন"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
@@ -2537,11 +2628,19 @@ export default function AdminDashboardPage() {
                               <button
                                 type="button"
                                 onClick={() => {
-                                  if (confirm(`আপনি কি "${item.title}" ছবিটি গ্যালারি থেকে মুছে ফেলতে চান?`)) {
-                                    deleteGalleryItem(item.id);
-                                  }
+                                  openConfirmModal({
+                                    title: 'ছবি মুছে ফেলার নিশ্চিতকরণ',
+                                    message: `আপনি কি "${item.title}" ছবিটি গ্যালারি থেকে মুছে ফেলতে চান?`,
+                                    confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                                    cancelLabel: 'বাতিল',
+                                    type: 'danger',
+                                    onConfirm: () => {
+                                      deleteGalleryItem(item.id);
+                                      closeConfirmModal();
+                                    }
+                                  });
                                 }}
-                                className="p-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors"
+                                className="p-1.5 bg-slate-100 hover:bg-rose-50 text-rose-600 hover:text-rose-800 rounded-lg border border-slate-200 transition-colors cursor-pointer"
                                 title="মুছে ফেলুন"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -2631,11 +2730,19 @@ export default function AdminDashboardPage() {
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`আপনি কি "${t.name}"-এর তথ্য মুছে ফেলতে চান?`)) {
-                            deleteTeacher(t.id);
-                          }
+                          openConfirmModal({
+                            title: 'শিক্ষকের তথ্য মুছে ফেলার নিশ্চিতকরণ',
+                            message: `আপনি কি "${t.name}"-এর সকল তথ্য মুছে ফেলতে চান?`,
+                            confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                            cancelLabel: 'বাতিল',
+                            type: 'danger',
+                            onConfirm: () => {
+                              deleteTeacher(t.id);
+                              closeConfirmModal();
+                            }
+                          });
                         }}
-                        className="px-3 py-1 bg-white text-rose-700 border border-slate-200 rounded text-xs font-bold"
+                        className="px-3 py-1 bg-white text-rose-700 hover:bg-rose-50 border border-slate-200 rounded text-xs font-bold cursor-pointer transition-colors"
                       >
                         মুছে ফেলুন
                       </button>
@@ -2731,11 +2838,19 @@ export default function AdminDashboardPage() {
                         )}
                         <button
                           onClick={() => {
-                            if (confirm('আপনি কি এই বার্তাটি মুছে ফেলতে চান?')) {
-                              deleteMessage(msg.id);
-                            }
+                            openConfirmModal({
+                              title: 'বার্তা মুছে ফেলার নিশ্চিতকরণ',
+                              message: 'আপনি কি এই বার্তাটি মুছে ফেলতে চান?',
+                              confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                              cancelLabel: 'বাতিল',
+                              type: 'danger',
+                              onConfirm: () => {
+                                deleteMessage(msg.id);
+                                closeConfirmModal();
+                              }
+                            });
                           }}
-                          className="text-rose-600 font-bold hover:underline ml-3"
+                          className="text-rose-600 font-bold hover:underline ml-3 cursor-pointer"
                         >
                           মুছে ফেলুন
                         </button>
@@ -3236,12 +3351,19 @@ export default function AdminDashboardPage() {
                   </div>
                   <button
                     onClick={() => {
-                      if (confirm('আপনি কি নিশ্চিত যে সকল তথ্য প্রাথমিক ডেমো অবস্থায় ফিরিয়ে নিতে চান?')) {
-                        resetToDefaults();
-                        alert('ডাটা সফলভাবে প্রাথমিক অবস্থায় রিসেট করা হয়েছে!');
-                      }
+                      openConfirmModal({
+                        title: 'ফ্যাক্টরি রিসেট নিশ্চিতকরণ',
+                        message: 'আপনি কি নিশ্চিত যে সকল তথ্য প্রাথমিক ডেমো অবস্থায় ফিরিয়ে নিতে চান? এতে সকল কাস্টম ডাটা রিসেট হয়ে যাবে।',
+                        confirmLabel: 'হ্যাঁ, ফ্যাক্টরি রিসেট করুন',
+                        cancelLabel: 'বাতিল',
+                        type: 'danger',
+                        onConfirm: () => {
+                          resetToDefaults();
+                          closeConfirmModal();
+                        }
+                      });
                     }}
-                    className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
+                    className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition-all active:scale-95"
                   >
                     <RefreshCw className="w-4 h-4" />
                     <span>ফ্যাক্টরি রিসেট করুন</span>
@@ -4218,13 +4340,21 @@ export default function AdminDashboardPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        if (confirm(`আপনি কি "${editingGalleryItem.title}" ছবিটি গ্যালারি থেকে সম্পূর্ণ মুছে ফেলতে চান?`)) {
-                          deleteGalleryItem(editingGalleryItem.id);
-                          setShowGalleryModal(false);
-                          setEditingGalleryItem(null);
-                        }
+                        openConfirmModal({
+                          title: 'গ্যালারি আইটেম মুছে ফেলার নিশ্চিতকরণ',
+                          message: `আপনি কি "${editingGalleryItem.title}" ছবিটি গ্যালারি থেকে সম্পূর্ণ মুছে ফেলতে চান?`,
+                          confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                          cancelLabel: 'বাতিল',
+                          type: 'danger',
+                          onConfirm: () => {
+                            deleteGalleryItem(editingGalleryItem.id);
+                            setShowGalleryModal(false);
+                            setEditingGalleryItem(null);
+                            closeConfirmModal();
+                          }
+                        });
                       }}
-                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors w-full sm:w-auto"
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition-colors w-full sm:w-auto cursor-pointer"
                     >
                       <Trash2 className="w-3.5 h-3.5 text-rose-600" />
                       <span>গ্যালারি থেকে আইটেমটি মুছুন</span>
@@ -4453,6 +4583,78 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* 🔴 Universal Centered Confirmation Modal (স্ক্রিনের কেন্দ্রে প্রিমিয়াম পপআপ) */}
+      {confirmModal.isOpen && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+          onClick={closeConfirmModal}
+        >
+          <div
+            className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-slate-200 text-center space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Top decorative accent strip */}
+            <div
+              className={`absolute top-0 left-0 right-0 h-1.5 ${
+                confirmModal.type === 'danger'
+                  ? 'bg-gradient-to-r from-rose-500 via-red-600 to-rose-700'
+                  : 'bg-gradient-to-r from-amber-400 via-orange-500 to-amber-600'
+              }`}
+            />
+
+            {/* Centered Warning / Trash Icon */}
+            <div className="pt-2">
+              <div
+                className={`w-16 h-16 rounded-2xl mx-auto flex items-center justify-center shadow-lg transition-transform hover:scale-105 ${
+                  confirmModal.type === 'danger'
+                    ? 'bg-rose-50 text-rose-600 border-2 border-rose-200 shadow-rose-500/10'
+                    : 'bg-amber-50 text-amber-600 border-2 border-amber-200 shadow-amber-500/10'
+                }`}
+              >
+                {confirmModal.type === 'danger' ? (
+                  <Trash2 className="w-8 h-8 text-rose-600" />
+                ) : (
+                  <AlertTriangle className="w-8 h-8 text-amber-600" />
+                )}
+              </div>
+            </div>
+
+            {/* Title & Message */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-black text-slate-900 leading-snug">
+                {confirmModal.title}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xs mx-auto">
+                {confirmModal.message}
+              </p>
+            </div>
+
+            {/* Cancel & Confirm Buttons */}
+            <div className="grid grid-cols-2 gap-3 pt-2">
+              <button
+                type="button"
+                onClick={closeConfirmModal}
+                className="w-full py-2.5 px-4 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+              >
+                {confirmModal.cancelLabel || 'বাতিল'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  confirmModal.onConfirm();
+                }}
+                className={`w-full py-2.5 px-4 rounded-xl text-white text-xs font-black shadow-md transition-all active:scale-95 cursor-pointer ${
+                  confirmModal.type === 'danger'
+                    ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
+                    : 'bg-amber-600 hover:bg-amber-700 shadow-amber-600/30'
+                }`}
+              >
+                {confirmModal.confirmLabel || 'নিশ্চিত করুন'}
+              </button>
+            </div>
           </div>
         </div>
       )}
