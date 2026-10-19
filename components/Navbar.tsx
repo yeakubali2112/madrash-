@@ -83,10 +83,10 @@ export const Navbar: React.FC = () => {
               loggedStudent ? (
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-full bg-transparent hover:bg-emerald-50/70 border-2 border-[#006837] hover:border-[#DDAA00] transition-all duration-200 hover:scale-105 active:scale-95 group shadow-xs lg:mr-9 xl:mr-10"
                   title="শিক্ষার্থী প্রোফাইল দেখুন ও এডিট করুন"
                 >
-                  <div className="w-6 h-6 rounded-lg bg-[#DDAA00] text-slate-950 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 border border-white/40">
+                  <div className="w-7 h-7 rounded-full bg-emerald-100 text-[#006837] flex items-center justify-center font-black text-xs overflow-hidden shrink-0 border border-[#006837]/30 group-hover:border-[#DDAA00] transition-colors">
                     {loggedStudent.photo ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
                       <img src={loggedStudent.photo} alt={loggedStudent.name} className="w-full h-full object-cover" />
@@ -94,11 +94,11 @@ export const Navbar: React.FC = () => {
                       <span>{loggedStudent.name.charAt(0) || 'শ'}</span>
                     )}
                   </div>
-                  <div className="text-left leading-tight">
-                    <span className="block text-[#DDAA00] font-black text-xs truncate max-w-[85px] sm:max-w-[140px]">
+                  <div className="text-left leading-tight pr-1">
+                    <span className="block text-[#006837] group-hover:text-[#004e29] font-black text-xs truncate max-w-[85px] sm:max-w-[130px]">
                       {loggedStudent.name}
                     </span>
-                    <span className="block text-[9px] text-emerald-200 font-semibold">
+                    <span className="block text-[9px] text-[#DDAA00] font-bold">
                       প্রোফাইল
                     </span>
                   </div>
@@ -106,11 +106,11 @@ export const Navbar: React.FC = () => {
               ) : (
                 <Link
                   href="/login"
-                  className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+                  className="inline-flex items-center gap-2 px-4 py-1.5 sm:py-2 rounded-full bg-transparent hover:bg-emerald-50/70 text-[#006837] hover:text-[#00542c] border-2 border-[#006837] hover:border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-xs transition-all duration-200 hover:scale-105 active:scale-95 group lg:mr-9 xl:mr-10"
                   title="মাদ্রাসা ডিজিটাল লগইন পোর্টাল"
                 >
-                  <LogIn className="w-4 h-4 text-[#DDAA00] group-hover:translate-x-0.5 transition-transform" />
-                  <span className="text-white group-hover:text-[#DDAA00] transition-colors">Login</span>
+                  <LogIn className="w-4 h-4 text-[#006837] group-hover:text-[#DDAA00] transition-colors" />
+                  <span className="text-[#006837] group-hover:text-[#00542c] transition-colors font-bold">Login</span>
                 </Link>
               )
             )}
