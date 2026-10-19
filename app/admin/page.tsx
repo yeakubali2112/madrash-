@@ -17,7 +17,9 @@ import {
   HeroSettings,
   defaultHeroSettings,
   HeroBannerSlide,
-  defaultHeroSlides
+  defaultHeroSlides,
+  PrayerTimeConfig,
+  defaultPrayerConfig
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -67,7 +69,12 @@ import {
   ArrowUp,
   ArrowDown,
   Play,
-  AlertTriangle
+  AlertTriangle,
+  Compass,
+  Moon,
+  Sun,
+  Sunrise,
+  Sunset
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -111,10 +118,12 @@ export default function AdminDashboardPage() {
     messages,
     markMessageRead,
     deleteMessage,
+    prayerConfig,
+    updatePrayerConfig,
     resetToDefaults
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'authorities' | 'results' | 'settings' | 'messages' | 'backup'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup'>('overview');
 
   // Check auth
   useEffect(() => {
@@ -457,6 +466,23 @@ export default function AdminDashboardPage() {
   // Settings Form State
   const [settingsForm, setSettingsForm] = useState<MadrasahInfo>(info);
   const [settingsSaved, setSettingsSaved] = useState(false);
+
+  // Prayer Schedule Form State
+  const [prayerForm, setPrayerForm] = useState<PrayerTimeConfig>(prayerConfig || defaultPrayerConfig);
+  const [prayerSaved, setPrayerSaved] = useState(false);
+
+  useEffect(() => {
+    if (prayerConfig) {
+      setPrayerForm(prayerConfig);
+    }
+  }, [prayerConfig]);
+
+  const handlePrayerSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updatePrayerConfig(prayerForm);
+    setPrayerSaved(true);
+    setTimeout(() => setPrayerSaved(false), 3000);
+  };
 
   // Authority Speeches Form State
   const [authorityForm, setAuthorityForm] = useState({
@@ -873,6 +899,23 @@ export default function AdminDashboardPage() {
                 <Settings className="w-4 h-4" />
                 <span>মাদ্রাসা সেটিংস</span>
               </div>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('prayer')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                activeTab === 'prayer'
+                  ? 'bg-emerald-800 text-white shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <Compass className="w-4 h-4 text-[#DDAA00]" />
+                <span>সালাতের সময়সূচি</span>
+              </div>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                নতুন
+              </span>
             </button>
 
             <button
@@ -3086,6 +3129,333 @@ export default function AdminDashboardPage() {
                     <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
                     <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
                     <span>সেটিংস সংরক্ষণ করুন</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {/* TAB: PRAYER TIMES SETTINGS */}
+          {activeTab === 'prayer' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+                <div>
+                  <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mb-1.5">
+                    <Compass className="w-3.5 h-3.5 text-[#006837]" />
+                    <span>ইসলামিক ক্যালেন্ডার ও সালাত সময়সূচি</span>
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900">সালাতের সময়সূচি ব্যবস্থাপনা</h2>
+                  <p className="text-xs text-slate-500">
+                    মাদ্রাসার মসজিদ ও এলাকার মুসল্লিদের জন্য দৈনিক আযান, জামাত, সাহরি ও ইফতারের সময় আপডেট করুন
+                  </p>
+                </div>
+
+                {prayerSaved && (
+                  <span className="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-emerald-200 animate-in fade-in">
+                    <CheckCircle className="w-4 h-4 text-emerald-600" />
+                    <span>সময়সূচি সফলভাবে সংরক্ষিত হয়েছে!</span>
+                  </span>
+                )}
+              </div>
+
+              <form onSubmit={handlePrayerSubmit} className="space-y-6">
+                {/* Active switch */}
+                <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <h4 className="font-bold text-emerald-950 text-sm">হোমপেজে সালাতের সময়সূচি প্রদর্শন</h4>
+                    <p className="text-xs text-emerald-700">অন করলে হোমপেজে লাইভ ডিজিটাল ঘড়ি ও ৫ ওয়াক্ত সালাতের কার্ড প্রদর্শিত হবে</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={prayerForm.isEnabled}
+                      onChange={(e) => setPrayerForm({ ...prayerForm, isEnabled: e.target.checked })}
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#006837]"></div>
+                  </label>
+                </div>
+
+                {/* Area Note */}
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-2">
+                  <label className="block text-xs font-bold text-slate-800">
+                    এলাকা বা অঞ্চলের নোট (Area Label)
+                  </label>
+                  <input
+                    type="text"
+                    value={prayerForm.areaNote}
+                    onChange={(e) => setPrayerForm({ ...prayerForm, areaNote: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-emerald-600"
+                    placeholder="যেমন: দুপচাঁচিয়া ও বগুড়া অঞ্চলের স্থানীয় ওয়াক্ত ও জামাত সময়সূচি"
+                  />
+                </div>
+
+                {/* Prayers 2-column Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {/* ফজর */}
+                  <div className="bg-white p-4 rounded-2xl border border-indigo-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-indigo-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs">
+                        <Moon className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">ফজর (الفجر)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">আযানের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.fajrAthan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, fajrAthan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="০৪:৪৫"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">জামাতের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.fajrIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, fajrIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০৫:১৫"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* সূর্যোদয় */}
+                  <div className="bg-white p-4 rounded-2xl border border-amber-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-amber-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs">
+                        <Sunrise className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">সূর্যোদয় ও ইশরাক (الشروق)</h4>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">সূর্যোদয়ের সময়</label>
+                      <input
+                        type="text"
+                        value={prayerForm.sunrise}
+                        onChange={(e) => setPrayerForm({ ...prayerForm, sunrise: e.target.value })}
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                        placeholder="০৬:০৫"
+                      />
+                    </div>
+                  </div>
+
+                  {/* যোহর */}
+                  <div className="bg-white p-4 rounded-2xl border border-emerald-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-emerald-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
+                        <Sun className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">যোহর (الظهر)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">আযানের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.dhuhrAthan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, dhuhrAthan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="১২:১৫"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">জামাতের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.dhuhrIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, dhuhrIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০১:১৫"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* আসর */}
+                  <div className="bg-white p-4 rounded-2xl border border-orange-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-orange-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-800 flex items-center justify-center font-bold text-xs">
+                        <Sunset className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">আসর (العصر)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">আযানের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.asrAthan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, asrAthan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="০৪:১৫"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">জামাতের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.asrIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, asrIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০৪:৪৫"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* মাগরিব */}
+                  <div className="bg-white p-4 rounded-2xl border border-rose-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-rose-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-800 flex items-center justify-center font-bold text-xs">
+                        <Sunset className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">মাগরিব (المغرب)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">আযান ও ইফতার</label>
+                        <input
+                          type="text"
+                          value={prayerForm.maghribAthan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, maghribAthan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="০৫:৩৬"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">জামাতের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.maghribIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, maghribIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০৫:৪০"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* এশা */}
+                  <div className="bg-white p-4 rounded-2xl border border-blue-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-blue-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold text-xs">
+                        <Moon className="w-3.5 h-3.5" />
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">এশা ও বিতর (العشاء)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">আযানের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.ishaAthan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, ishaAthan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="০৭:০০"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">জামাতের সময়</label>
+                        <input
+                          type="text"
+                          value={prayerForm.ishaIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, ishaIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০৭:৪৫"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* জুমুআ */}
+                  <div className="bg-white p-4 rounded-2xl border-2 border-emerald-300 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-emerald-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#006837] text-[#DDAA00] flex items-center justify-center font-bold text-xs">
+                        🕌
+                      </div>
+                      <h4 className="font-bold text-[#006837] text-sm">পবিত্র জুমুআ (শুক্রবার)</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">বয়ান ও আযান</label>
+                        <input
+                          type="text"
+                          value={prayerForm.jumuahBayan}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, jumuahBayan: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                          placeholder="১২:৩০"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600 mb-1">খুতবা ও জামাত</label>
+                        <input
+                          type="text"
+                          value={prayerForm.jumuahIqamah}
+                          onChange={(e) => setPrayerForm({ ...prayerForm, jumuahIqamah: e.target.value })}
+                          className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-black text-emerald-800 bg-emerald-50/50"
+                          placeholder="০১:৩০"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* সাহরি ও তাহাজ্জুদ */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-xs">
+                        🌙
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">সাহরি ও তাহাজ্জুদ শেষ</h4>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">শেষ সময় (ভোর)</label>
+                      <input
+                        type="text"
+                        value={prayerForm.tahajjudEnd}
+                        onChange={(e) => setPrayerForm({ ...prayerForm, tahajjudEnd: e.target.value })}
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold"
+                        placeholder="০৪:৪০"
+                      />
+                    </div>
+                  </div>
+
+                  {/* ইফতার */}
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs space-y-3">
+                    <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                      <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-800 flex items-center justify-center font-bold text-xs">
+                        🌅
+                      </div>
+                      <h4 className="font-bold text-slate-900 text-sm">ইফতারের সময়সূচি</h4>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-600 mb-1">ইফতারের সময় (সন্ধ্যা)</label>
+                      <input
+                        type="text"
+                        value={prayerForm.iftarTime}
+                        onChange={(e) => setPrayerForm({ ...prayerForm, iftarTime: e.target.value })}
+                        className="w-full px-2.5 py-1.5 rounded-lg border text-xs font-mono font-bold text-rose-700 bg-rose-50/40"
+                        placeholder="০৫:৩৬"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Save Button */}
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+                  <div className="text-xs text-slate-500">
+                    * সংরক্ষিত সময়সূচি সরাসরি ওয়েবসাইটে স্বয়ংক্রিয়ভাবে আপডেট হয়ে যাবে।
+                  </div>
+                  <button
+                    type="submit"
+                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>সালাতের সময়সূচি সংরক্ষণ করুন</span>
                   </button>
                 </div>
               </form>

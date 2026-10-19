@@ -96,6 +96,29 @@ export interface HeroSettings {
   slides: HeroBannerSlide[];
 }
 
+export interface PrayerTimeConfig {
+  isEnabled: boolean;
+  fajrAthan: string;
+  fajrIqamah: string;
+  sunrise: string;
+  dhuhrAthan: string;
+  dhuhrIqamah: string;
+  asrAthan: string;
+  asrIqamah: string;
+  maghribAthan: string;
+  maghribIqamah: string;
+  ishaAthan: string;
+  ishaIqamah: string;
+  jumuahBayan: string;
+  jumuahIqamah: string;
+  tahajjudEnd: string;
+  iftarTime: string;
+  areaNote: string;
+  prayerQuoteArabic: string;
+  prayerQuoteBangla: string;
+  prayerQuoteSource: string;
+}
+
 export interface FacilityItem {
   id: string;
   title: string;
@@ -826,3 +849,26 @@ export const defaultMessages: ContactMessage[] = [
     isRead: true
   }
 ];
+
+export const defaultPrayerConfig: PrayerTimeConfig = {
+  isEnabled: true,
+  fajrAthan: "০৪:৪৫",
+  fajrIqamah: "০৫:১৫",
+  sunrise: "০৬:০৫",
+  dhuhrAthan: "১২:১৫",
+  dhuhrIqamah: "০১:১৫",
+  asrAthan: "০৪:১৫",
+  asrIqamah: "০৪:৪৫",
+  maghribAthan: "০৫:৩৬",
+  maghribIqamah: "০৫:৪০",
+  ishaAthan: "০৭:০০",
+  ishaIqamah: "০৭:৪৫",
+  jumuahBayan: "১২:৩০",
+  jumuahIqamah: "০১:৩০",
+  tahajjudEnd: "০৪:৪০",
+  iftarTime: "০৫:৩৬",
+  areaNote: "দুপচাঁচিয়া ও বগুড়া অঞ্চলের স্থানীয় ওয়াক্ত ও জামাত সময়সূচি",
+  prayerQuoteArabic: "إِنَّ الصَّلَاةَ كَانَتْ عَلَى الْمُؤْمِنِينَ كِتَابًا مَّوْقُوتًا",
+  prayerQuoteBangla: "নিশ্চয়ই সালাত মুমিনদের ওপর নির্দিষ্ট সময়ে ফরয করা হয়েছে। (সূরা আন-নিসা: ১০৩)",
+  prayerQuoteSource: "আল-কুরআন, সূরা আন-নিসা: ৪/১০৩"
+};

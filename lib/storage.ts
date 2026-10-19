@@ -20,7 +20,9 @@ import {
   defaultHeroSettings,
   defaultUrgentNotices,
   defaultFacilities,
-  defaultGallery
+  defaultGallery,
+  PrayerTimeConfig,
+  defaultPrayerConfig
 } from './data';
 
 const STORAGE_KEYS = {
@@ -35,7 +37,8 @@ const STORAGE_KEYS = {
   TICKER_SETTINGS: 'padm_ticker_settings',
   HERO_SETTINGS: 'padm_hero_settings',
   FACILITIES: 'padm_facilities',
-  GALLERY: 'padm_gallery'
+  GALLERY: 'padm_gallery',
+  PRAYER_CONFIG: 'padm_prayer_config'
 };
 
 export const getStoredInfo = (): MadrasahInfo => {
@@ -241,6 +244,22 @@ export const resetAllData = () => {
   localStorage.setItem(STORAGE_KEYS.HERO_SETTINGS, JSON.stringify(defaultHeroSettings));
   localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(defaultFacilities));
   localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(defaultGallery));
+  localStorage.setItem(STORAGE_KEYS.PRAYER_CONFIG, JSON.stringify(defaultPrayerConfig));
+};
+
+export const getStoredPrayerConfig = (): PrayerTimeConfig => {
+  if (typeof window === 'undefined') return defaultPrayerConfig;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.PRAYER_CONFIG);
+    return data ? JSON.parse(data) : defaultPrayerConfig;
+  } catch {
+    return defaultPrayerConfig;
+  }
+};
+
+export const saveStoredPrayerConfig = (config: PrayerTimeConfig) => {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYS.PRAYER_CONFIG, JSON.stringify(config));
 };
 
 export const isAdminLoggedIn = (): boolean => {

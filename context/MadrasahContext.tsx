@@ -23,7 +23,9 @@ import {
   defaultHeroSettings,
   defaultUrgentNotices,
   defaultFacilities,
-  defaultGallery
+  defaultGallery,
+  PrayerTimeConfig,
+  defaultPrayerConfig
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -48,6 +50,8 @@ import {
   saveStoredFacilities,
   getStoredGallery,
   saveStoredGallery,
+  getStoredPrayerConfig,
+  saveStoredPrayerConfig,
   isAdminLoggedIn,
   setAdminLoggedIn,
   resetAllData
@@ -65,8 +69,10 @@ interface MadrasahContextType {
   heroSettings: HeroSettings;
   facilities: FacilityItem[];
   gallery: GalleryItem[];
+  prayerConfig: PrayerTimeConfig;
   isAdmin: boolean;
   updateInfo: (newInfo: MadrasahInfo) => void;
+  updatePrayerConfig: (newConfig: PrayerTimeConfig) => void;
   updateHeroSettings: (newSettings: Partial<HeroSettings>) => void;
   addNotice: (notice: Omit<Notice, 'id'>) => void;
   updateNotice: (id: string, notice: Partial<Notice>) => void;
@@ -112,6 +118,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [heroSettings, setHeroSettings] = useState<HeroSettings>(defaultHeroSettings);
   const [facilities, setFacilities] = useState<FacilityItem[]>(defaultFacilities);
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
+  const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -127,6 +134,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setHeroSettings(getStoredHeroSettings());
     setFacilities(getStoredFacilities());
     setGallery(getStoredGallery());
+    setPrayerConfig(getStoredPrayerConfig());
     setIsAdmin(isAdminLoggedIn());
     setIsLoaded(true);
 
@@ -138,6 +146,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (e.key === 'padm_notices') setNotices(getStoredNotices());
       if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
       if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
+      if (e.key === 'padm_prayer_config') setPrayerConfig(getStoredPrayerConfig());
     };
 
     const handleHeroSync = (e: any) => {
@@ -160,6 +169,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateInfo = (newInfo: MadrasahInfo) => {
     setInfo(newInfo);
     saveStoredInfo(newInfo);
+  };
+
+  const updatePrayerConfig = (newConfig: PrayerTimeConfig) => {
+    setPrayerConfig(newConfig);
+    saveStoredPrayerConfig(newConfig);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('padm_prayer_sync', { detail: newConfig }));
+    }
   };
 
   const addNotice = (newNoticeData: Omit<Notice, 'id'>) => {
@@ -398,6 +415,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setHeroSettings(defaultHeroSettings);
     setFacilities(defaultFacilities);
     setGallery(defaultGallery);
+    setPrayerConfig(defaultPrayerConfig);
   };
 
   return (
@@ -410,12 +428,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         heroSettings,
         facilities,
         gallery,
+        prayerConfig,
         teachers,
         applications,
         results,
         messages,
         isAdmin,
         updateInfo,
+        updatePrayerConfig,
         updateHeroSettings,
         addNotice,
         updateNotice,
