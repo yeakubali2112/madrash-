@@ -19,7 +19,6 @@ import {
   Sunrise,
   Moon,
   Compass,
-  Printer,
   Bell,
   Heart,
   ChevronRight,
@@ -213,12 +212,6 @@ export const PrayerTimesWidget: React.FC = () => {
     }
   ];
 
-  const handlePrint = () => {
-    if (typeof window !== 'undefined') {
-      window.print();
-    }
-  };
-
   return (
     <section className="relative py-10 bg-gradient-to-b from-[#f4f8f5] via-white to-slate-50 border-y border-emerald-100/70 overflow-hidden">
       {/* Subtle Islamic Geometry Background Details */}
@@ -261,16 +254,6 @@ export const PrayerTimesWidget: React.FC = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Print Button */}
-              <button
-                onClick={handlePrint}
-                className="inline-flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-[#006837] border border-emerald-200 px-3.5 py-2.5 rounded-2xl font-bold text-xs transition-colors"
-                title="সালাতের সময়সূচি প্রিন্ট করুন"
-              >
-                <Printer className="w-4 h-4 text-[#006837]" />
-                <span className="hidden sm:inline">সময়সূচি প্রিন্ট</span>
-              </button>
             </div>
           </div>
 
