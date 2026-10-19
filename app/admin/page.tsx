@@ -125,13 +125,18 @@ export default function AdminDashboardPage() {
   } = useMadrasah();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup'>('overview');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Check auth
   useEffect(() => {
-    if (!isAdmin) {
+    if (mounted && !isAdmin) {
       router.push('/admin/login');
     }
-  }, [isAdmin, router]);
+  }, [mounted, isAdmin, router]);
 
   // Universal Centered Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -655,13 +660,20 @@ export default function AdminDashboardPage() {
   };
 
   // Filtered applications
-  const filteredApps = applications.filter(a => {
+  const filteredApps = (applications || []).filter(a => {
+    if (!a) return false;
     const matchesFilter = appFilter === 'সকল' || a.status === appFilter;
+    const search = (appSearch || '').toLowerCase();
+    const nameBn = (a.studentNameBn || '').toLowerCase();
+    const id = (a.id || '').toLowerCase();
+    const phone = a.fatherPhone || '';
+    const applyingClass = (a.applyingClass || '').toLowerCase();
+
     const matchesSearch =
-      a.studentNameBn.toLowerCase().includes(appSearch.toLowerCase()) ||
-      a.id.toLowerCase().includes(appSearch.toLowerCase()) ||
-      a.fatherPhone.includes(appSearch) ||
-      a.applyingClass.toLowerCase().includes(appSearch.toLowerCase());
+      nameBn.includes(search) ||
+      id.includes(search) ||
+      phone.includes(search) ||
+      applyingClass.includes(search);
     return matchesFilter && matchesSearch;
   });
 
@@ -670,8 +682,12 @@ export default function AdminDashboardPage() {
   // ==========================================
   const [attendanceSubTab, setAttendanceSubTab] = useState<'teachers' | 'students'>('teachers');
   const [attendanceDate, setAttendanceDate] = useState<string>(() => {
-    const today = new Date();
-    return today.toISOString().split('T')[0];
+    try {
+      const today = new Date();
+      return today.toISOString().split('T')[0];
+    } catch {
+      return '2026-10-20';
+    }
   });
   const [attendanceClassFilter, setAttendanceClassFilter] = useState<string>('১০ম শ্রেণি (দাখিল)');
   const [attendanceSearchQuery, setAttendanceSearchQuery] = useState('');
@@ -730,26 +746,37 @@ export default function AdminDashboardPage() {
   const activeClassStudents = React.useMemo(() => {
     const list = [...(baseClassStudents[attendanceClassFilter] || [])];
 
-    applications.forEach(app => {
-      if (app.applyingClass === attendanceClassFilter || (attendanceClassFilter.includes('১০ম') && app.applyingClass.includes('১০ম'))) {
-        if (!list.some(s => s.id === app.id || s.name === app.studentNameBn)) {
+    (applications || []).forEach(app => {
+      if (!app) return;
+      const appClass = (app.applyingClass || '').trim();
+      const filterClass = (attendanceClassFilter || '').trim();
+      const matches = appClass === filterClass || (filterClass.includes('১০ম') && appClass.includes('১০ম'));
+      if (matches) {
+        const studentName = app.studentNameBn || 'শিক্ষার্থী';
+        if (!list.some(s => s.id === app.id || s.name === studentName)) {
+          const strId = String(app.id || '');
           list.push({
-            id: app.id,
-            name: app.studentNameBn,
-            rollNo: app.id.slice(-3) || '১১০',
-            phone: app.fatherPhone
+            id: strId || `app-${Math.random()}`,
+            name: studentName,
+            rollNo: strId.length >= 3 ? strId.slice(-3) : '১১০',
+            phone: app.fatherPhone || '017XXXXXXXX'
           });
         }
       }
     });
 
-    results.forEach(res => {
-      if (res.classYear === attendanceClassFilter || (attendanceClassFilter.includes('১০ম') && res.classYear.includes('১০ম'))) {
-        if (!list.some(s => s.name.toLowerCase() === res.studentName.toLowerCase())) {
+    (results || []).forEach(res => {
+      if (!res) return;
+      const resClass = (res.classYear || '').trim();
+      const filterClass = (attendanceClassFilter || '').trim();
+      const matches = resClass === filterClass || (filterClass.includes('১০ম') && resClass.includes('১০ম'));
+      if (matches) {
+        const sName = (res.studentName || '').trim();
+        if (sName && !list.some(s => (s.name || '').toLowerCase() === sName.toLowerCase())) {
           list.push({
-            id: res.id,
-            name: res.studentName,
-            rollNo: res.rollNo,
+            id: String(res.id || `res-${Math.random()}`),
+            name: sName,
+            rollNo: String(res.rollNo || '১০১'),
             phone: '017XXXXXXXX'
           });
         }
@@ -766,16 +793,22 @@ export default function AdminDashboardPage() {
       const key = `padm_teacher_attendance_${attendanceDate}`;
       const saved = localStorage.getItem(key);
       if (saved) {
-        setTeacherAttendance(JSON.parse(saved));
-      } else {
-        const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }> = {};
-        teachers.forEach(t => {
-          initial[t.id] = { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
-        });
-        setTeacherAttendance(initial);
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          setTeacherAttendance(parsed);
+          return;
+        }
       }
+      const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }> = {};
+      (teachers || []).forEach(t => {
+        if (t?.id) {
+          initial[t.id] = { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
+        }
+      });
+      setTeacherAttendance(initial);
     } catch (e) {
       console.error(e);
+      setTeacherAttendance({});
     }
   }, [attendanceDate, teachers]);
 
@@ -786,16 +819,22 @@ export default function AdminDashboardPage() {
       const key = `padm_student_attendance_${attendanceDate}_${attendanceClassFilter}`;
       const saved = localStorage.getItem(key);
       if (saved) {
-        setStudentAttendance(JSON.parse(saved));
-      } else {
-        const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }> = {};
-        activeClassStudents.forEach(s => {
-          initial[s.id] = { status: 'present', remarks: '' };
-        });
-        setStudentAttendance(initial);
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          setStudentAttendance(parsed);
+          return;
+        }
       }
+      const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }> = {};
+      (activeClassStudents || []).forEach(s => {
+        if (s?.id) {
+          initial[s.id] = { status: 'present', remarks: '' };
+        }
+      });
+      setStudentAttendance(initial);
     } catch (e) {
       console.error(e);
+      setStudentAttendance({});
     }
   }, [attendanceDate, attendanceClassFilter, activeClassStudents]);
 
@@ -803,7 +842,7 @@ export default function AdminDashboardPage() {
   const handleSaveTeacherAttendance = () => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`padm_teacher_attendance_${attendanceDate}`, JSON.stringify(teacherAttendance));
+        localStorage.setItem(`padm_teacher_attendance_${attendanceDate}`, JSON.stringify(teacherAttendance || {}));
         setAttendanceToast({ show: true, message: 'শিক্ষক ও স্টাফদের আজকের হাজিরা সফলভাবে সংরক্ষিত হয়েছে!' });
         setTimeout(() => setAttendanceToast({ show: false, message: '' }), 3500);
       } catch (e) {
@@ -816,7 +855,7 @@ export default function AdminDashboardPage() {
   const handleSaveStudentAttendance = () => {
     if (typeof window !== 'undefined') {
       try {
-        localStorage.setItem(`padm_student_attendance_${attendanceDate}_${attendanceClassFilter}`, JSON.stringify(studentAttendance));
+        localStorage.setItem(`padm_student_attendance_${attendanceDate}_${attendanceClassFilter}`, JSON.stringify(studentAttendance || {}));
         setAttendanceToast({ show: true, message: `${attendanceClassFilter}-এর হাজিরা সফলভাবে সংরক্ষিত হয়েছে!` });
         setTimeout(() => setAttendanceToast({ show: false, message: '' }), 3500);
       } catch (e) {
@@ -828,13 +867,16 @@ export default function AdminDashboardPage() {
   // Mark all teachers with a specific status
   const handleMarkAllTeachers = (status: 'present' | 'absent') => {
     setTeacherAttendance(prev => {
+      const safePrev = prev && typeof prev === 'object' ? prev : {};
       const updated: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }> = {};
-      teachers.forEach(t => {
-        updated[t.id] = {
-          status,
-          inTime: status === 'present' ? '০৮:৫০ মি.' : '',
-          remarks: prev[t.id]?.remarks || ''
-        };
+      (teachers || []).forEach(t => {
+        if (t?.id) {
+          updated[t.id] = {
+            status,
+            inTime: status === 'present' ? '০৮:৫০ মি.' : '',
+            remarks: safePrev[t.id]?.remarks || ''
+          };
+        }
       });
       return updated;
     });
@@ -843,16 +885,43 @@ export default function AdminDashboardPage() {
   // Mark all students with a specific status
   const handleMarkAllStudents = (status: 'present' | 'absent') => {
     setStudentAttendance(prev => {
+      const safePrev = prev && typeof prev === 'object' ? prev : {};
       const updated: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }> = {};
-      activeClassStudents.forEach(s => {
-        updated[s.id] = {
-          status,
-          remarks: prev[s.id]?.remarks || ''
-        };
+      (activeClassStudents || []).forEach(s => {
+        if (s?.id) {
+          updated[s.id] = {
+            status,
+            remarks: safePrev[s.id]?.remarks || ''
+          };
+        }
       });
       return updated;
     });
   };
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700 p-6 rounded-2xl text-center shadow-xl">
+          <RefreshCw className="w-8 h-8 animate-spin text-[#DDAA00] mx-auto mb-3" />
+          <p className="text-white font-bold text-sm">মাদ্রাসা অ্যাডমিন কন্ট্রোল প্যানেল লোড হচ্ছে...</p>
+          <p className="text-slate-400 text-xs mt-1">অনুগ্রহ করে একটু অপেক্ষা করুন</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700 p-6 rounded-2xl text-center shadow-xl">
+          <RefreshCw className="w-8 h-8 animate-spin text-[#DDAA00] mx-auto mb-3" />
+          <p className="text-white font-bold text-sm">লগইন যাচাই করা হচ্ছে...</p>
+          <p className="text-slate-400 text-xs mt-1">আপনাকে অ্যাডমিন লগইন পেজে নিয়ে যাওয়া হচ্ছে</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
@@ -1225,7 +1294,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Attendance Quick Banner in Overview */}
-              <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
                 <div className="flex items-center gap-2.5">
                   <UserCheck className="w-4 h-4 text-[#006837] shrink-0" />
                   <div>
@@ -2846,7 +2915,7 @@ export default function AdminDashboardPage() {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
-                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 shadow-sm">
                     <Calendar className="w-4 h-4 text-[#006837]" />
                     <span className="text-xs font-bold text-slate-700">তারিখ:</span>
                     <input
@@ -2862,7 +2931,7 @@ export default function AdminDashboardPage() {
                     onClick={() => {
                       if (typeof window !== 'undefined') window.print();
                     }}
-                    className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                    className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-sm cursor-pointer"
                     title="হাজিরা শিট প্রিন্ট করুন"
                   >
                     <Printer className="w-4 h-4 text-[#006837]" />
@@ -2872,7 +2941,7 @@ export default function AdminDashboardPage() {
               </div>
 
               {/* Sub-Tabs: 1. Teachers Attendance | 2. Students Attendance */}
-              <div className="bg-white rounded-2xl p-2 shadow-2xs border border-slate-200 flex flex-wrap gap-2">
+              <div className="bg-white rounded-2xl p-2 shadow-sm border border-slate-200 flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => setAttendanceSubTab('teachers')}
@@ -2907,21 +2976,22 @@ export default function AdminDashboardPage() {
                 <div className="space-y-6">
                   {/* Teacher Stats KPI Cards */}
                   {(() => {
-                    const total = teachers.length;
-                    const present = Object.values(teacherAttendance).filter(a => a.status === 'present').length;
-                    const absent = Object.values(teacherAttendance).filter(a => a.status === 'absent').length;
-                    const late = Object.values(teacherAttendance).filter(a => a.status === 'late').length;
-                    const leave = Object.values(teacherAttendance).filter(a => a.status === 'leave').length;
+                    const total = (teachers || []).length;
+                    const attendanceList = (teacherAttendance && typeof teacherAttendance === 'object') ? Object.values(teacherAttendance) : [];
+                    const present = attendanceList.filter(a => a?.status === 'present').length;
+                    const absent = attendanceList.filter(a => a?.status === 'absent').length;
+                    const late = attendanceList.filter(a => a?.status === 'late').length;
+                    const leave = attendanceList.filter(a => a?.status === 'leave').length;
                     const rate = total > 0 ? Math.round((present / total) * 100) : 100;
 
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                           <span className="text-xs text-slate-500 font-bold block">মোট শিক্ষক ও স্টাফ</span>
                           <div className="text-2xl font-black text-slate-900 mt-1">{total} জন</div>
                         </div>
 
-                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-2xs">
+                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
                           <span className="text-xs text-emerald-800 font-bold block">উপস্থিত (Present)</span>
                           <div className="text-2xl font-black text-[#006837] mt-1 flex items-center gap-1.5">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -2929,7 +2999,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-2xs">
+                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-sm">
                           <span className="text-xs text-rose-800 font-bold block">অনুপস্থিত (Absent)</span>
                           <div className="text-2xl font-black text-rose-700 mt-1 flex items-center gap-1.5">
                             <XCircle className="w-5 h-5 text-rose-500" />
@@ -2937,7 +3007,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 shadow-2xs">
+                        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 shadow-sm">
                           <span className="text-xs text-amber-800 font-bold block">দেরিতে / ছুটি</span>
                           <div className="text-2xl font-black text-amber-700 mt-1 flex items-center gap-1.5">
                             <Clock className="w-5 h-5 text-amber-600" />
@@ -2945,7 +3015,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-2xs col-span-2 sm:col-span-1">
+                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-sm col-span-2 sm:col-span-1">
                           <span className="text-xs text-emerald-200 font-bold block">উপস্থিতির হার</span>
                           <div className="text-2xl font-black text-[#DDAA00] mt-1">{rate}%</div>
                         </div>
@@ -2954,7 +3024,7 @@ export default function AdminDashboardPage() {
                   })()}
 
                   {/* Teacher Action Bar */}
-                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div className="relative w-full sm:w-72">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
@@ -3002,14 +3072,19 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs">
-                          {teachers
-                            .filter(t =>
-                              t.name.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
-                              t.designation.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
-                              t.subject.toLowerCase().includes(attendanceSearchQuery.toLowerCase())
-                            )
+                          {(teachers || [])
+                            .filter(t => {
+                              if (!t) return false;
+                              if (!attendanceSearchQuery) return true;
+                              const q = attendanceSearchQuery.toLowerCase();
+                              return (
+                                (t.name || '').toLowerCase().includes(q) ||
+                                (t.designation || '').toLowerCase().includes(q) ||
+                                (t.subject || '').toLowerCase().includes(q)
+                              );
+                            })
                             .map((t, idx) => {
-                              const record = teacherAttendance[t.id] || { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
+                              const record = (teacherAttendance && t && teacherAttendance[t.id]) || { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
 
                               return (
                                 <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
@@ -3055,7 +3130,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'present'
-                                            ? 'bg-emerald-600 text-white shadow-2xs'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3072,7 +3147,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'absent'
-                                            ? 'bg-rose-600 text-white shadow-2xs'
+                                            ? 'bg-rose-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3089,7 +3164,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'late'
-                                            ? 'bg-amber-600 text-white shadow-2xs'
+                                            ? 'bg-amber-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3106,7 +3181,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'leave'
-                                            ? 'bg-blue-600 text-white shadow-2xs'
+                                            ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3162,7 +3237,7 @@ export default function AdminDashboardPage() {
               {attendanceSubTab === 'students' && (
                 <div className="space-y-6">
                   {/* Class Selection Filter Pills */}
-                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 space-y-2">
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 space-y-2">
                     <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
                       <GraduationCap className="w-4 h-4 text-[#006837]" />
                       <span>শ্রেণি নির্বাচন করুন:</span>
@@ -3194,20 +3269,20 @@ export default function AdminDashboardPage() {
 
                   {/* Student Stats KPI Cards */}
                   {(() => {
-                    const total = activeClassStudents.length;
-                    const present = Object.values(studentAttendance).filter(a => a.status === 'present').length;
-                    const absent = Object.values(studentAttendance).filter(a => a.status === 'absent').length;
-                    const leave = Object.values(studentAttendance).filter(a => a.status === 'leave' || a.status === 'late').length;
+                    const total = (activeClassStudents || []).length;
+                    const attendanceList = (studentAttendance && typeof studentAttendance === 'object') ? Object.values(studentAttendance) : [];
+                    const present = attendanceList.filter(a => a?.status === 'present').length;
+                    const absent = attendanceList.filter(a => a?.status === 'absent').length;
                     const rate = total > 0 ? Math.round((present / total) * 100) : 100;
 
                     return (
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
                           <span className="text-xs text-slate-500 font-bold block">{attendanceClassFilter} মোট শিক্ষার্থী</span>
                           <div className="text-2xl font-black text-slate-900 mt-1">{total} জন</div>
                         </div>
 
-                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-2xs">
+                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
                           <span className="text-xs text-emerald-800 font-bold block">উপস্থিত শিক্ষার্থী</span>
                           <div className="text-2xl font-black text-[#006837] mt-1 flex items-center gap-1.5">
                             <CheckCircle2 className="w-5 h-5 text-emerald-600" />
@@ -3215,7 +3290,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-2xs">
+                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-sm">
                           <span className="text-xs text-rose-800 font-bold block">অনুপস্থিত</span>
                           <div className="text-2xl font-black text-rose-700 mt-1 flex items-center gap-1.5">
                             <XCircle className="w-5 h-5 text-rose-500" />
@@ -3223,7 +3298,7 @@ export default function AdminDashboardPage() {
                           </div>
                         </div>
 
-                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-2xs">
+                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-sm">
                           <span className="text-xs text-emerald-200 font-bold block">উপস্থিতির শতকরা হার</span>
                           <div className="text-2xl font-black text-[#DDAA00] mt-1">{rate}%</div>
                         </div>
@@ -3232,7 +3307,7 @@ export default function AdminDashboardPage() {
                   })()}
 
                   {/* Student Action Bar */}
-                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                  <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
                     <div className="relative w-full sm:w-72">
                       <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                       <input
@@ -3289,13 +3364,18 @@ export default function AdminDashboardPage() {
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 text-xs">
-                          {activeClassStudents
-                            .filter(s =>
-                              s.name.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
-                              s.rollNo.includes(attendanceSearchQuery)
-                            )
+                          {(activeClassStudents || [])
+                            .filter(s => {
+                              if (!s) return false;
+                              if (!attendanceSearchQuery) return true;
+                              const q = attendanceSearchQuery.toLowerCase();
+                              return (
+                                (s.name || '').toLowerCase().includes(q) ||
+                                (s.rollNo || '').includes(attendanceSearchQuery)
+                              );
+                            })
                             .map((s) => {
-                              const record = studentAttendance[s.id] || { status: 'present', remarks: '' };
+                              const record = (studentAttendance && s && studentAttendance[s.id]) || { status: 'present', remarks: '' };
 
                               return (
                                 <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
@@ -3330,7 +3410,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'present'
-                                            ? 'bg-emerald-600 text-white shadow-2xs'
+                                            ? 'bg-emerald-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3347,7 +3427,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'absent'
-                                            ? 'bg-rose-600 text-white shadow-2xs'
+                                            ? 'bg-rose-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
@@ -3364,7 +3444,7 @@ export default function AdminDashboardPage() {
                                         }
                                         className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
                                           record.status === 'leave'
-                                            ? 'bg-blue-600 text-white shadow-2xs'
+                                            ? 'bg-blue-600 text-white shadow-sm'
                                             : 'text-slate-600 hover:bg-slate-200'
                                         }`}
                                       >
