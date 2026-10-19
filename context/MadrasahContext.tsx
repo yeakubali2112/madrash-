@@ -25,7 +25,8 @@ import {
   defaultFacilities,
   defaultGallery,
   PrayerTimeConfig,
-  defaultPrayerConfig
+  defaultPrayerConfig,
+  StudentProfile
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -70,9 +71,11 @@ interface MadrasahContextType {
   facilities: FacilityItem[];
   gallery: GalleryItem[];
   prayerConfig: PrayerTimeConfig;
+  loggedStudent: StudentProfile | null;
   isAdmin: boolean;
   updateInfo: (newInfo: MadrasahInfo) => void;
   updatePrayerConfig: (newConfig: PrayerTimeConfig) => void;
+  updateLoggedStudent: (student: StudentProfile | null) => void;
   updateHeroSettings: (newSettings: Partial<HeroSettings>) => void;
   addNotice: (notice: Omit<Notice, 'id'>) => void;
   updateNotice: (id: string, notice: Partial<Notice>) => void;
@@ -119,6 +122,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [facilities, setFacilities] = useState<FacilityItem[]>(defaultFacilities);
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
   const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
+  const [loggedStudent, setLoggedStudent] = useState<StudentProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
 
@@ -136,6 +140,12 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGallery(getStoredGallery());
     setPrayerConfig(getStoredPrayerConfig());
     setIsAdmin(isAdminLoggedIn());
+    try {
+      const savedStudent = localStorage.getItem('padm_logged_student');
+      if (savedStudent) setLoggedStudent(JSON.parse(savedStudent));
+    } catch (e) {
+      console.error(e);
+    }
     setIsLoaded(true);
 
     const handleStorageChange = (e: StorageEvent) => {
@@ -147,6 +157,17 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
       if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
       if (e.key === 'padm_prayer_config') setPrayerConfig(getStoredPrayerConfig());
+      if (e.key === 'padm_logged_student') {
+        try {
+          setLoggedStudent(e.newValue ? JSON.parse(e.newValue) : null);
+        } catch {
+          setLoggedStudent(null);
+        }
+      }
+    };
+
+    const handleStudentSync = (e: any) => {
+      setLoggedStudent(e?.detail || null);
     };
 
     const handleHeroSync = (e: any) => {
@@ -159,10 +180,12 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('padm_hero_sync', handleHeroSync);
+    window.addEventListener('padm_student_sync', handleStudentSync);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('padm_hero_sync', handleHeroSync);
+      window.removeEventListener('padm_student_sync', handleStudentSync);
     };
   }, []);
 
@@ -176,6 +199,18 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveStoredPrayerConfig(newConfig);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('padm_prayer_sync', { detail: newConfig }));
+    }
+  };
+
+  const updateLoggedStudent = (student: StudentProfile | null) => {
+    setLoggedStudent(student);
+    if (typeof window !== 'undefined') {
+      if (student) {
+        localStorage.setItem('padm_logged_student', JSON.stringify(student));
+      } else {
+        localStorage.removeItem('padm_logged_student');
+      }
+      window.dispatchEvent(new CustomEvent('padm_student_sync', { detail: student }));
     }
   };
 
@@ -429,6 +464,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         facilities,
         gallery,
         prayerConfig,
+        loggedStudent,
         teachers,
         applications,
         results,
@@ -436,6 +472,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         isAdmin,
         updateInfo,
         updatePrayerConfig,
+        updateLoggedStudent,
         updateHeroSettings,
         addNotice,
         updateNotice,

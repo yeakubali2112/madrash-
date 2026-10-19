@@ -119,6 +119,24 @@ export interface PrayerTimeConfig {
   prayerQuoteSource: string;
 }
 
+export interface StudentProfile {
+  name: string;
+  phone: string;
+  photo?: string;
+  address?: string;
+  fatherName?: string;
+  motherName?: string;
+  classYear: string;
+  rollNo: string;
+  regNo: string;
+  session: string;
+  bloodGroup: string;
+  attendanceRate: string;
+  feeStatus: string;
+  result?: ResultRecord;
+  application?: AdmissionApplication;
+}
+
 export interface FacilityItem {
   id: string;
   title: string;

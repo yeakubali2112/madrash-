@@ -23,7 +23,7 @@ import {
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { info, isAdmin } = useMadrasah();
+  const { info, isAdmin, loggedStudent } = useMadrasah();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAdminRoute = pathname?.startsWith('/admin');
 
@@ -77,17 +77,42 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          {/* Right Action: Login button + Mobile Menu Toggle */}
+          {/* Right Action: Login / Student Profile button + Mobile Menu Toggle */}
           <div className="flex items-center gap-3">
             {!isAdminRoute && (
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
-                title="মাদ্রাসা ডিজিটাল লগইন পোর্টাল (শিক্ষার্থী ও প্রশাসন)"
-              >
-                <LogIn className="w-4 h-4 text-[#DDAA00] group-hover:translate-x-0.5 transition-transform" />
-                <span className="text-white group-hover:text-[#DDAA00] transition-colors">Login</span>
-              </Link>
+              loggedStudent ? (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+                  title="শিক্ষার্থী প্রোফাইল দেখুন ও এডিট করুন"
+                >
+                  <div className="w-6 h-6 rounded-lg bg-[#DDAA00] text-slate-950 flex items-center justify-center font-black text-xs overflow-hidden shrink-0 border border-white/40">
+                    {loggedStudent.photo ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={loggedStudent.photo} alt={loggedStudent.name} className="w-full h-full object-cover" />
+                    ) : (
+                      <span>{loggedStudent.name.charAt(0) || 'শ'}</span>
+                    )}
+                  </div>
+                  <div className="text-left leading-tight">
+                    <span className="block text-[#DDAA00] font-black text-xs truncate max-w-[85px] sm:max-w-[140px]">
+                      {loggedStudent.name}
+                    </span>
+                    <span className="block text-[9px] text-emerald-200 font-semibold">
+                      প্রোফাইল
+                    </span>
+                  </div>
+                </Link>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+                  title="মাদ্রাসা ডিজিটাল লগইন পোর্টাল"
+                >
+                  <LogIn className="w-4 h-4 text-[#DDAA00] group-hover:translate-x-0.5 transition-transform" />
+                  <span className="text-white group-hover:text-[#DDAA00] transition-colors">Login</span>
+                </Link>
+              )
             )}
 
             {/* Mobile Menu Toggle Button */}

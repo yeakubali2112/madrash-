@@ -1,71 +1,64 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMadrasah } from '@/context/MadrasahContext';
-import { ResultRecord, AdmissionApplication } from '@/lib/data';
+import { StudentProfile } from '@/lib/data';
 import {
   GraduationCap,
   User,
   Phone,
   ArrowRight,
-  BookOpen,
   Calendar,
   Award,
   CheckCircle2,
   Printer,
   LogOut,
   AlertCircle,
-  FileText,
-  School,
   Sparkles,
-  CheckCircle,
-  Clock,
-  ShieldCheck,
-  ChevronRight,
-  QrCode,
   IdCard,
-  CreditCard
+  Edit3,
+  Camera,
+  Save,
+  Upload,
+  X,
+  MapPin,
+  Trash2,
+  Check
 } from 'lucide-react';
 
-interface StudentProfile {
-  name: string;
-  phone: string;
-  classYear: string;
-  rollNo: string;
-  regNo: string;
-  session: string;
-  bloodGroup: string;
-  attendanceRate: string;
-  feeStatus: string;
-  result?: ResultRecord;
-  application?: AdmissionApplication;
-}
-
 export default function LoginPage() {
-  const { info, results, applications } = useMadrasah();
+  const { info, results, applications, loggedStudent, updateLoggedStudent } = useMadrasah();
 
   // Student Login Form State
   const [studentName, setStudentName] = useState('');
   const [studentPhone, setStudentPhone] = useState('');
   const [studentError, setStudentError] = useState('');
-  const [loggedInStudent, setLoggedInStudent] = useState<StudentProfile | null>(null);
 
   // Active sub-tab in Student Profile
-  const [profileTab, setProfileTab] = useState<'idcard' | 'results' | 'routine' | 'fees'>('idcard');
+  const [profileTab, setProfileTab] = useState<'idcard' | 'results' | 'routine'>('idcard');
 
-  // Restore saved login session on mount
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem('padm_logged_student');
-      if (saved) {
-        setLoggedInStudent(JSON.parse(saved));
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  // Edit Profile Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Edit Form Fields
+  const [editForm, setEditForm] = useState({
+    name: '',
+    phone: '',
+    photo: '',
+    address: '',
+    fatherName: '',
+    motherName: '',
+    classYear: '',
+    rollNo: '',
+    regNo: '',
+    session: '',
+    bloodGroup: 'B+'
+  });
 
   // Normalize bangla to english digits
   const normalizeDigits = (str: string) => {
@@ -76,6 +69,111 @@ export default function LoginPage() {
     return str.replace(/[০-৯]/g, (w) => bnToEn[w] || w).trim();
   };
 
+  // Compress uploaded photo to fit safely in localStorage (under ~35KB)
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 360;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL('image/jpeg', 0.82));
+          } else {
+            resolve(event.target?.result as string);
+          }
+        };
+        img.onerror = (err) => reject(err);
+      };
+      reader.onerror = (err) => reject(err);
+    });
+  };
+
+  // Open edit modal and populate with current student data
+  const handleOpenEditModal = () => {
+    if (!loggedStudent) return;
+    setEditForm({
+      name: loggedStudent.name || '',
+      phone: loggedStudent.phone || '',
+      photo: loggedStudent.photo || '',
+      address: loggedStudent.address || 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+      fatherName: loggedStudent.fatherName || '',
+      motherName: loggedStudent.motherName || '',
+      classYear: loggedStudent.classYear || '১০ম শ্রেণি (দাখিল)',
+      rollNo: loggedStudent.rollNo || '১০১',
+      regNo: loggedStudent.regNo || '',
+      session: loggedStudent.session || '২০২৫-২০২৬',
+      bloodGroup: loggedStudent.bloodGroup || 'B+'
+    });
+    setIsEditModalOpen(true);
+  };
+
+  // Handle Photo selection & compression
+  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressing(true);
+      const compressedBase64 = await compressImage(file);
+      setEditForm(prev => ({ ...prev, photo: compressedBase64 }));
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      alert('ছবি আপলোড করতে সমস্যা হয়েছে। অনুগ্রহ করে অন্য ছবি নির্বাচন করুন।');
+    } finally {
+      setIsCompressing(false);
+    }
+  };
+
+  // Save profile changes
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loggedStudent) return;
+
+    const updatedProfile: StudentProfile = {
+      ...loggedStudent,
+      name: editForm.name.trim() || loggedStudent.name,
+      phone: editForm.phone.trim() || loggedStudent.phone,
+      photo: editForm.photo || '',
+      address: editForm.address.trim() || loggedStudent.address || 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+      fatherName: editForm.fatherName.trim(),
+      motherName: editForm.motherName.trim(),
+      classYear: editForm.classYear.trim() || loggedStudent.classYear,
+      rollNo: editForm.rollNo.trim() || loggedStudent.rollNo,
+      regNo: editForm.regNo.trim() || loggedStudent.regNo,
+      session: editForm.session.trim() || loggedStudent.session,
+      bloodGroup: editForm.bloodGroup || loggedStudent.bloodGroup
+    };
+
+    updateLoggedStudent(updatedProfile);
+    setIsEditModalOpen(false);
+    setSaveSuccess(true);
+    setTimeout(() => setSaveSuccess(false), 4000);
+  };
+
+  // Login handler
   const handleStudentLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setStudentError('');
@@ -107,6 +205,7 @@ export default function LoginPage() {
       profile = {
         name: foundResult.studentName,
         phone: phoneTrim,
+        address: 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
         classYear: foundResult.classYear,
         rollNo: foundResult.rollNo,
         regNo: foundResult.regNo,
@@ -132,9 +231,17 @@ export default function LoginPage() {
       });
 
       if (foundApp) {
+        const addr = foundApp.presentVillage
+          ? `${foundApp.presentVillage}, ${foundApp.presentPost || ''}, ${foundApp.presentUpazila || 'দুপচাঁচিয়া'}, ${foundApp.presentDistrict || 'বগুড়া'}`
+          : 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া';
+
         profile = {
           name: foundApp.studentNameBn,
           phone: foundApp.fatherPhone,
+          photo: foundApp.photo || '',
+          address: addr,
+          fatherName: foundApp.fatherNameBn || '',
+          motherName: foundApp.motherNameBn || '',
           classYear: foundApp.applyingClass,
           rollNo: foundApp.id,
           regNo: '২০২৬' + (normPhone.slice(-4) || '১০১০'),
@@ -149,6 +256,9 @@ export default function LoginPage() {
         profile = {
           name: nameTrim,
           phone: phoneTrim,
+          address: 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+          fatherName: '',
+          motherName: '',
           classYear: '১০ম শ্রেণি (দাখিল)',
           rollNo: '১০১',
           regNo: '২০২৬' + (normPhone.slice(-4) || '১০১০'),
@@ -183,21 +293,11 @@ export default function LoginPage() {
       }
     }
 
-    setLoggedInStudent(profile);
-    try {
-      localStorage.setItem('padm_logged_student', JSON.stringify(profile));
-    } catch (e) {
-      console.error(e);
-    }
+    updateLoggedStudent(profile);
   };
 
   const handleLogout = () => {
-    setLoggedInStudent(null);
-    try {
-      localStorage.removeItem('padm_logged_student');
-    } catch (e) {
-      console.error(e);
-    }
+    updateLoggedStudent(null);
   };
 
   const handlePrint = () => {
@@ -220,12 +320,33 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-emerald-50/20 to-slate-100 py-10 px-4 flex items-center justify-center relative islamic-bg-pattern">
-      <div className={`w-full transition-all duration-300 ${loggedInStudent ? 'max-w-4xl' : 'max-w-md'}`}>
-        
+      <div className={`w-full transition-all duration-300 ${loggedStudent ? 'max-w-4xl' : 'max-w-md'}`}>
+
+        {/* Success Alert Toast */}
+        {saveSuccess && (
+          <div className="mb-4 p-4 rounded-2xl bg-emerald-700 text-white shadow-lg flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-300 border-2 border-[#DDAA00]">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#DDAA00] text-slate-900 flex items-center justify-center font-black shrink-0">
+                <Check className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-sm">প্রোফাইল সফলভাবে আপডেট করা হয়েছে!</p>
+                <p className="text-xs text-emerald-100">আপনার ছবি, ঠিকানা এবং তথ্যাবলী সেভ করা হয়েছে।</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setSaveSuccess(false)}
+              className="text-emerald-200 hover:text-white p-1 rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+        )}
+
         {/* ========================================================
             VIEW 1: STUDENT LOGIN FORM (When NOT logged in)
            ======================================================== */}
-        {!loggedInStudent ? (
+        {!loggedStudent ? (
           <div className="bg-white rounded-3xl shadow-xl border border-emerald-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             {/* Header with Madrasah Brand Colors */}
             <div className="bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white p-7 text-center relative border-b-2 border-[#DDAA00]/40">
@@ -325,48 +446,88 @@ export default function LoginPage() {
              VIEW 2: FULL STUDENT PROFILE DASHBOARD (When LOGGED IN)
              ======================================================== */
           <div className="space-y-6 animate-in fade-in zoom-in-95 duration-200">
-            {/* Top Bar with Student Info and Logout */}
+            {/* Top Bar with Student Info, Photo, Edit Button, Print and Logout */}
             <div className="bg-white rounded-3xl p-5 sm:p-6 shadow-md border border-emerald-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-              <div className="flex items-center gap-4">
-                <div className="relative w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-[#00341c] to-[#006837] text-white flex items-center justify-center font-black text-xl shadow-md border-2 border-[#DDAA00] shrink-0">
-                  {loggedInStudent.name.charAt(0) || 'শ'}
+              <div className="flex items-start sm:items-center gap-4">
+                {/* Profile Photo / Avatar with edit shortcut */}
+                <div
+                  onClick={handleOpenEditModal}
+                  className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-[#00341c] to-[#006837] text-white flex items-center justify-center font-black text-2xl shadow-md border-2 border-[#DDAA00] shrink-0 overflow-hidden cursor-pointer group"
+                  title="ছবি বা তথ্য পরিবর্তন করতে ক্লিক করুন"
+                >
+                  {loggedStudent.photo ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
+                    <img
+                      src={loggedStudent.photo}
+                      alt={loggedStudent.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    />
+                  ) : (
+                    <span>{loggedStudent.name.charAt(0) || 'শ'}</span>
+                  )}
+                  {/* Camera overlay on hover */}
+                  <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center transition-opacity text-white">
+                    <Camera className="w-5 h-5 text-[#DDAA00]" />
+                    <span className="text-[8px] font-bold">এডিট</span>
+                  </div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
+
+                <div className="space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
-                      {loggedInStudent.name}
+                      {loggedStudent.name}
                     </h2>
-                    <span className="bg-emerald-100 text-[#006837] text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                    <span className="bg-emerald-100 text-[#006837] text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 border border-emerald-300">
                       <CheckCircle2 className="w-3 h-3 text-[#006837]" />
                       <span>সক্রিয় শিক্ষার্থী</span>
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium mt-0.5">
-                    {loggedInStudent.classYear} • রোল নম্বর: <strong className="font-mono text-[#006837]">{loggedInStudent.rollNo}</strong> • সেশন: {loggedInStudent.session}
+
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium">
+                    {loggedStudent.classYear} • রোল: <strong className="font-mono text-[#006837]">{loggedStudent.rollNo}</strong> • সেশন: {loggedStudent.session}
                   </p>
-                  <p className="text-[11px] text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
-                    <Phone className="w-3 h-3 text-[#006837]" />
-                    <span>অভিভাবক মোবাইল: {loggedInStudent.phone}</span>
-                  </p>
+
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-500 font-medium">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Phone className="w-3 h-3 text-[#006837]" />
+                      <span>মোবাইল: {loggedStudent.phone}</span>
+                    </span>
+                    {loggedStudent.address && (
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#006837]" />
+                        <span className="truncate max-w-[200px] sm:max-w-[320px]">ঠিকানা: {loggedStudent.address}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Action Buttons: Print & Logout */}
-              <div className="flex items-center gap-2.5 w-full md:w-auto justify-end pt-2 md:pt-0 border-t md:border-t-0 border-slate-100">
+              {/* Action Buttons: Edit Profile, Print & Logout */}
+              <div className="flex flex-wrap items-center gap-2 w-full md:w-auto justify-end pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                <button
+                  type="button"
+                  onClick={handleOpenEditModal}
+                  className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                >
+                  <Edit3 className="w-4 h-4 text-[#DDAA00]" />
+                  <span>প্রোফাইল এডিট</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={handlePrint}
-                  className="px-4 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
                 >
                   <Printer className="w-4 h-4 text-[#006837]" />
-                  <span>প্রিন্ট করুন</span>
+                  <span>প্রিন্ট</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-600 text-xs font-bold flex items-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-300 hover:border-rose-300 text-slate-700 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                 >
-                  <LogOut className="w-4 h-4 text-rose-500" />
+                  <LogOut className="w-3.5 h-3.5 text-rose-500" />
                   <span>লগআউট</span>
                 </button>
               </div>
@@ -447,43 +608,72 @@ export default function LoginPage() {
 
                   {/* ID Body */}
                   <div className="flex items-center gap-4 relative z-10">
-                    <div className="w-20 h-24 rounded-xl bg-white/20 border-2 border-[#DDAA00] flex flex-col items-center justify-center text-center p-2 shrink-0">
-                      <User className="w-10 h-10 text-[#DDAA00] mb-1" />
-                      <span className="text-[9px] font-bold text-white/90">শিক্ষার্থী ছবি</span>
+                    {/* ID Card Photo with edit shortcut */}
+                    <div
+                      onClick={handleOpenEditModal}
+                      className="w-20 h-24 rounded-xl bg-white/10 border-2 border-[#DDAA00] flex flex-col items-center justify-center text-center shrink-0 relative overflow-hidden cursor-pointer group"
+                      title="ছবি বদলাতে ক্লিক করুন"
+                    >
+                      {loggedStudent.photo ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={loggedStudent.photo}
+                          alt={loggedStudent.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      ) : (
+                        <div className="p-2 flex flex-col items-center">
+                          <User className="w-10 h-10 text-[#DDAA00] mb-1" />
+                          <span className="text-[9px] font-bold text-white/90">ছবি নেই</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-[#DDAA00] font-bold transition-opacity">
+                        <Camera className="w-4 h-4 mb-0.5" />
+                        <span>ছবি বদলান</span>
+                      </div>
                     </div>
 
                     <div className="space-y-1 text-xs text-white flex-1">
                       <div>
                         <span className="text-[10px] text-emerald-200 font-semibold block">নাম:</span>
-                        <strong className="text-sm font-black text-[#DDAA00]">{loggedInStudent.name}</strong>
+                        <strong className="text-sm font-black text-[#DDAA00]">{loggedStudent.name}</strong>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-0.5">
                         <div>
                           <span className="text-[10px] text-emerald-200 block">শ্রেণি:</span>
-                          <strong className="font-bold">{loggedInStudent.classYear}</strong>
+                          <strong className="font-bold">{loggedStudent.classYear}</strong>
                         </div>
                         <div>
                           <span className="text-[10px] text-emerald-200 block">রোল নম্বর:</span>
-                          <strong className="font-bold font-mono">{loggedInStudent.rollNo}</strong>
+                          <strong className="font-bold font-mono">{loggedStudent.rollNo}</strong>
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-2 pt-0.5">
                         <div>
                           <span className="text-[10px] text-emerald-200 block">রেজি নম্বর:</span>
-                          <strong className="font-bold font-mono">{loggedInStudent.regNo}</strong>
+                          <strong className="font-bold font-mono">{loggedStudent.regNo}</strong>
                         </div>
                         <div>
                           <span className="text-[10px] text-emerald-200 block">রক্তের গ্রুপ:</span>
-                          <strong className="font-bold text-[#DDAA00]">{loggedInStudent.bloodGroup}</strong>
+                          <strong className="font-bold text-[#DDAA00]">{loggedStudent.bloodGroup}</strong>
                         </div>
                       </div>
+
+                      {loggedStudent.address && (
+                        <div className="pt-1">
+                          <span className="text-[9px] text-emerald-200 block">ঠিকানা:</span>
+                          <span className="text-[11px] font-medium text-emerald-100 block truncate">
+                            {loggedStudent.address}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
                   {/* ID Footer */}
                   <div className="mt-4 pt-3 border-t border-white/20 flex justify-between items-center text-[10px] text-emerald-200 relative z-10">
                     <div>
-                      <span>সেশন: <strong>{loggedInStudent.session}</strong></span>
+                      <span>সেশন: <strong>{loggedStudent.session}</strong></span>
                     </div>
                     <div className="text-right">
                       <span className="text-[9px] text-[#DDAA00] font-bold block">অধ্যক্ষ / সুপারিনটেনডেন্ট</span>
@@ -492,7 +682,16 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                <div className="text-center">
+                <div className="flex flex-wrap justify-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleOpenEditModal}
+                    className="inline-flex items-center gap-2 bg-gradient-to-r from-[#00341c] to-[#006837] border-2 border-[#DDAA00] hover:scale-105 text-white px-5 py-2.5 rounded-xl font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                  >
+                    <Edit3 className="w-4 h-4 text-[#DDAA00]" />
+                    <span>আইডি কার্ড ও প্রোফাইল এডিট করুন</span>
+                  </button>
+
                   <button
                     type="button"
                     onClick={handlePrint}
@@ -523,26 +722,26 @@ export default function LoginPage() {
                   <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4">
                     <span className="text-xs text-emerald-800 font-bold block">জিপিএ (GPA)</span>
                     <div className="text-2xl font-black text-[#006837] mt-1">
-                      {loggedInStudent.result?.gpa.toFixed(2) || '৫.০০'}
+                      {loggedStudent.result?.gpa.toFixed(2) || '৫.০০'}
                     </div>
                   </div>
                   <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
                     <span className="text-xs text-amber-800 font-bold block">প্রাপ্ত লেটার গ্রেড</span>
                     <div className="text-2xl font-black text-[#997500] mt-1">
-                      {loggedInStudent.result?.grade || 'A+'}
+                      {loggedStudent.result?.grade || 'A+'}
                     </div>
                   </div>
                   <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">
                     <span className="text-xs text-blue-800 font-bold block">উপস্থিতির হার</span>
                     <div className="text-2xl font-black text-[#003580] mt-1">
-                      {loggedInStudent.attendanceRate}
+                      {loggedStudent.attendanceRate}
                     </div>
                   </div>
                   <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
                     <span className="text-xs text-slate-700 font-bold block">ফলাফল অবস্থা</span>
                     <div className="text-sm font-black text-emerald-800 mt-2 flex items-center justify-center gap-1">
                       <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      <span>{loggedInStudent.result?.resultStatus || 'উত্তীর্ণ'}</span>
+                      <span>{loggedStudent.result?.resultStatus || 'উত্তীর্ণ'}</span>
                     </div>
                   </div>
                 </div>
@@ -551,10 +750,10 @@ export default function LoginPage() {
                 <div className="border border-slate-200 rounded-2xl overflow-hidden">
                   <div className="bg-slate-100 px-4 py-3 font-bold text-xs text-slate-800 flex justify-between items-center">
                     <span>বিষয়ভিত্তিক প্রাপ্ত নম্বর ও গ্রেডশিট</span>
-                    <span className="text-emerald-800 text-[11px] font-semibold">সেশন: {loggedInStudent.session}</span>
+                    <span className="text-emerald-800 text-[11px] font-semibold">সেশন: {loggedStudent.session}</span>
                   </div>
                   <div className="divide-y divide-slate-100 text-xs">
-                    {(loggedInStudent.result?.subjects || []).map((sub, idx) => (
+                    {(loggedStudent.result?.subjects || []).map((sub, idx) => (
                       <div key={idx} className="px-4 py-2.5 flex justify-between items-center hover:bg-slate-50">
                         <div>
                           <span className="font-bold text-slate-900">{sub.name}</span>
@@ -579,7 +778,7 @@ export default function LoginPage() {
                 <div>
                   <h3 className="text-lg font-black text-slate-900 flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-[#006837]" />
-                    <span>ক্লাস রুটিন ও সময়সূচি ({loggedInStudent.classYear})</span>
+                    <span>ক্লাস রুটিন ও সময়সূচি ({loggedStudent.classYear})</span>
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
                     ক্লাস শুরুর সময়: সকাল ০৯:১৫ | সালাত ও টিফিন বিরতি: ১২:১৫ - ০১:১৫
@@ -606,6 +805,242 @@ export default function LoginPage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ========================================================
+            MODAL: EDIT STUDENT PROFILE (Photo, Address, Info)
+           ======================================================== */}
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="bg-white rounded-3xl max-w-xl w-full shadow-2xl border-2 border-emerald-500 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+              
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white p-5 px-6 flex items-center justify-between border-b-2 border-[#DDAA00]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-[#DDAA00] text-slate-900 flex items-center justify-center font-bold">
+                    <Edit3 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-base sm:text-lg text-white leading-tight">
+                      শিক্ষার্থী প্রোফাইল এডিট ও আপডেট
+                    </h3>
+                    <p className="text-xs text-emerald-100">
+                      আপনার ছবি, ঠিকানা ও অন্যান্য তথ্য পরিবর্তন করুন
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Modal Form */}
+              <form onSubmit={handleSaveProfile} className="p-6 space-y-5 max-h-[75vh] overflow-y-auto">
+                
+                {/* 1. Photo Upload Section */}
+                <div className="bg-emerald-50/70 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-4">
+                  <div className="relative w-20 h-24 rounded-xl bg-white border-2 border-[#DDAA00] overflow-hidden flex items-center justify-center shadow-inner shrink-0">
+                    {editForm.photo ? (
+                      /* eslint-disable-next-line @next/next/no-img-element */
+                      <img src={editForm.photo} alt="Student Preview" className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="text-center p-2 text-slate-400">
+                        <User className="w-8 h-8 mx-auto text-[#006837]/40 mb-1" />
+                        <span className="text-[9px] font-bold block">ছবি দিন</span>
+                      </div>
+                    )}
+                    {isCompressing && (
+                      <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-[10px] text-white font-bold">
+                        লোড হচ্ছে...
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex-1 text-center sm:text-left space-y-2">
+                    <p className="text-xs font-bold text-slate-800">
+                      শিক্ষার্থীর ছবি (Photo Upload)
+                    </p>
+                    <p className="text-[11px] text-slate-500">
+                      আপনার পাসপোর্ট সাইজ বা পরিষ্কার ছবি আপলোড করুন। এটি আপনার আইডি কার্ড ও পোর্টাল হেডার এ দেখাবে।
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        ref={fileInputRef}
+                        onChange={handlePhotoUpload}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="px-3 py-1.5 rounded-xl bg-[#006837] hover:bg-[#00542c] text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Camera className="w-3.5 h-3.5 text-[#DDAA00]" />
+                        <span>{editForm.photo ? 'ছবি পরিবর্তন করুন' : 'ছবি নির্বাচন করুন'}</span>
+                      </button>
+
+                      {editForm.photo && (
+                        <button
+                          type="button"
+                          onClick={() => setEditForm(prev => ({ ...prev, photo: '' }))}
+                          className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>মুছুন</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Text Fields Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Name */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      শিক্ষার্থীর নাম (Student Name) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.name}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="যেমন: আকাশ বা মোঃ ওমর ফারুক"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Phone */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      মোবাইল নম্বর (Phone) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      required
+                      value={editForm.phone}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                      placeholder="017XXXXXXXX"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold font-mono"
+                    />
+                  </div>
+
+                  {/* Blood Group */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      রক্তের গ্রুপ (Blood Group)
+                    </label>
+                    <select
+                      value={editForm.bloodGroup}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, bloodGroup: e.target.value }))}
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold bg-white"
+                    >
+                      <option value="A+">A+ (পজিটিভ)</option>
+                      <option value="A-">A- (নেগেটিভ)</option>
+                      <option value="B+">B+ (পজিটিভ)</option>
+                      <option value="B-">B- (নেগেটিভ)</option>
+                      <option value="O+">O+ (পজিটিভ)</option>
+                      <option value="O-">O- (নেগেটিভ)</option>
+                      <option value="AB+">AB+ (পজিটিভ)</option>
+                      <option value="AB-">AB- (নেগেটিভ)</option>
+                    </select>
+                  </div>
+
+                  {/* Address */}
+                  <div className="sm:col-span-2">
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ঠিকানা (Address - গ্রাম, ডাকঘর, উপজেলা, জেলা) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.address}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, address: e.target.value }))}
+                      placeholder="যেমন: পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Father's Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      পিতার নাম (Father&apos;s Name)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.fatherName}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, fatherName: e.target.value }))}
+                      placeholder="পিতার নাম লিখুন"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Mother's Name */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      মাতার নাম (Mother&apos;s Name)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.motherName}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, motherName: e.target.value }))}
+                      placeholder="মাতার নাম লিখুন"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Class */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      শ্রেণি (Class)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.classYear}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, classYear: e.target.value }))}
+                      placeholder="যেমন: ১০ম শ্রেণি (দাখিল)"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold"
+                    />
+                  </div>
+
+                  {/* Roll No */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      রোল নম্বর (Roll No)
+                    </label>
+                    <input
+                      type="text"
+                      value={editForm.rollNo}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, rollNo: e.target.value }))}
+                      placeholder="যেমন: ১০১"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold font-mono"
+                    />
+                  </div>
+                </div>
+
+                {/* Footer Buttons */}
+                <div className="pt-4 border-t border-slate-200 flex items-center justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsEditModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                  >
+                    বাতিল
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] border-2 border-[#DDAA00] text-white text-xs font-black shadow-md flex items-center gap-2 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <Save className="w-4 h-4 text-[#DDAA00]" />
+                    <span>তথ্য সংরক্ষণ করুন (Save Changes)</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
       </div>
