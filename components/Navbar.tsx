@@ -81,12 +81,12 @@ export const Navbar: React.FC = () => {
           <div className="flex items-center gap-3">
             {!isAdminRoute && (
               <Link
-                href={isAdmin ? "/admin" : "/admin/login"}
-                className="inline-flex items-center gap-1.5 px-4 py-1.5 md:px-5 md:py-2 rounded-xl border-2 border-rose-500 text-rose-600 hover:bg-rose-50 hover:border-rose-600 font-bold text-xs md:text-sm tracking-wide shadow-xs transition-all duration-200 hover:scale-105 active:scale-95 group"
-                title="লগইন"
+                href="/login"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] text-white border-2 border-[#DDAA00] font-black text-xs sm:text-sm tracking-wide shadow-sm hover:shadow-md transition-all duration-200 hover:scale-105 active:scale-95 group"
+                title="মাদ্রাসা ডিজিটাল লগইন পোর্টাল (শিক্ষার্থী ও প্রশাসন)"
               >
-                <LogIn className="w-4 h-4 text-rose-500 group-hover:text-rose-700 transition-transform group-hover:translate-x-0.5" />
-                <span>Login</span>
+                <LogIn className="w-4 h-4 text-[#DDAA00] group-hover:translate-x-0.5 transition-transform" />
+                <span className="text-white group-hover:text-[#DDAA00] transition-colors">Login</span>
               </Link>
             )}
 
@@ -189,12 +189,12 @@ export const Navbar: React.FC = () => {
             })}
 
             <Link
-              href="/admin"
+              href={isAdmin ? "/admin" : "/login"}
               onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-2.5 px-3 py-2.5 rounded-md text-sm font-bold text-[#DDAA00] hover:bg-[#00542c] mt-2 border-t border-emerald-800/80"
             >
-              <ShieldCheck className="w-4 h-4 text-[#DDAA00]" />
-              <span>{isAdmin ? 'অ্যাডমিন ড্যাশবোর্ড' : 'অ্যাডমিন লগইন'}</span>
+              <LogIn className="w-4 h-4 text-[#DDAA00]" />
+              <span>{isAdmin ? 'অ্যাডমিন ড্যাশবোর্ড' : 'লগইন পোর্টাল (শিক্ষার্থী ও প্রশাসন)'}</span>
             </Link>
           </div>
         </div>
