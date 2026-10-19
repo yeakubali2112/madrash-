@@ -24,7 +24,9 @@ import {
   FileText,
   School,
   Sparkles,
-  Phone
+  Phone,
+  Clock,
+  IdCard
 } from 'lucide-react';
 
 export default function LoginPage() {
@@ -34,11 +36,15 @@ export default function LoginPage() {
   // Tab: 'student' or 'admin'
   const [activeTab, setActiveTab] = useState<'student' | 'admin'>('student');
 
-  // Student Login Form State
-  const [studentClass, setStudentClass] = useState('১০ম শ্রেণি (দাখিল)');
-  const [studentRoll, setStudentRoll] = useState('');
+  // Student Login Form State (Name & Phone Number)
+  const [studentName, setStudentName] = useState('');
+  const [studentPhone, setStudentPhone] = useState('');
   const [studentError, setStudentError] = useState('');
   const [loggedInStudent, setLoggedInStudent] = useState<{
+    name: string;
+    phone: string;
+    classYear: string;
+    rollNo?: string;
     result?: ResultRecord;
     application?: AdmissionApplication;
   } | null>(null);
@@ -48,7 +54,7 @@ export default function LoginPage() {
   const [adminPassword, setAdminPassword] = useState('');
   const [adminError, setAdminError] = useState('');
 
-  // Normalize bangla to english digits for matching
+  // Normalize bangla to english digits
   const normalizeDigits = (str: string) => {
     const bnToEn: Record<string, string> = {
       '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4',
@@ -62,39 +68,70 @@ export default function LoginPage() {
     setStudentError('');
     setLoggedInStudent(null);
 
-    const inputClean = studentRoll.trim();
-    if (!inputClean) {
-      setStudentError('অনুগ্রহ করে আপনার রোল নম্বর বা রেজি নম্বর দিন। (ডেমো: ১০১, ১০২ বা ১০৩)');
+    const nameTrim = studentName.trim();
+    const phoneTrim = studentPhone.trim();
+
+    if (!nameTrim) {
+      setStudentError('অনুগ্রহ করে শিক্ষার্থীর নাম লিখুন।');
+      return;
+    }
+    if (!phoneTrim) {
+      setStudentError('অনুগ্রহ করে মোবাইল নম্বর দিন।');
       return;
     }
 
-    const normInput = normalizeDigits(inputClean);
+    const normPhone = normalizeDigits(phoneTrim);
+    const normName = nameTrim.toLowerCase();
 
-    // Search in results database
+    // 1. Search in results database by student name
     const foundResult = results.find(r => {
-      const normRoll = normalizeDigits(r.rollNo);
-      const normReg = normalizeDigits(r.regNo);
-      return normRoll === normInput || normReg === normInput || r.rollNo === inputClean;
+      const rName = r.studentName.toLowerCase();
+      return rName.includes(normName) || normName.includes(rName);
     });
 
     if (foundResult) {
-      setLoggedInStudent({ result: foundResult });
+      setLoggedInStudent({
+        name: foundResult.studentName,
+        phone: phoneTrim,
+        classYear: foundResult.classYear,
+        rollNo: foundResult.rollNo,
+        result: foundResult
+      });
       return;
     }
 
-    // Search in admission applications
+    // 2. Search in admission applications by name or father's phone
     const foundApp = applications.find(a => {
-      const normId = a.id.toLowerCase();
-      const normPhone = normalizeDigits(a.fatherPhone);
-      return normId === inputClean.toLowerCase() || normPhone === normInput;
+      const aNameBn = a.studentNameBn.toLowerCase();
+      const aNameEn = a.studentNameEn.toLowerCase();
+      const aPhone = normalizeDigits(a.fatherPhone);
+      return (
+        aNameBn.includes(normName) ||
+        normName.includes(aNameBn) ||
+        aNameEn.includes(normName) ||
+        aPhone.includes(normPhone) ||
+        normPhone.includes(aPhone)
+      );
     });
 
     if (foundApp) {
-      setLoggedInStudent({ application: foundApp });
+      setLoggedInStudent({
+        name: foundApp.studentNameBn,
+        phone: foundApp.fatherPhone,
+        classYear: foundApp.applyingClass,
+        rollNo: foundApp.id,
+        application: foundApp
+      });
       return;
     }
 
-    setStudentError(`রোল/আইডি "${inputClean}" দিয়ে কোনো শিক্ষার্থী বা ভর্তি তথ্য পাওয়া যায়নি। অনুগ্রহ করে সঠিক তথ্য দিন (ডেমো শিক্ষার্থী দেখতে রোল: ১০১, ১০২ বা ১০৩ লিখুন)।`);
+    // 3. If any valid student/parent enters name & phone, create their personalized active portal session!
+    setLoggedInStudent({
+      name: nameTrim,
+      phone: phoneTrim,
+      classYear: '১০ম শ্রেণি (দাখিল)',
+      rollNo: 'শিক্ষার্থী-' + (normPhone.slice(-4) || '২০২৬')
+    });
   };
 
   const handleAdminLogin = (e: React.FormEvent) => {
@@ -152,7 +189,7 @@ export default function LoginPage() {
                   setActiveTab('student');
                   setLoggedInStudent(null);
                 }}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   activeTab === 'student'
                     ? 'bg-[#DDAA00] text-slate-950 shadow-md scale-[1.02]'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -165,7 +202,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => setActiveTab('admin')}
-                className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                   activeTab === 'admin'
                     ? 'bg-[#DDAA00] text-slate-950 shadow-md scale-[1.02]'
                     : 'text-white/80 hover:text-white hover:bg-white/10'
@@ -179,7 +216,7 @@ export default function LoginPage() {
 
           {/* Card Body */}
           <div className="p-6 sm:p-8">
-            {/* TAB 1: STUDENT / GUARDIAN PORTAL */}
+            {/* TAB 1: STUDENT / GUARDIAN PORTAL (Name & Phone Number Login) */}
             {activeTab === 'student' && (
               <div>
                 {!loggedInStudent ? (
@@ -187,46 +224,46 @@ export default function LoginPage() {
                     <div className="bg-emerald-50/80 border border-emerald-200 rounded-2xl p-4 text-xs text-emerald-950 space-y-1">
                       <div className="font-bold flex items-center gap-1.5 text-[#006837]">
                         <Sparkles className="w-4 h-4 text-[#DDAA00]" />
-                        <span>শিক্ষার্থী পোর্টাল সুবিধা:</span>
+                        <span>শিক্ষার্থী ও অভিভাবক লগইন:</span>
                       </div>
-                      <p>রোল নম্বর দিয়ে লগইন করে আপনার ফলাফল, পরীক্ষার নম্বরপত্র ও ক্লাসের তথ্য দেখতে পারবেন।</p>
+                      <p>আপনার <strong>নাম</strong> এবং <strong>মোবাইল নম্বর</strong> দিয়ে সহজেই লগইন করে ফলাফল, রুটিন ও অ্যাকাডেমিক তথ্য দেখুন।</p>
                       <p className="text-emerald-800 font-semibold pt-1">
-                        💡 ডেমো শিক্ষার্থী হিসেবে দেখতে রোল নম্বর <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-300">১০১</strong>, <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-300">১০২</strong> বা <strong className="font-mono bg-white px-1.5 py-0.5 rounded border border-emerald-300">১০৩</strong> লিখুন।
+                        💡 ডেমো দেখতে নাম: <strong className="bg-white px-1.5 py-0.5 rounded border border-emerald-300">ওমর ফারুক</strong> বা <strong className="bg-white px-1.5 py-0.5 rounded border border-emerald-300">আয়েশা সিদ্দিকা</strong> এবং যেকোনো ফোন নম্বর লিখুন।
                       </p>
                     </div>
 
+                    {/* Field 1: Name */}
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        অধ্যয়নরত শ্রেণি নির্বাচন করুন
-                      </label>
-                      <select
-                        value={studentClass}
-                        onChange={(e) => setStudentClass(e.target.value)}
-                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold bg-white"
-                      >
-                        <option value="১০ম শ্রেণি (দাখিল)">১০ম শ্রেণি (দাখিল)</option>
-                        <option value="৯ম শ্রেণি">৯ম শ্রেণি</option>
-                        <option value="৮ম শ্রেণি">৮ম শ্রেণি (জেডিসি)</option>
-                        <option value="৭ম শ্রেণি">৭ম শ্রেণি</option>
-                        <option value="৬ষ্ঠ শ্রেণি">৬ষ্ঠ শ্রেণি</option>
-                        <option value="হিফজুল কুরআন বিভাগ">হিফজুল কুরআন বিভাগ</option>
-                        <option value="ইবতেদায়ী শাখা">ইবতেদায়ী ১ম-৫ম শ্রেণি</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                        শিক্ষার্থীর রোল নম্বর অথবা রেজি নম্বর
+                        শিক্ষার্থীর পূর্ণ নাম (Student Full Name) <span className="text-rose-500">*</span>
                       </label>
                       <div className="relative">
-                        <GraduationCap className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                         <input
                           type="text"
                           required
-                          value={studentRoll}
-                          onChange={(e) => setStudentRoll(e.target.value)}
-                          placeholder="যেমন: ১০১ (বা ২০২৬১০১০১)"
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-sm font-semibold font-mono"
+                          value={studentName}
+                          onChange={(e) => setStudentName(e.target.value)}
+                          placeholder="যেমন: মোঃ ওমর ফারুক বা আপনার নাম"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-xs sm:text-sm font-semibold bg-white"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Field 2: Phone Number */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                        অভিভাবক / শিক্ষার্থীর মোবাইল নম্বর (Phone Number) <span className="text-rose-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="tel"
+                          required
+                          value={studentPhone}
+                          onChange={(e) => setStudentPhone(e.target.value)}
+                          placeholder="যেমন: 017XXXXXXXX"
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#006837] text-sm font-semibold font-mono bg-white"
                         />
                       </div>
                     </div>
@@ -240,10 +277,10 @@ export default function LoginPage() {
 
                     <button
                       type="submit"
-                      className="w-full bg-[#006837] hover:bg-[#00542c] text-white font-black py-3 rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 cursor-pointer"
+                      className="w-full bg-[#006837] hover:bg-[#00542c] text-white font-black py-3 rounded-xl shadow-md transition-all text-sm flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-95 cursor-pointer mt-2"
                     >
-                      <User className="w-4 h-4 text-[#DDAA00]" />
-                      <span>শিক্ষার্থী প্রোফাইলে প্রবেশ করুন</span>
+                      <GraduationCap className="w-4 h-4 text-[#DDAA00]" />
+                      <span>লগইন করুন</span>
                       <ArrowRight className="w-4 h-4 text-[#DDAA00]" />
                     </button>
                   </form>
@@ -251,30 +288,35 @@ export default function LoginPage() {
                   /* LOGGED IN STUDENT DASHBOARD VIEW */
                   <div className="space-y-6 animate-in fade-in duration-200">
                     {/* Welcome Header */}
-                    <div className="bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                    <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 border border-emerald-200 rounded-2xl p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
                       <div>
-                        <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006837] bg-emerald-100 px-2.5 py-0.5 rounded-full">
-                          শিক্ষার্থী প্রোফাইল
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#006837] bg-emerald-100 px-2.5 py-0.5 rounded-full">
+                            সক্রিয় শিক্ষার্থী
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500 font-mono">
+                            {loggedInStudent.phone}
+                          </span>
+                        </div>
                         <h3 className="text-lg font-black text-slate-900 mt-1">
-                          {loggedInStudent.result?.studentName || loggedInStudent.application?.studentNameBn}
+                          {loggedInStudent.name}
                         </h3>
                         <p className="text-xs text-slate-600 font-medium">
-                          শ্রেণি: {loggedInStudent.result?.classYear || loggedInStudent.application?.applyingClass} • রোল: {loggedInStudent.result?.rollNo || loggedInStudent.application?.id}
+                          শ্রেণি: {loggedInStudent.classYear} • রোল/আইডি: {loggedInStudent.rollNo}
                         </p>
                       </div>
 
                       <div className="flex items-center gap-2 self-end sm:self-auto">
                         <button
                           onClick={handlePrint}
-                          className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-100 text-[#006837] text-xs font-bold flex items-center gap-1.5 transition-colors"
+                          className="px-3 py-1.5 rounded-xl border border-emerald-300 bg-white hover:bg-emerald-100 text-[#006837] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <Printer className="w-3.5 h-3.5" />
                           <span>প্রিন্ট</span>
                         </button>
                         <button
                           onClick={() => setLoggedInStudent(null)}
-                          className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-colors"
+                          className="px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
                         >
                           <LogOut className="w-3.5 h-3.5" />
                           <span>লগআউট</span>
@@ -283,7 +325,7 @@ export default function LoginPage() {
                     </div>
 
                     {/* Result Details if found */}
-                    {loggedInStudent.result && (
+                    {loggedInStudent.result ? (
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                           <div className="bg-slate-50 border border-slate-200 rounded-xl p-3">
@@ -333,26 +375,50 @@ export default function LoginPage() {
                             ))}
                           </div>
                         </div>
+                      </div>
+                    ) : (
+                      /* General Student Info Card if no specific exam record */
+                      <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-100 text-[#006837] flex items-center justify-center font-bold">
+                            <BookOpen className="w-5 h-5" />
+                          </div>
+                          <div>
+                            <h4 className="font-bold text-slate-900 text-sm">শিক্ষার্থীর ডিজিটাল প্রোফাইল সক্রিয়</h4>
+                            <p className="text-xs text-slate-600">আপনি সফলভাবে মাদ্রাসার অনলাইন পোর্টালে সংযুক্ত আছেন।</p>
+                          </div>
+                        </div>
 
-                        {/* Quick links for student */}
-                        <div className="grid grid-cols-2 gap-3 pt-2">
-                          <Link
-                            href="/routine"
-                            className="p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-center text-xs font-bold text-[#006837] flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <Calendar className="w-4 h-4" />
-                            <span>ক্লাস রুটিন দেখুন</span>
-                          </Link>
-                          <Link
-                            href="/notices"
-                            className="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-center text-xs font-bold text-[#003580] flex items-center justify-center gap-1.5 transition-colors"
-                          >
-                            <FileText className="w-4 h-4" />
-                            <span>নোটিশ বোর্ড দেখুন</span>
-                          </Link>
+                        <div className="grid grid-cols-2 gap-3 text-xs">
+                          <div className="bg-white p-3 rounded-xl border border-slate-200">
+                            <span className="text-slate-500 font-semibold block">শিক্ষার্থীর নাম:</span>
+                            <span className="font-bold text-slate-900">{loggedInStudent.name}</span>
+                          </div>
+                          <div className="bg-white p-3 rounded-xl border border-slate-200">
+                            <span className="text-slate-500 font-semibold block">অভিভাবক ফোন:</span>
+                            <span className="font-bold text-slate-900 font-mono">{loggedInStudent.phone}</span>
+                          </div>
                         </div>
                       </div>
                     )}
+
+                    {/* Quick Action Links for student */}
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <Link
+                        href="/routine"
+                        className="p-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-xl text-center text-xs font-bold text-[#006837] flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Calendar className="w-4 h-4" />
+                        <span>ক্লাস রুটিন দেখুন</span>
+                      </Link>
+                      <Link
+                        href="/notices"
+                        className="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl text-center text-xs font-bold text-[#003580] flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <FileText className="w-4 h-4" />
+                        <span>নোটিশ বোর্ড দেখুন</span>
+                      </Link>
+                    </div>
                   </div>
                 )}
               </div>
