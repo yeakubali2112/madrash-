@@ -74,7 +74,8 @@ import {
   Moon,
   Sun,
   Sunrise,
-  Sunset
+  Sunset,
+  Calendar
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -123,7 +124,7 @@ export default function AdminDashboardPage() {
     resetToDefaults
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup'>('overview');
 
   // Check auth
   useEffect(() => {
@@ -664,6 +665,195 @@ export default function AdminDashboardPage() {
     return matchesFilter && matchesSearch;
   });
 
+  // ==========================================
+  // ATTENDANCE STATE (TEACHERS & STUDENTS)
+  // ==========================================
+  const [attendanceSubTab, setAttendanceSubTab] = useState<'teachers' | 'students'>('teachers');
+  const [attendanceDate, setAttendanceDate] = useState<string>(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [attendanceClassFilter, setAttendanceClassFilter] = useState<string>('১০ম শ্রেণি (দাখিল)');
+  const [attendanceSearchQuery, setAttendanceSearchQuery] = useState('');
+  const [teacherAttendance, setTeacherAttendance] = useState<Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }>>({});
+  const [studentAttendance, setStudentAttendance] = useState<Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }>>({});
+  const [attendanceToast, setAttendanceToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
+  // Base student roster per class
+  const baseClassStudents: Record<string, Array<{ id: string; name: string; rollNo: string; phone: string }>> = {
+    '১০ম শ্রেণি (দাখিল)': [
+      { id: 'std-101', name: 'আকাশ', rollNo: '১০১', phone: '01773542057' },
+      { id: 'std-102', name: 'মোঃ ওমর ফারুক', rollNo: '১০২', phone: '01711223344' },
+      { id: 'std-103', name: 'আব্দুল্লাহ আল মামুন', rollNo: '১০৩', phone: '01819876543' },
+      { id: 'std-104', name: 'মুহাম্মদ আবু বকর', rollNo: '১০৪', phone: '01912345678' },
+      { id: 'std-105', name: 'ফাতেমা আক্তার', rollNo: '১০৫', phone: '01511223344' },
+      { id: 'std-106', name: 'মারিয়া জান্নাত', rollNo: '১০৬', phone: '01611223344' },
+      { id: 'std-107', name: 'মোঃ হাসান মাহমুদ', rollNo: '১০৭', phone: '01722334455' },
+      { id: 'std-108', name: 'মোঃ রবিউল ইসলাম', rollNo: '১০৮', phone: '01833445566' }
+    ],
+    '৯ম শ্রেণি': [
+      { id: 'std-201', name: 'মোঃ তানভীর আহমেদ', rollNo: '০১', phone: '01710000001' },
+      { id: 'std-202', name: 'মোঃ সাইদুল ইসলাম', rollNo: '০২', phone: '01710000002' },
+      { id: 'std-203', name: 'সুমাইয়া খাতুন', rollNo: '০৩', phone: '01710000003' },
+      { id: 'std-204', name: 'নাফিসা আনজুম', rollNo: '০৪', phone: '01710000004' },
+      { id: 'std-205', name: 'মোঃ কামরুল হাসান', rollNo: '০৫', phone: '01710000005' },
+      { id: 'std-206', name: 'মোছাঃ মাহিয়া আক্তার', rollNo: '০৬', phone: '01710000006' }
+    ],
+    '৮ম শ্রেণি (জেডিসি)': [
+      { id: 'std-301', name: 'মোঃ রিফাত হোসেন', rollNo: '০১', phone: '01720000001' },
+      { id: 'std-302', name: 'জান্নাতুল ফেরদৌস', rollNo: '০২', phone: '01720000002' },
+      { id: 'std-303', name: 'মোঃ আসিফ ইকবাল', rollNo: '০৩', phone: '01720000003' },
+      { id: 'std-304', name: 'হুমায়রা তাবাসসুম', rollNo: '০৪', phone: '01720000004' },
+      { id: 'std-305', name: 'মোঃ নাজমুল সাকিব', rollNo: '০৫', phone: '01720000005' }
+    ],
+    '৭ম শ্রেণি': [
+      { id: 'std-401', name: 'মোঃ সালমান ফারসি', rollNo: '০১', phone: '01730000001' },
+      { id: 'std-402', name: 'খাদিজা আক্তার', rollNo: '০২', phone: '01730000002' },
+      { id: 'std-403', name: 'মোঃ নাঈম ইসলাম', rollNo: '০৩', phone: '01730000003' },
+      { id: 'std-404', name: 'সাদিয়া সুলতানা', rollNo: '০৪', phone: '01730000004' }
+    ],
+    '৬ষ্ঠ শ্রেণি': [
+      { id: 'std-501', name: 'মোঃ জুনাইদ আহমেদ', rollNo: '০১', phone: '01740000001' },
+      { id: 'std-502', name: 'আয়েশা সিদ্দিকা', rollNo: '০২', phone: '01740000002' },
+      { id: 'std-503', name: 'মোঃ সিয়াম হোসেন', rollNo: '০৩', phone: '01740000003' },
+      { id: 'std-504', name: 'মাইমুনা জাহান', rollNo: '০৪', phone: '01740000004' }
+    ],
+    'ইবতেদায়ী (১ম-৫ম)': [
+      { id: 'std-601', name: 'মোঃ তালহা জুবায়ের', rollNo: '০১', phone: '01750000001' },
+      { id: 'std-602', name: 'হাফসা জান্নাত', rollNo: '০২', phone: '01750000002' },
+      { id: 'std-603', name: 'মোঃ রায়হানুল হক', rollNo: '০৩', phone: '01750000003' },
+      { id: 'std-604', name: 'মারিয়াম বিনতে আলী', rollNo: '০৪', phone: '01750000004' }
+    ]
+  };
+
+  // Dynamically merge actual admission applicants and results into active student roster
+  const activeClassStudents = React.useMemo(() => {
+    const list = [...(baseClassStudents[attendanceClassFilter] || [])];
+
+    applications.forEach(app => {
+      if (app.applyingClass === attendanceClassFilter || (attendanceClassFilter.includes('১০ম') && app.applyingClass.includes('১০ম'))) {
+        if (!list.some(s => s.id === app.id || s.name === app.studentNameBn)) {
+          list.push({
+            id: app.id,
+            name: app.studentNameBn,
+            rollNo: app.id.slice(-3) || '১১০',
+            phone: app.fatherPhone
+          });
+        }
+      }
+    });
+
+    results.forEach(res => {
+      if (res.classYear === attendanceClassFilter || (attendanceClassFilter.includes('১০ম') && res.classYear.includes('১০ম'))) {
+        if (!list.some(s => s.name.toLowerCase() === res.studentName.toLowerCase())) {
+          list.push({
+            id: res.id,
+            name: res.studentName,
+            rollNo: res.rollNo,
+            phone: '017XXXXXXXX'
+          });
+        }
+      }
+    });
+
+    return list;
+  }, [attendanceClassFilter, applications, results]);
+
+  // Load and sync Teacher Attendance from localStorage for the selected date
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = `padm_teacher_attendance_${attendanceDate}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setTeacherAttendance(JSON.parse(saved));
+      } else {
+        const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }> = {};
+        teachers.forEach(t => {
+          initial[t.id] = { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
+        });
+        setTeacherAttendance(initial);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [attendanceDate, teachers]);
+
+  // Load and sync Student Attendance from localStorage for the selected date and class
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      const key = `padm_student_attendance_${attendanceDate}_${attendanceClassFilter}`;
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        setStudentAttendance(JSON.parse(saved));
+      } else {
+        const initial: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }> = {};
+        activeClassStudents.forEach(s => {
+          initial[s.id] = { status: 'present', remarks: '' };
+        });
+        setStudentAttendance(initial);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, [attendanceDate, attendanceClassFilter, activeClassStudents]);
+
+  // Save teacher attendance
+  const handleSaveTeacherAttendance = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`padm_teacher_attendance_${attendanceDate}`, JSON.stringify(teacherAttendance));
+        setAttendanceToast({ show: true, message: 'শিক্ষক ও স্টাফদের আজকের হাজিরা সফলভাবে সংরক্ষিত হয়েছে!' });
+        setTimeout(() => setAttendanceToast({ show: false, message: '' }), 3500);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // Save student attendance
+  const handleSaveStudentAttendance = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(`padm_student_attendance_${attendanceDate}_${attendanceClassFilter}`, JSON.stringify(studentAttendance));
+        setAttendanceToast({ show: true, message: `${attendanceClassFilter}-এর হাজিরা সফলভাবে সংরক্ষিত হয়েছে!` });
+        setTimeout(() => setAttendanceToast({ show: false, message: '' }), 3500);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  };
+
+  // Mark all teachers with a specific status
+  const handleMarkAllTeachers = (status: 'present' | 'absent') => {
+    setTeacherAttendance(prev => {
+      const updated: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; inTime: string; remarks: string }> = {};
+      teachers.forEach(t => {
+        updated[t.id] = {
+          status,
+          inTime: status === 'present' ? '০৮:৫০ মি.' : '',
+          remarks: prev[t.id]?.remarks || ''
+        };
+      });
+      return updated;
+    });
+  };
+
+  // Mark all students with a specific status
+  const handleMarkAllStudents = (status: 'present' | 'absent') => {
+    setStudentAttendance(prev => {
+      const updated: Record<string, { status: 'present' | 'absent' | 'late' | 'leave'; remarks: string }> = {};
+      activeClassStudents.forEach(s => {
+        updated[s.id] = {
+          status,
+          remarks: prev[s.id]?.remarks || ''
+        };
+      });
+      return updated;
+    });
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
       {/* Top Admin Header Bar */}
@@ -834,6 +1024,23 @@ export default function AdminDashboardPage() {
               </div>
               <span className="text-[11px] text-slate-400 font-mono font-bold">
                 {teachers.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('attendance')}
+              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                activeTab === 'attendance'
+                  ? 'bg-emerald-800 text-white shadow-sm'
+                  : 'text-slate-700 hover:bg-slate-100'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                <UserCheck className="w-4 h-4 text-emerald-400" />
+                <span>দৈনিক হাজিরা ও উপস্থিতি</span>
+              </div>
+              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                নতুন
               </span>
             </button>
 
@@ -1014,6 +1221,26 @@ export default function AdminDashboardPage() {
                   className="bg-[#003580] hover:bg-[#002456] text-[#DDAA00] font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition-colors shrink-0"
                 >
                   জরুরি নোটিশ পরিচালনা করুন →
+                </button>
+              </div>
+
+              {/* Attendance Quick Banner in Overview */}
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-2xs">
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="w-4 h-4 text-[#006837] shrink-0" />
+                  <div>
+                    <span className="font-bold text-slate-900">দৈনিক হাজিরা ও উপস্থিতি:</span>{' '}
+                    <span className="text-slate-600">
+                      আজকের শিক্ষক ও শিক্ষার্থী ডিজিটাল উপস্থিতি রেকর্ড করুন ও রিপোর্ট দেখুন
+                    </span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setActiveTab('attendance')}
+                  className="bg-[#006837] hover:bg-[#00542c] text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-[#DDAA00]" />
+                  <span>হাজিরা খাতায় যান →</span>
                 </button>
               </div>
 
@@ -2574,6 +2801,601 @@ export default function AdminDashboardPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ========================================================
+              TAB: TEACHER & STUDENT ATTENDANCE MANAGEMENT
+             ======================================================== */}
+          {activeTab === 'attendance' && (
+            <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Success Notification Banner */}
+              {attendanceToast.show && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white shadow-lg flex items-center justify-between border-2 border-[#DDAA00] animate-in fade-in slide-in-from-top-4 duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-[#DDAA00] text-slate-900 flex items-center justify-center font-black shrink-0">
+                      <Check className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-white">{attendanceToast.message}</p>
+                      <p className="text-xs text-emerald-100">হাজিরা সফলভাবে ডাটাবেজ ও লোকাল স্টোরেজে সংরক্ষণ করা হয়েছে।</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setAttendanceToast({ show: false, message: '' })}
+                    className="text-emerald-200 hover:text-white p-1 rounded-lg"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+              )}
+
+              {/* Attendance Header & Date Picker */}
+              <div className="bg-white rounded-3xl p-6 shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                  <div className="inline-flex items-center gap-1.5 bg-emerald-100 text-[#006837] text-xs font-bold px-3 py-1 rounded-full mb-2 border border-emerald-300">
+                    <UserCheck className="w-3.5 h-3.5 text-[#006837]" />
+                    <span>ডিজিটাল হাজিরা পোর্টাল</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900">
+                    দৈনিক শিক্ষক ও শিক্ষার্থী হাজিরা ও উপস্থিতি
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসা • তারিখভিত্তিক নিয়মিত হাজিরা রেকর্ড
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 shadow-2xs">
+                    <Calendar className="w-4 h-4 text-[#006837]" />
+                    <span className="text-xs font-bold text-slate-700">তারিখ:</span>
+                    <input
+                      type="date"
+                      value={attendanceDate}
+                      onChange={(e) => setAttendanceDate(e.target.value)}
+                      className="text-xs font-bold text-slate-900 bg-transparent focus:outline-none cursor-pointer"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== 'undefined') window.print();
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer"
+                    title="হাজিরা শিট প্রিন্ট করুন"
+                  >
+                    <Printer className="w-4 h-4 text-[#006837]" />
+                    <span>প্রিন্ট শিট</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Sub-Tabs: 1. Teachers Attendance | 2. Students Attendance */}
+              <div className="bg-white rounded-2xl p-2 shadow-2xs border border-slate-200 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAttendanceSubTab('teachers')}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    attendanceSubTab === 'teachers'
+                      ? 'bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white shadow-sm border-b-2 border-[#DDAA00]'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <Users className="w-4 h-4" />
+                  <span>শিক্ষক ও স্টাফ হাজিরা ({teachers.length} জন)</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setAttendanceSubTab('students')}
+                  className={`flex-1 py-3 px-4 rounded-xl text-xs sm:text-sm font-black flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                    attendanceSubTab === 'students'
+                      ? 'bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white shadow-sm border-b-2 border-[#DDAA00]'
+                      : 'text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <GraduationCap className="w-4 h-4" />
+                  <span>শিক্ষার্থী ডিজিটাল হাজিরা ({activeClassStudents.length} জন)</span>
+                </button>
+              </div>
+
+              {/* ========================================================
+                  SUB-TAB 1: TEACHER & STAFF ATTENDANCE
+                 ======================================================== */}
+              {attendanceSubTab === 'teachers' && (
+                <div className="space-y-6">
+                  {/* Teacher Stats KPI Cards */}
+                  {(() => {
+                    const total = teachers.length;
+                    const present = Object.values(teacherAttendance).filter(a => a.status === 'present').length;
+                    const absent = Object.values(teacherAttendance).filter(a => a.status === 'absent').length;
+                    const late = Object.values(teacherAttendance).filter(a => a.status === 'late').length;
+                    const leave = Object.values(teacherAttendance).filter(a => a.status === 'leave').length;
+                    const rate = total > 0 ? Math.round((present / total) * 100) : 100;
+
+                    return (
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
+                          <span className="text-xs text-slate-500 font-bold block">মোট শিক্ষক ও স্টাফ</span>
+                          <div className="text-2xl font-black text-slate-900 mt-1">{total} জন</div>
+                        </div>
+
+                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-2xs">
+                          <span className="text-xs text-emerald-800 font-bold block">উপস্থিত (Present)</span>
+                          <div className="text-2xl font-black text-[#006837] mt-1 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                            <span>{present}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-2xs">
+                          <span className="text-xs text-rose-800 font-bold block">অনুপস্থিত (Absent)</span>
+                          <div className="text-2xl font-black text-rose-700 mt-1 flex items-center gap-1.5">
+                            <XCircle className="w-5 h-5 text-rose-500" />
+                            <span>{absent}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-amber-50 rounded-2xl p-4 border border-amber-200 shadow-2xs">
+                          <span className="text-xs text-amber-800 font-bold block">দেরিতে / ছুটি</span>
+                          <div className="text-2xl font-black text-amber-700 mt-1 flex items-center gap-1.5">
+                            <Clock className="w-5 h-5 text-amber-600" />
+                            <span>{late + leave}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-2xs col-span-2 sm:col-span-1">
+                          <span className="text-xs text-emerald-200 font-bold block">উপস্থিতির হার</span>
+                          <div className="text-2xl font-black text-[#DDAA00] mt-1">{rate}%</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Teacher Action Bar */}
+                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={attendanceSearchQuery}
+                        onChange={(e) => setAttendanceSearchQuery(e.target.value)}
+                        placeholder="শিক্ষক বা পদবি খুঁজুন..."
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#006837]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAllTeachers('present')}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>সকলকে উপস্থিত করুন</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveTeacherAttendance}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] border-2 border-[#DDAA00] text-white text-xs font-black flex items-center gap-2 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                      >
+                        <Save className="w-4 h-4 text-[#DDAA00]" />
+                        <span>শিক্ষক হাজিরা সংরক্ষণ করুন</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Teachers Table */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs font-black">
+                            <th className="py-3 px-4 w-12 text-center">ক্র.</th>
+                            <th className="py-3 px-4">শিক্ষক ও পদবি</th>
+                            <th className="py-3 px-4 hidden md:table-cell">মোবাইল</th>
+                            <th className="py-3 px-4 text-center">উপস্থিতি স্ট্যাটাস</th>
+                            <th className="py-3 px-4 text-center w-32 hidden sm:table-cell">আগমন সময়</th>
+                            <th className="py-3 px-4 hidden lg:table-cell">মন্তব্য</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs">
+                          {teachers
+                            .filter(t =>
+                              t.name.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
+                              t.designation.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
+                              t.subject.toLowerCase().includes(attendanceSearchQuery.toLowerCase())
+                            )
+                            .map((t, idx) => {
+                              const record = teacherAttendance[t.id] || { status: 'present', inTime: '০৮:৫০ মি.', remarks: '' };
+
+                              return (
+                                <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="py-3 px-4 text-center font-mono font-bold text-slate-500">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex items-center gap-3">
+                                      <div className="relative w-10 h-10 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 shrink-0">
+                                        {t.image ? (
+                                          /* eslint-disable-next-line @next/next/no-img-element */
+                                          <img src={t.image} alt={t.name} className="w-full h-full object-cover" />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center font-bold text-emerald-800 text-sm">
+                                            {t.name.charAt(0) || 'শ'}
+                                          </div>
+                                        )}
+                                      </div>
+                                      <div>
+                                        <strong className="text-slate-900 text-xs sm:text-sm block">{t.name}</strong>
+                                        <span className="text-[11px] text-emerald-800 font-semibold">{t.designation}</span>
+                                        {t.subject && (
+                                          <span className="text-[10px] text-slate-400 block">• বিষয়: {t.subject}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3 px-4 hidden md:table-cell font-mono text-slate-600 font-semibold">
+                                    {t.phone || '017XXXXXXXX'}
+                                  </td>
+
+                                  {/* Status Switcher Buttons */}
+                                  <td className="py-3 px-4 text-center">
+                                    <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setTeacherAttendance(prev => ({
+                                            ...prev,
+                                            [t.id]: { ...record, status: 'present', inTime: record.inTime || '০৮:৫০ মি.' }
+                                          }))
+                                        }
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'present'
+                                            ? 'bg-emerald-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        উপস্থিত
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setTeacherAttendance(prev => ({
+                                            ...prev,
+                                            [t.id]: { ...record, status: 'absent', inTime: '' }
+                                          }))
+                                        }
+                                        className={`px-2.5 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'absent'
+                                            ? 'bg-rose-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        অনুপস্থিত
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setTeacherAttendance(prev => ({
+                                            ...prev,
+                                            [t.id]: { ...record, status: 'late' }
+                                          }))
+                                        }
+                                        className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'late'
+                                            ? 'bg-amber-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        দেরি
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setTeacherAttendance(prev => ({
+                                            ...prev,
+                                            [t.id]: { ...record, status: 'leave', inTime: '' }
+                                          }))
+                                        }
+                                        className={`px-2 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'leave'
+                                            ? 'bg-blue-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        ছুটি
+                                      </button>
+                                    </div>
+                                  </td>
+
+                                  {/* In-time input */}
+                                  <td className="py-3 px-4 text-center hidden sm:table-cell">
+                                    <input
+                                      type="text"
+                                      value={record.inTime || ''}
+                                      onChange={(e) =>
+                                        setTeacherAttendance(prev => ({
+                                          ...prev,
+                                          [t.id]: { ...record, inTime: e.target.value }
+                                        }))
+                                      }
+                                      placeholder="০৮:৫০ মি."
+                                      className="w-24 px-2 py-1 text-center font-mono font-bold text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                    />
+                                  </td>
+
+                                  {/* Remarks input */}
+                                  <td className="py-3 px-4 hidden lg:table-cell">
+                                    <input
+                                      type="text"
+                                      value={record.remarks || ''}
+                                      onChange={(e) =>
+                                        setTeacherAttendance(prev => ({
+                                          ...prev,
+                                          [t.id]: { ...record, remarks: e.target.value }
+                                        }))
+                                      }
+                                      placeholder="মন্তব্য লিখুন..."
+                                      className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ========================================================
+                  SUB-TAB 2: STUDENT DIGITAL ATTENDANCE
+                 ======================================================== */}
+              {attendanceSubTab === 'students' && (
+                <div className="space-y-6">
+                  {/* Class Selection Filter Pills */}
+                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 space-y-2">
+                    <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                      <GraduationCap className="w-4 h-4 text-[#006837]" />
+                      <span>শ্রেণি নির্বাচন করুন:</span>
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {[
+                        '১০ম শ্রেণি (দাখিল)',
+                        '৯ম শ্রেণি',
+                        '৮ম শ্রেণি (জেডিসি)',
+                        '৭ম শ্রেণি',
+                        '৬ষ্ঠ শ্রেণি',
+                        'ইবতেদায়ী (১ম-৫ম)'
+                      ].map((cls) => (
+                        <button
+                          key={cls}
+                          type="button"
+                          onClick={() => setAttendanceClassFilter(cls)}
+                          className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            attendanceClassFilter === cls
+                              ? 'bg-[#006837] text-white shadow-sm border-2 border-[#DDAA00]'
+                              : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                          }`}
+                        >
+                          {cls}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Student Stats KPI Cards */}
+                  {(() => {
+                    const total = activeClassStudents.length;
+                    const present = Object.values(studentAttendance).filter(a => a.status === 'present').length;
+                    const absent = Object.values(studentAttendance).filter(a => a.status === 'absent').length;
+                    const leave = Object.values(studentAttendance).filter(a => a.status === 'leave' || a.status === 'late').length;
+                    const rate = total > 0 ? Math.round((present / total) * 100) : 100;
+
+                    return (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                        <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs">
+                          <span className="text-xs text-slate-500 font-bold block">{attendanceClassFilter} মোট শিক্ষার্থী</span>
+                          <div className="text-2xl font-black text-slate-900 mt-1">{total} জন</div>
+                        </div>
+
+                        <div className="bg-emerald-50 rounded-2xl p-4 border border-emerald-200 shadow-2xs">
+                          <span className="text-xs text-emerald-800 font-bold block">উপস্থিত শিক্ষার্থী</span>
+                          <div className="text-2xl font-black text-[#006837] mt-1 flex items-center gap-1.5">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600" />
+                            <span>{present}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-rose-50 rounded-2xl p-4 border border-rose-200 shadow-2xs">
+                          <span className="text-xs text-rose-800 font-bold block">অনুপস্থিত</span>
+                          <div className="text-2xl font-black text-rose-700 mt-1 flex items-center gap-1.5">
+                            <XCircle className="w-5 h-5 text-rose-500" />
+                            <span>{absent}</span>
+                          </div>
+                        </div>
+
+                        <div className="bg-gradient-to-br from-[#00341c] to-[#006837] text-white rounded-2xl p-4 border border-emerald-700 shadow-2xs">
+                          <span className="text-xs text-emerald-200 font-bold block">উপস্থিতির শতকরা হার</span>
+                          <div className="text-2xl font-black text-[#DDAA00] mt-1">{rate}%</div>
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Student Action Bar */}
+                  <div className="bg-white rounded-2xl p-4 shadow-2xs border border-slate-200 flex flex-col sm:flex-row justify-between items-center gap-3">
+                    <div className="relative w-full sm:w-72">
+                      <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                      <input
+                        type="text"
+                        value={attendanceSearchQuery}
+                        onChange={(e) => setAttendanceSearchQuery(e.target.value)}
+                        placeholder="শিক্ষার্থীর নাম বা রোল খুঁজুন..."
+                        className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#006837]"
+                      />
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAllStudents('present')}
+                        className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-[#006837] text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>সকলকে উপস্থিত করুন</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleMarkAllStudents('absent')}
+                        className="px-3 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-300 text-rose-700 text-xs font-bold transition-colors cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                        <span>সকলকে অনুপস্থিত</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleSaveStudentAttendance}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] hover:from-[#002614] hover:to-[#005a30] border-2 border-[#DDAA00] text-white text-xs font-black flex items-center gap-2 shadow-sm transition-all hover:scale-105 active:scale-95 cursor-pointer"
+                      >
+                        <Save className="w-4 h-4 text-[#DDAA00]" />
+                        <span>শিক্ষার্থী হাজিরা সংরক্ষণ করুন</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Student Attendance Table */}
+                  <div className="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 text-xs font-black">
+                            <th className="py-3 px-4 w-16 text-center">রোল</th>
+                            <th className="py-3 px-4">শিক্ষার্থীর নাম</th>
+                            <th className="py-3 px-4 hidden md:table-cell">শ্রেণি</th>
+                            <th className="py-3 px-4 hidden sm:table-cell">অভিভাবক মোবাইল</th>
+                            <th className="py-3 px-4 text-center">উপস্থিতি স্ট্যাটাস</th>
+                            <th className="py-3 px-4 hidden lg:table-cell">মন্তব্য</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 text-xs">
+                          {activeClassStudents
+                            .filter(s =>
+                              s.name.toLowerCase().includes(attendanceSearchQuery.toLowerCase()) ||
+                              s.rollNo.includes(attendanceSearchQuery)
+                            )
+                            .map((s) => {
+                              const record = studentAttendance[s.id] || { status: 'present', remarks: '' };
+
+                              return (
+                                <tr key={s.id} className="hover:bg-slate-50/80 transition-colors">
+                                  <td className="py-3 px-4 text-center font-mono font-black text-[#006837]">
+                                    <span className="bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
+                                      {s.rollNo}
+                                    </span>
+                                  </td>
+
+                                  <td className="py-3 px-4 font-bold text-slate-900 text-xs sm:text-sm">
+                                    {s.name}
+                                  </td>
+
+                                  <td className="py-3 px-4 hidden md:table-cell text-slate-600 font-semibold">
+                                    {attendanceClassFilter}
+                                  </td>
+
+                                  <td className="py-3 px-4 hidden sm:table-cell font-mono text-slate-600">
+                                    {s.phone}
+                                  </td>
+
+                                  {/* Student Status Switcher */}
+                                  <td className="py-3 px-4 text-center">
+                                    <div className="inline-flex rounded-xl bg-slate-100 p-1 border border-slate-200 gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setStudentAttendance(prev => ({
+                                            ...prev,
+                                            [s.id]: { ...record, status: 'present' }
+                                          }))
+                                        }
+                                        className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'present'
+                                            ? 'bg-emerald-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        উপস্থিত
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setStudentAttendance(prev => ({
+                                            ...prev,
+                                            [s.id]: { ...record, status: 'absent' }
+                                          }))
+                                        }
+                                        className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'absent'
+                                            ? 'bg-rose-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        অনুপস্থিত
+                                      </button>
+
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setStudentAttendance(prev => ({
+                                            ...prev,
+                                            [s.id]: { ...record, status: 'leave' }
+                                          }))
+                                        }
+                                        className={`px-3 py-1 rounded-lg text-xs font-black transition-all cursor-pointer ${
+                                          record.status === 'leave'
+                                            ? 'bg-blue-600 text-white shadow-2xs'
+                                            : 'text-slate-600 hover:bg-slate-200'
+                                        }`}
+                                      >
+                                        ছুটি
+                                      </button>
+                                    </div>
+                                  </td>
+
+                                  <td className="py-3 px-4 hidden lg:table-cell">
+                                    <input
+                                      type="text"
+                                      value={record.remarks || ''}
+                                      onChange={(e) =>
+                                        setStudentAttendance(prev => ({
+                                          ...prev,
+                                          [s.id]: { ...record, remarks: e.target.value }
+                                        }))
+                                      }
+                                      placeholder="মন্তব্য লিখুন..."
+                                      className="w-full px-2.5 py-1 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-1 focus:ring-[#006837]"
+                                    />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
