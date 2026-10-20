@@ -1287,9 +1287,6 @@ export default function AdminDashboardPage() {
                   <Bell className="w-4 h-4" />
                   <span>নোটিশ ব্যবস্থাপনা</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono font-bold">
-                  {notices.length}
-                </span>
               </button>
             )}
 
@@ -1325,9 +1322,6 @@ export default function AdminDashboardPage() {
                   <Sparkles className="w-4 h-4 text-emerald-400" />
                   <span>সুযোগ-সুবিধাসমূহ</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono font-bold">
-                  {facilities.length}
-                </span>
               </button>
             )}
 
@@ -1344,9 +1338,6 @@ export default function AdminDashboardPage() {
                   <Camera className="w-4 h-4 text-amber-500" />
                   <span>ফটো গ্যালারি</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono font-bold">
-                  {gallery.length}
-                </span>
               </button>
             )}
 
@@ -1363,9 +1354,6 @@ export default function AdminDashboardPage() {
                   <Users className="w-4 h-4" />
                   <span>শিক্ষক ও স্টাফ</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono font-bold">
-                  {teachers.length}
-                </span>
               </button>
             )}
 
@@ -1401,9 +1389,6 @@ export default function AdminDashboardPage() {
                   <Quote className="w-4 h-4 text-emerald-500" />
                   <span>কর্তৃপক্ষের বাণী</span>
                 </div>
-                <span className="text-[11px] text-slate-400 font-mono font-bold">
-                  ২টি বাণী
-                </span>
               </button>
             )}
 
@@ -1509,25 +1494,9 @@ export default function AdminDashboardPage() {
                   <ShieldCheck className="w-4 h-4 text-[#DDAA00]" />
                   <span>প্রোফাইল ও ইউজার কন্ট্রোল</span>
                 </div>
-                <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded shadow-2xs">
-                  {adminUsers.length} জন
-                </span>
               </button>
             )}
           </nav>
-
-          <div className="mt-6 pt-4 border-t border-slate-100 px-2 space-y-2">
-            <button
-              onClick={() => {
-                logoutAdmin();
-                router.push('/admin/login');
-              }}
-              className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm hover:shadow cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>লগআউট করুন</span>
-            </button>
-          </div>
         </aside>
 
         {/* Main Content Area */}
