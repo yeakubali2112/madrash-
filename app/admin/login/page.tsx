@@ -9,16 +9,14 @@ import {
   Lock,
   User,
   ArrowRight,
-  School,
-  AlertCircle,
-  KeyRound
+  AlertCircle
 } from 'lucide-react';
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const { isAdmin, isLoaded, loginAdmin, info } = useMadrasah();
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('admin');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -36,15 +34,6 @@ export default function AdminLoginPage() {
       router.push('/admin');
     } else {
       setError('ভুল ইউজারনেম বা পাসওয়ার্ড! অথবা অ্যাকাউন্টটি বর্তমানে নিষ্ক্রিয় রয়েছে।');
-    }
-  };
-
-  const handleQuickLogin = (user = 'admin', pass = 'madrasah123') => {
-    setUsername(user);
-    setPassword(pass);
-    const success = loginAdmin(pass, user);
-    if (success) {
-      router.push('/admin');
     }
   };
 
@@ -76,51 +65,6 @@ export default function AdminLoginPage() {
 
         {/* Form Body */}
         <div className="p-8 space-y-6">
-          {/* Demo Credentials Helper Box */}
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 text-xs text-amber-900 space-y-2">
-            <div className="font-bold flex items-center justify-between text-amber-950">
-              <div className="flex items-center gap-1.5">
-                <KeyRound className="w-4 h-4 text-amber-600" />
-                <span>ডেমো ইউজার এক্সেস:</span>
-              </div>
-              <span className="text-[10px] text-amber-700 font-normal">ক্লিক করলেই ফিল হবে</span>
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 pt-1">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admin', 'madrasah123')}
-                className="text-left p-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 transition-colors"
-              >
-                <div className="font-bold text-amber-950 text-[11px]">👑 সুপার অ্যাডমিন</div>
-                <div className="text-[10px] text-slate-500 font-mono">admin / madrasah123</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('attendance_staff', 'att123')}
-                className="text-left p-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 transition-colors"
-              >
-                <div className="font-bold text-amber-950 text-[11px]">📋 হাজিরা ইনচার্জ</div>
-                <div className="text-[10px] text-slate-500 font-mono">attendance_staff / att123</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('exam_admin', 'exam123')}
-                className="text-left p-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 transition-colors"
-              >
-                <div className="font-bold text-amber-950 text-[11px]">🏆 ফলাফল নিয়ন্ত্রক</div>
-                <div className="text-[10px] text-slate-500 font-mono">exam_admin / exam123</div>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('admission_staff', 'adm123')}
-                className="text-left p-1.5 rounded-lg bg-white border border-amber-300 hover:bg-amber-100 transition-colors"
-              >
-                <div className="font-bold text-amber-950 text-[11px]">🎓 ভর্তি কর্মকর্তা</div>
-                <div className="text-[10px] text-slate-500 font-mono">admission_staff / adm123</div>
-              </button>
-            </div>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 mb-1.5">
@@ -133,7 +77,7 @@ export default function AdminLoginPage() {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="admin"
+                  placeholder="ইউজারনেম লিখুন"
                   className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 text-sm font-medium"
                 />
               </div>
@@ -172,17 +116,6 @@ export default function AdminLoginPage() {
               <ArrowRight className="w-4 h-4 text-[#DDAA00]" />
             </button>
           </form>
-
-          {/* Quick One-Click Demo Access */}
-          <div className="pt-2 text-center border-t border-slate-100">
-            <button
-              type="button"
-              onClick={handleQuickLogin}
-              className="text-xs font-bold text-[#003580] hover:text-[#002b66] hover:underline"
-            >
-              ⚡ এক ক্লিকে ডেমো অ্যাডমিন হিসেবে প্রবেশ করুন
-            </button>
-          </div>
         </div>
       </div>
     </div>
