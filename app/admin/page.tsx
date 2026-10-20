@@ -1550,45 +1550,6 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Urgent Notice Quick Status in Overview */}
-              <div className="bg-amber-50/70 border border-amber-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <Megaphone className="w-4 h-4 text-amber-600 shrink-0" />
-                  <div>
-                    <span className="font-bold text-slate-900">জরুরি নোটিশ (স্ক্রলিং টিককার):</span>{' '}
-                    <span className="text-slate-600">
-                      {tickerSettings?.isEnabled ? `${urgentNotices.filter(n => n.isActive).length}টি নোটিশ বর্তমানে স্ক্রল হচ্ছে` : 'বারটি বর্তমানে বন্ধ রাখা হয়েছে'}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveTab('urgent-notices')}
-                  className="bg-[#003580] hover:bg-[#002456] text-[#DDAA00] font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition-colors shrink-0"
-                >
-                  জরুরি নোটিশ পরিচালনা করুন →
-                </button>
-              </div>
-
-              {/* Attendance Quick Banner in Overview */}
-              <div className="bg-gradient-to-r from-emerald-50 via-teal-50/60 to-emerald-50 border border-emerald-300 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs shadow-sm">
-                <div className="flex items-center gap-2.5">
-                  <UserCheck className="w-4 h-4 text-[#006837] shrink-0" />
-                  <div>
-                    <span className="font-bold text-slate-900">দৈনিক হাজিরা ও উপস্থিতি:</span>{' '}
-                    <span className="text-slate-600">
-                      আজকের শিক্ষক ও শিক্ষার্থী ডিজিটাল উপস্থিতি রেকর্ড করুন ও রিপোর্ট দেখুন
-                    </span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setActiveTab('attendance')}
-                  className="bg-[#006837] hover:bg-[#00542c] text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-sm transition-colors shrink-0 flex items-center gap-1.5 cursor-pointer"
-                >
-                  <UserCheck className="w-3.5 h-3.5 text-[#DDAA00]" />
-                  <span>হাজিরা খাতায় যান →</span>
-                </button>
-              </div>
-
               {/* Recent Applications Section */}
               <div className="space-y-3 pt-4 border-t border-slate-200">
                 <div className="flex justify-between items-center">
