@@ -1181,69 +1181,6 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* Top Admin Header Bar */}
-      <header className="bg-gradient-to-r from-[#00341c] via-[#006837] to-[#003580] text-white px-4 py-2.5 border-b border-[#DDAA00]/40 sticky top-0 z-40 shadow-md">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div
-            onClick={() => window.location.reload()}
-            className="flex items-center gap-3 cursor-pointer group"
-            title="অ্যাডমিন প্যানেল রিলোড করুন"
-          >
-            <div className="relative w-10 h-10 shrink-0 drop-shadow-md group-hover:scale-105 transition-transform">
-              <Image
-                src="/logo.png"
-                alt={info.name}
-                width={40}
-                height={40}
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-base md:text-lg leading-tight text-white group-hover:text-emerald-100 transition-colors">
-                  মাদ্রাসা অ্যাডমিন কন্ট্রোল প্যানেল
-                </h1>
-                <span className="bg-[#DDAA00] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded shadow-sm">
-                  লাইভ সিস্টেম
-                </span>
-              </div>
-              <p className="text-xs text-emerald-200">{info.name} • {info.location || "দুপচাঁচিয়া, বগুড়া"}</p>
-            </div>
-          </div>
-
-          {/* User profile info & quick logout */}
-          <div className="flex items-center gap-2.5">
-            <div className="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-xl text-right">
-              <div className="w-8 h-8 rounded-lg bg-[#DDAA00] text-slate-950 font-black flex items-center justify-center text-xs shadow shrink-0">
-                {currentAdminUser?.name ? currentAdminUser.name.charAt(0) : 'অ্যা'}
-              </div>
-              <div className="hidden sm:block text-right">
-                <div className="text-xs font-bold text-white flex items-center gap-1.5 justify-end">
-                  <span>{currentAdminUser?.name || 'প্রধান সুপার অ্যাডমিন'}</span>
-                  {currentAdminUser?.isSuperAdmin ? (
-                    <span className="bg-[#DDAA00] text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded">সুপার</span>
-                  ) : (
-                    <span className="bg-emerald-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded">স্টাফ</span>
-                  )}
-                </div>
-                <div className="text-[10px] text-emerald-200">{currentAdminUser?.role || 'সুপার অ্যাডমিন'} • @{currentAdminUser?.username || 'admin'}</div>
-              </div>
-            </div>
-
-            <button
-              onClick={() => {
-                logoutAdmin();
-                router.push('/admin/login');
-              }}
-              className="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
-              title="লগআউট করুন"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden md:inline">লগআউট</span>
-            </button>
-          </div>
-        </div>
-      </header>
 
       {/* Test / Preview Mode Banner */}
       {!isSuperAdminUser && currentAdminUser && (

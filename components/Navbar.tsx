@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useMadrasah } from '@/context/MadrasahContext';
 import {
   Menu,
@@ -18,12 +18,14 @@ import {
   ShieldCheck,
   Calendar,
   LogIn,
+  LogOut,
   Phone
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const pathname = usePathname();
-  const { info, isAdmin, loggedStudent } = useMadrasah();
+  const router = useRouter();
+  const { info, isAdmin, loggedStudent, currentAdminUser, logoutAdmin } = useMadrasah();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const isAdminRoute = pathname?.startsWith('/admin');
 
@@ -89,9 +91,54 @@ export const Navbar: React.FC = () => {
             </div>
           </Link>
 
-          {/* Right Action: Login / Student Profile button + Mobile Menu Toggle */}
+          {/* Right Action: Login / Student Profile or Admin User Profile & Logout */}
           <div className="flex items-center gap-3">
-            {!isAdminRoute && (
+            {isAdminRoute ? (
+              isAdmin && (
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {/* Admin User Profile Badge */}
+                  <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 hover:border-emerald-300 px-2.5 py-1.5 rounded-xl transition-all shadow-2xs">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#006837] to-emerald-700 text-white font-black flex items-center justify-center text-xs shadow-xs shrink-0 ring-1 ring-emerald-200">
+                      {currentAdminUser?.name ? currentAdminUser.name.charAt(0) : 'অ্যা'}
+                    </div>
+                    <div className="text-left leading-tight pr-1">
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-black text-xs text-slate-900 truncate max-w-[100px] sm:max-w-[160px]">
+                          {currentAdminUser?.name || 'প্রধান সুপার অ্যাডমিন'}
+                        </span>
+                        {currentAdminUser?.isSuperAdmin ? (
+                          <span className="bg-[#DDAA00] text-slate-950 font-black text-[9px] px-1.5 py-0.2 rounded hidden sm:inline-block">
+                            সুপার
+                          </span>
+                        ) : (
+                          <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-black text-[9px] px-1.5 py-0.2 rounded hidden sm:inline-block">
+                            স্টাফ
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-slate-500 font-semibold mt-0.5 truncate max-w-[110px] sm:max-w-[170px]">
+                        <span className="text-[#006837] font-bold">{currentAdminUser?.role || 'সুপার অ্যাডমিন'}</span>
+                        <span className="font-mono text-slate-400"> • @{currentAdminUser?.username || 'admin'}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Top Navbar Logout Button */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logoutAdmin();
+                      router.push('/admin/login');
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-rose-600 hover:bg-rose-700 active:scale-95 text-white text-xs font-black px-3 py-2 sm:px-3.5 sm:py-2 rounded-xl transition-all shadow-sm hover:shadow cursor-pointer"
+                    title="অ্যাডমিন প্যানেল থেকে লগআউট করুন"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="font-black">লগআউট</span>
+                  </button>
+                </div>
+              )
+            ) : (
               loggedStudent ? (
                 <Link
                   href="/login"
