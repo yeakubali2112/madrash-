@@ -24,7 +24,8 @@ import {
   PrayerTimeConfig,
   defaultPrayerConfig,
   AdminUser,
-  defaultAdminUsers
+  defaultAdminUsers,
+  availablePermissions
 } from './data';
 
 const STORAGE_KEYS = {
@@ -257,9 +258,51 @@ export const getStoredAdminUsers = (): AdminUser[] => {
   if (typeof window === 'undefined') return defaultAdminUsers;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.ADMIN_USERS);
-    if (!data) return defaultAdminUsers;
+    if (!data) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(defaultAdminUsers));
+      return defaultAdminUsers;
+    }
     const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultAdminUsers;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(defaultAdminUsers));
+      return defaultAdminUsers;
+    }
+
+    const allPermIds = availablePermissions.map(p => p.id);
+    let modified = false;
+    let hasSuper = false;
+
+    const healedUsers: AdminUser[] = parsed.map((user: any) => {
+      const isSuper = user.isSuperAdmin === true || user.username === 'admin' || (user.role && String(user.role).toLowerCase().includes('সুপার'));
+      if (isSuper) {
+        hasSuper = true;
+        const currentPerms = Array.isArray(user.permissions) ? user.permissions : [];
+        const missingPerms = allPermIds.filter(id => !currentPerms.includes(id));
+        if (missingPerms.length > 0 || !user.isSuperAdmin) {
+          modified = true;
+          return {
+            ...user,
+            isSuperAdmin: true,
+            permissions: allPermIds
+          };
+        }
+      }
+      return {
+        ...user,
+        permissions: Array.isArray(user.permissions) ? user.permissions : []
+      };
+    });
+
+    if (!hasSuper) {
+      healedUsers.unshift(defaultAdminUsers[0]);
+      modified = true;
+    }
+
+    if (modified) {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(healedUsers));
+    }
+
+    return healedUsers;
   } catch {
     return defaultAdminUsers;
   }
@@ -278,7 +321,18 @@ export const getCurrentAdminUser = (): AdminUser | null => {
   if (typeof window === 'undefined') return null;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
-    return data ? JSON.parse(data) : null;
+    if (!data) return null;
+    const parsed = JSON.parse(data);
+    if (!parsed) return null;
+    if (parsed.username === 'admin' || parsed.isSuperAdmin) {
+      const allPermIds = availablePermissions.map(p => p.id);
+      return {
+        ...parsed,
+        isSuperAdmin: true,
+        permissions: allPermIds
+      };
+    }
+    return parsed;
   } catch {
     return null;
   }

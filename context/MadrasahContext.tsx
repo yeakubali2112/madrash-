@@ -115,6 +115,8 @@ interface MadrasahContextType {
   updateAdminUser: (id: string, user: Partial<AdminUser>) => void;
   deleteAdminUser: (id: string) => boolean;
   toggleAdminUserStatus: (id: string) => void;
+  switchAdminUser: (userIdOrUsername: string) => void;
+  restoreSuperAdmin: () => void;
   loginAdmin: (pass: string, username?: string) => boolean;
   logoutAdmin: () => void;
   resetToDefaults: () => void;
@@ -162,9 +164,12 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
     const storedCurrent = getCurrentAdminUser();
     if (storedCurrent) {
-      setCurrentAdminUserState(storedCurrent);
+      const match = storedUsers.find(u => u.id === storedCurrent.id || u.username.toLowerCase() === storedCurrent.username.toLowerCase());
+      const effectiveUser = match || storedCurrent;
+      setCurrentAdminUserState(effectiveUser);
+      setCurrentAdminUser(effectiveUser);
     } else if (loggedIn) {
-      const superAdmin = storedUsers.find(u => u.isSuperAdmin) || defaultAdminUsers[0];
+      const superAdmin = storedUsers.find(u => u.isSuperAdmin || u.username === 'admin') || defaultAdminUsers[0];
       setCurrentAdminUserState(superAdmin);
       setCurrentAdminUser(superAdmin);
     }
@@ -507,6 +512,22 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveStoredAdminUsers(updated);
   };
 
+  const switchAdminUser = (userIdOrUsername: string) => {
+    const target = adminUsers.find(
+      u => u.id === userIdOrUsername || u.username.toLowerCase() === userIdOrUsername.toLowerCase()
+    );
+    if (target) {
+      setCurrentAdminUserState(target);
+      setCurrentAdminUser(target);
+    }
+  };
+
+  const restoreSuperAdmin = () => {
+    const superAdmin = adminUsers.find(u => u.isSuperAdmin || u.username === 'admin') || defaultAdminUsers[0];
+    setCurrentAdminUserState(superAdmin);
+    setCurrentAdminUser(superAdmin);
+  };
+
   const loginAdmin = (pass: string, username?: string): boolean => {
     const cleanPass = pass.trim();
     const cleanUser = (username || '').trim().toLowerCase();
@@ -598,6 +619,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateAdminUser,
         deleteAdminUser,
         toggleAdminUserStatus,
+        switchAdminUser,
+        restoreSuperAdmin,
         updateInfo,
         updatePrayerConfig,
         updateLoggedStudent,

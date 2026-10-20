@@ -894,6 +894,7 @@ export const defaultPrayerConfig: PrayerTimeConfig = {
 export interface AdminPermission {
   id: string;
   name: string;
+  title: string;
   description: string;
   category: 'core' | 'academic' | 'media' | 'system';
 }
@@ -914,22 +915,22 @@ export interface AdminUser {
 }
 
 export const availablePermissions: AdminPermission[] = [
-  { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
-  { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
-  { id: 'results', name: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },
-  { id: 'admissions', name: 'ভর্তি আবেদন', description: 'অনলাইন নতুন ভর্তি আবেদন যাচাই, অনুমোদন ও বাতিল', category: 'academic' },
-  { id: 'teachers', name: 'শিক্ষক ও স্টাফ তালিকা', description: 'শিক্ষক-কর্মচারীদের তথ্য ও প্রোফাইল ব্যবস্থাপনা', category: 'academic' },
-  { id: 'notices', name: 'নোটিশ ব্যবস্থাপনা', description: 'সাধারণ ও অ্যাকাডেমিক নোটিশ যুক্ত ও প্রকাশ', category: 'core' },
-  { id: 'urgent-notices', name: 'জরুরি নোটিশ (স্ক্রল)', description: 'হোমপেজের জরুরি স্ক্রলিং টিকার নোটিশ নিয়ন্ত্রণ', category: 'core' },
-  { id: 'hero', name: 'হিরো ব্যানার স্লাইডশো', description: 'হোমপেজের মূল ব্যানার, ছবি ও স্লাইডশো পরিবর্তন', category: 'media' },
-  { id: 'facilities', name: 'সুযোগ-সুবিধাসমূহ', description: 'মাদ্রাসার ল্যাব, লাইব্রেরি ও ক্যাম্পাসের সুবিধা এডিট', category: 'media' },
-  { id: 'gallery', name: 'ফটো গ্যালারি', description: 'ক্যাম্পাস, অনুষ্ঠান ও পুরস্কারের ছবি আপলোড', category: 'media' },
-  { id: 'authorities', name: 'কর্তৃপক্ষের বাণী', description: 'সভাপতি ও অধ্যক্ষ মহোদয়ের বাণী ও ছবি পরিবর্তন', category: 'media' },
-  { id: 'messages', name: 'প্রাপ্ত বার্তা (ইনবক্স)', description: 'ওয়েবসাইটের যোগাযোগ ফরম থেকে আসা মেসেজ দেখা', category: 'core' },
-  { id: 'prayer', name: 'সালাতের সময়সূচি', description: 'পাঁচ ওয়াক্ত সালাতের আযান ও জামাতের সময়সূচি পরিবর্তন', category: 'core' },
-  { id: 'settings', name: 'মাদ্রাসা সাধারণ সেটিংস', description: 'মাদ্রাসার নাম, কোড, ঠিকানা, ফোন ও অন্যান্য সেটিংস', category: 'system' },
-  { id: 'backup', name: 'ব্যাকআপ ও রিস্টোর', description: 'ডাটাবেজ এক্সপোর্ট, ইমপোর্ট ও ব্যাকআপ ফাইল ডাউনলোড', category: 'system' },
-  { id: 'users', name: 'ইউজার ও পারমিশন কন্ট্রোল', description: 'নতুন অ্যাডমিন তৈরি ও তাদের এক্সেস পারমিশন নিয়ন্ত্রণ', category: 'system' }
+  { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', title: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
+  { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', title: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
+  { id: 'results', name: 'ফলাফল ও মার্কস', title: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },
+  { id: 'admissions', name: 'ভর্তি আবেদন', title: 'ভর্তি আবেদন', description: 'অনলাইন নতুন ভর্তি আবেদন যাচাই, অনুমোদন ও বাতিল', category: 'academic' },
+  { id: 'teachers', name: 'শিক্ষক ও স্টাফ তালিকা', title: 'শিক্ষক ও স্টাফ তালিকা', description: 'শিক্ষক-কর্মচারীদের তথ্য ও প্রোফাইল ব্যবস্থাপনা', category: 'academic' },
+  { id: 'notices', name: 'নোটিশ ব্যবস্থাপনা', title: 'নোটিশ ব্যবস্থাপনা', description: 'সাধারণ ও অ্যাকাডেমিক নোটিশ যুক্ত ও প্রকাশ', category: 'core' },
+  { id: 'urgent-notices', name: 'জরুরি নোটিশ (স্ক্রল)', title: 'জরুরি নোটিশ (স্ক্রল)', description: 'হোমপেজের জরুরি স্ক্রলিং টিকার নোটিশ নিয়ন্ত্রণ', category: 'core' },
+  { id: 'hero', name: 'হিরো ব্যানার স্লাইডশো', title: 'হিরো ব্যানার স্লাইডশো', description: 'হোমপেজের মূল ব্যানার, ছবি ও স্লাইডশো পরিবর্তন', category: 'media' },
+  { id: 'facilities', name: 'সুযোগ-সুবিধাসমূহ', title: 'সুযোগ-সুবিধাসমূহ', description: 'মাদ্রাসার ল্যাব, লাইব্রেরি ও ক্যাম্পাসের সুবিধা এডিট', category: 'media' },
+  { id: 'gallery', name: 'ফটো গ্যালারি', title: 'ফটো গ্যালারি', description: 'ক্যাম্পাস, অনুষ্ঠান ও পুরস্কারের ছবি আপলোড', category: 'media' },
+  { id: 'authorities', name: 'কর্তৃপক্ষের বাণী', title: 'কর্তৃপক্ষের বাণী', description: 'সভাপতি ও অধ্যক্ষ মহোদয়ের বাণী ও ছবি পরিবর্তন', category: 'media' },
+  { id: 'messages', name: 'প্রাপ্ত বার্তা (ইনবক্স)', title: 'প্রাপ্ত বার্তা (ইনবক্স)', description: 'ওয়েবসাইটের যোগাযোগ ফরম থেকে আসা মেসেজ দেখা', category: 'core' },
+  { id: 'prayer', name: 'সালাতের সময়সূচি', title: 'সালাতের সময়সূচি', description: 'পাঁচ ওয়াক্ত সালাতের আযান ও জামাতের সময়সূচি পরিবর্তন', category: 'core' },
+  { id: 'settings', name: 'মাদ্রাসা সাধারণ সেটিংস', title: 'মাদ্রাসা সাধারণ সেটিংস', description: 'মাদ্রাসার নাম, কোড, ঠিকানা, ফোন ও অন্যান্য সেটিংস', category: 'system' },
+  { id: 'backup', name: 'ব্যাকআপ ও রিস্টোর', title: 'ব্যাকআপ ও রিস্টোর', description: 'ডাটাবেজ এক্সপোর্ট, ইমপোর্ট ও ব্যাকআপ ফাইল ডাউনলোড', category: 'system' },
+  { id: 'users', name: 'ইউজার ও পারমিশন কন্ট্রোল', title: 'ইউজার ও পারমিশন কন্ট্রোল', description: 'নতুন অ্যাডমিন তৈরি ও তাদের এক্সেস পারমিশন নিয়ন্ত্রণ', category: 'system' }
 ];
 
 export const defaultAdminUsers: AdminUser[] = [

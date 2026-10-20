@@ -98,6 +98,8 @@ export default function AdminDashboardPage() {
     updateAdminUser,
     deleteAdminUser,
     toggleAdminUserStatus,
+    switchAdminUser,
+    restoreSuperAdmin,
     info,
     updateInfo,
     heroSettings,
@@ -143,8 +145,15 @@ export default function AdminDashboardPage() {
   const [mounted, setMounted] = useState(false);
 
   // User Permission verification
-  const userPermissions = currentAdminUser?.permissions || availablePermissions.map(p => p.id);
-  const isSuperAdminUser = currentAdminUser ? !!currentAdminUser.isSuperAdmin : true;
+  const isSuperAdminUser =
+    !currentAdminUser ||
+    currentAdminUser.isSuperAdmin === true ||
+    currentAdminUser.username.toLowerCase() === 'admin' ||
+    (currentAdminUser.role && String(currentAdminUser.role).toLowerCase().includes('সুপার'));
+
+  const userPermissions = isSuperAdminUser
+    ? availablePermissions.map(p => p.id)
+    : (currentAdminUser?.permissions || []);
 
   const canAccessTab = (tabId: string) => {
     if (isSuperAdminUser) return true;
@@ -588,6 +597,7 @@ export default function AdminDashboardPage() {
   });
   const [userSearchQuery, setUserSearchQuery] = useState('');
   const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [modalPermCategory, setModalPermCategory] = useState<'all' | 'academic' | 'core' | 'media' | 'system'>('all');
   const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
   const [userToast, setUserToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
 
@@ -738,6 +748,20 @@ export default function AdminDashboardPage() {
     setUserForm(prev => ({
       ...prev,
       permissions: availablePermissions.map(p => p.id)
+    }));
+  };
+
+  const selectAcademicPreset = () => {
+    setUserForm(prev => ({
+      ...prev,
+      permissions: ['overview', 'attendance', 'teachers', 'results', 'admissions']
+    }));
+  };
+
+  const selectMediaPreset = () => {
+    setUserForm(prev => ({
+      ...prev,
+      permissions: ['overview', 'notices', 'urgent-notices', 'hero', 'facilities', 'gallery', 'authorities']
     }));
   };
 
@@ -1221,6 +1245,29 @@ export default function AdminDashboardPage() {
         </div>
       </header>
 
+      {/* Test / Preview Mode Banner */}
+      {!isSuperAdminUser && currentAdminUser && (
+        <div className="bg-amber-400 text-slate-950 px-4 py-2.5 text-xs font-bold border-b border-amber-500 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-2 sticky top-[58px] z-30">
+          <div className="flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 shrink-0 text-slate-950" />
+            <span>
+              আপনি বর্তমানে <strong>&ldquo;{currentAdminUser.name}&rdquo;</strong> (@{currentAdminUser.username}) হিসেবে প্যানেল দেখছেন। এই ইউজারের অনুমোদিত ({(currentAdminUser.permissions || []).length}টি) অপশন কার্যকর আছে।
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              restoreSuperAdmin();
+              setActiveTab('users');
+            }}
+            className="bg-slate-900 hover:bg-black text-[#DDAA00] hover:text-white px-3 py-1.5 rounded-lg text-xs font-black shadow transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#DDAA00]" />
+            <span>👑 সুপার অ্যাডমিনে ফিরে যান</span>
+          </button>
+        </div>
+      )}
+
       {/* Main Admin Body */}
       <div className="max-w-7xl mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-6">
         {/* Sidebar Nav */}
@@ -1511,22 +1558,22 @@ export default function AdminDashboardPage() {
               </button>
             )}
 
-            {/* NEW TAB: USER & PERMISSION PROFILES */}
+            {/* TAB: USER & PERMISSION PROFILES */}
             {canAccessTab('users') && (
               <button
                 onClick={() => setActiveTab('users')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-all cursor-pointer ${
                   activeTab === 'users'
-                    ? 'bg-emerald-800 text-white shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    ? 'bg-emerald-800 text-white shadow-sm font-black'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-emerald-900'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <ShieldCheck className="w-4 h-4 text-[#DDAA00]" />
-                  <span>ইউজার ও পারমিশন</span>
+                  <span>প্রোফাইল ও ইউজার কন্ট্রোল</span>
                 </div>
-                <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded">
-                  {adminUsers.length} প্রোফাইল
+                <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded shadow-2xs">
+                  {adminUsers.length} জন
                 </span>
               </button>
             )}
@@ -1635,6 +1682,48 @@ export default function AdminDashboardPage() {
                   <span>হাজিরা খাতায় যান →</span>
                 </button>
               </div>
+
+              {/* User & Permission Management Quick Banner in Overview */}
+              {canAccessTab('users') && (
+                <div className="bg-gradient-to-r from-slate-900 via-[#00341c] to-[#006837] text-white border border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                  <div className="flex items-start sm:items-center gap-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-[#DDAA00] text-slate-950 flex items-center justify-center shrink-0 shadow-md font-black">
+                      <ShieldCheck className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-black text-sm sm:text-base text-white">
+                          অ্যাডমিন প্রোফাইল ও অপশন পারমিশন কন্ট্রোল
+                        </h3>
+                        <span className="bg-[#DDAA00] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {adminUsers.length}টি প্রোফাইল সক্রিয়
+                        </span>
+                      </div>
+                      <p className="text-xs text-emerald-100/90 mt-1 max-w-2xl leading-relaxed">
+                        মাদ্রাসার শিক্ষক ও দায়িত্বপ্রাপ্তদের জন্য নতুন প্রোফাইল তৈরি করুন এবং কে অ্যাডমিন প্যানেলের কোন কোন মেনু ব্যবহার করতে পারবেন তা এক ক্লিকে নিয়ন্ত্রণ করুন।
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-stretch md:self-auto shrink-0 flex-wrap sm:flex-nowrap">
+                    <button
+                      type="button"
+                      onClick={handleOpenAddUser}
+                      className="flex-1 sm:flex-initial bg-white/10 hover:bg-white/20 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-colors border border-white/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-[#DDAA00]" />
+                      <span>নতুন প্রোফাইল তৈরি</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('users')}
+                      className="flex-1 sm:flex-initial bg-[#DDAA00] hover:bg-[#c99b00] text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      <span>ইউজার ব্যবস্থাপনা খুলুন →</span>
+                    </button>
+                  </div>
+                </div>
+              )}
 
               {/* Recent Applications Section */}
               <div className="space-y-3 pt-4 border-t border-slate-200">
@@ -5050,7 +5139,7 @@ export default function AdminDashboardPage() {
                                   className="inline-flex items-center gap-1 bg-white border border-emerald-200 text-emerald-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-2xs"
                                 >
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                                  <span>{permInfo.title}</span>
+                                  <span>{permInfo.name || permInfo.title}</span>
                                 </span>
                               );
                             })}
@@ -5064,8 +5153,8 @@ export default function AdminDashboardPage() {
                       </div>
 
                       {/* Action Buttons */}
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2">
+                      <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <button
                             type="button"
                             onClick={() => handleOpenEditUser(user)}
@@ -5074,6 +5163,26 @@ export default function AdminDashboardPage() {
                             <Edit className="w-3.5 h-3.5" />
                             <span>সম্পাদনা ও পারমিশন</span>
                           </button>
+
+                          {/* Quick Preview Test Button */}
+                          {user.isActive && !isCurrent && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                switchAdminUser(user.id);
+                                setUserToast({
+                                  show: true,
+                                  message: `"${user.name}" হিসেবে অ্যাডমিন প্যানেল প্রিভিউ চালু হয়েছে! প্যানেলে এখন শুধুমাত্র অনুমোদিত অপশনগুলো দৃশ্যমান।`
+                                });
+                                setTimeout(() => setUserToast({ show: false, message: '' }), 3500);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-800 text-xs font-bold transition-colors cursor-pointer"
+                              title="এই ইউজারের দৃষ্টিতে অ্যাডমিন প্যানেল টেস্ট করুন"
+                            >
+                              <Eye className="w-3.5 h-3.5 text-blue-600" />
+                              <span>প্রিভিউ দেখুন</span>
+                            </button>
+                          )}
 
                           {!user.isSuperAdmin && (
                             <button
@@ -5100,16 +5209,32 @@ export default function AdminDashboardPage() {
                           )}
                         </div>
 
-                        {!user.isSuperAdmin && (
+                        <div className="flex items-center gap-1.5">
+                          {/* Quick Copy Credentials Button */}
                           <button
                             type="button"
-                            onClick={() => handleDeleteUser(user)}
-                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
-                            title="প্রোফাইল মুছে ফেলুন"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`ইউজারনেম: ${user.username}\nপাসওয়ার্ড: ${user.password}`);
+                              setUserToast({ show: true, message: `"${user.name}" এর ইউজারনেম ও পাসওয়ার্ড ক্লিপবোর্ডে কপি হয়েছে!` });
+                              setTimeout(() => setUserToast({ show: false, message: '' }), 3000);
+                            }}
+                            className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors cursor-pointer"
+                            title="ইউজারনেম ও পাসওয়ার্ড কপি করুন"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Download className="w-3.5 h-3.5" />
                           </button>
-                        )}
+
+                          {!user.isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(user)}
+                              className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                              title="প্রোফাইল মুছে ফেলুন"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -6525,24 +6650,108 @@ export default function AdminDashboardPage() {
                   </div>
 
                   {!editingUser?.isSuperAdmin && (
-                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                    <div className="flex flex-wrap items-center gap-1.5 self-start sm:self-auto shrink-0">
                       <button
                         type="button"
                         onClick={selectAllPermissions}
                         className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="সকল ১৬টি অপশনে অনুমতি দিন"
                       >
-                        সবগুলো সিলেক্ট
+                        সবগুলো (১৬টি)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={selectAcademicPreset}
+                        className="text-[11px] font-bold text-blue-800 hover:text-blue-950 bg-blue-50 hover:bg-blue-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="হাজিরা, শিক্ষক, ফলাফল ও ভর্তি"
+                      >
+                        🎓 অ্যাকাডেমিক
+                      </button>
+                      <button
+                        type="button"
+                        onClick={selectMediaPreset}
+                        className="text-[11px] font-bold text-purple-800 hover:text-purple-950 bg-purple-50 hover:bg-purple-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="নোটিশ, টিকার, ব্যানার, গ্যালারি ও সুবিধা"
+                      >
+                        📢 মিডিয়া ও নোটিশ
                       </button>
                       <button
                         type="button"
                         onClick={deselectAllPermissions}
                         className="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
                       >
-                        ক্লিয়ার করুন
+                        ক্লিয়ার
                       </button>
                     </div>
                   )}
                 </div>
+
+                {/* Category Filter Pills & Selection Counter */}
+                {!editingUser?.isSuperAdmin && (
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1 pb-1">
+                    <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold">
+                      <button
+                        type="button"
+                        onClick={() => setModalPermCategory('all')}
+                        className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                          modalPermCategory === 'all'
+                            ? 'bg-white text-slate-900 font-bold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        সকল ({availablePermissions.length})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalPermCategory('academic')}
+                        className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                          modalPermCategory === 'academic'
+                            ? 'bg-blue-600 text-white font-bold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        অ্যাকাডেমিক
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalPermCategory('core')}
+                        className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                          modalPermCategory === 'core'
+                            ? 'bg-emerald-700 text-white font-bold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        প্রাতিষ্ঠানিক
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalPermCategory('media')}
+                        className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                          modalPermCategory === 'media'
+                            ? 'bg-purple-700 text-white font-bold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        মিডিয়া
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setModalPermCategory('system')}
+                        className={`px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                          modalPermCategory === 'system'
+                            ? 'bg-slate-700 text-white font-bold shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        সিস্টেম
+                      </button>
+                    </div>
+
+                    <div className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                      {userForm.permissions.length}টি অপশন নির্বাচিত
+                    </div>
+                  </div>
+                )}
 
                 {editingUser?.isSuperAdmin ? (
                   <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium space-y-1">
@@ -6556,7 +6765,9 @@ export default function AdminDashboardPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1">
-                    {availablePermissions.map((perm) => {
+                    {availablePermissions
+                      .filter(perm => modalPermCategory === 'all' || perm.category === modalPermCategory)
+                      .map((perm) => {
                       const isChecked = userForm.permissions.includes(perm.id);
 
                       return (
@@ -6565,7 +6776,7 @@ export default function AdminDashboardPage() {
                           onClick={() => togglePermission(perm.id)}
                           className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 select-none ${
                             isChecked
-                              ? 'bg-emerald-50/80 border-emerald-400 shadow-2xs'
+                              ? 'bg-emerald-50/80 border-emerald-400 shadow-2xs ring-1 ring-emerald-300'
                               : 'bg-white border-slate-200 hover:border-slate-300'
                           }`}
                         >
@@ -6577,8 +6788,8 @@ export default function AdminDashboardPage() {
                           />
                           <div className="space-y-0.5 flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className={`font-bold ${isChecked ? 'text-emerald-950' : 'text-slate-800'}`}>
-                                {perm.title}
+                              <span className={`font-bold ${isChecked ? 'text-emerald-950 font-black' : 'text-slate-800'}`}>
+                                {perm.name || perm.title}
                               </span>
                               <span
                                 className={`text-[9px] font-black px-1.5 py-0.2 rounded ${
