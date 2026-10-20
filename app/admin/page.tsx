@@ -82,6 +82,7 @@ export default function AdminDashboardPage() {
   const router = useRouter();
   const {
     isAdmin,
+    isLoaded,
     logoutAdmin,
     info,
     updateInfo,
@@ -131,12 +132,12 @@ export default function AdminDashboardPage() {
     setMounted(true);
   }, []);
 
-  // Check auth
+  // Check auth - only after mounted and isLoaded from storage
   useEffect(() => {
-    if (mounted && !isAdmin) {
+    if (mounted && isLoaded && !isAdmin) {
       router.push('/admin/login');
     }
-  }, [mounted, isAdmin, router]);
+  }, [mounted, isLoaded, isAdmin, router]);
 
   // Universal Centered Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -528,10 +529,6 @@ export default function AdminDashboardPage() {
   const pendingAppsCount = applications.filter(a => a.status === 'অপেক্ষমান').length;
   const unreadMessagesCount = messages.filter(m => !m.isRead).length;
 
-  if (!isAdmin) {
-    return null; // Will redirect via useEffect
-  }
-
   // Helper for compressing/resizing images to prevent localStorage quota overflow
   const handleImageUpload = (file: File, callback: (dataUrl: string) => void) => {
     const reader = new FileReader();
@@ -899,7 +896,7 @@ export default function AdminDashboardPage() {
     });
   };
 
-  if (!mounted) {
+  if (!mounted || !isLoaded) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
         <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700 p-6 rounded-2xl text-center shadow-xl">
@@ -928,8 +925,12 @@ export default function AdminDashboardPage() {
       {/* Top Admin Header Bar */}
       <header className="bg-gradient-to-r from-[#00341c] via-[#006837] to-[#003580] text-white px-4 py-2.5 border-b border-[#DDAA00]/40 sticky top-0 z-40 shadow-md">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <div className="relative w-10 h-10 shrink-0 drop-shadow-md">
+          <div
+            onClick={() => window.location.reload()}
+            className="flex items-center gap-3 cursor-pointer group"
+            title="অ্যাডমিন প্যানেল রিলোড করুন"
+          >
+            <div className="relative w-10 h-10 shrink-0 drop-shadow-md group-hover:scale-105 transition-transform">
               <Image
                 src="/logo.png"
                 alt={info.name}
@@ -940,7 +941,7 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="font-extrabold text-base md:text-lg leading-tight text-white">
+                <h1 className="font-extrabold text-base md:text-lg leading-tight text-white group-hover:text-emerald-100 transition-colors">
                   মাদ্রাসা অ্যাডমিন কন্ট্রোল প্যানেল
                 </h1>
                 <span className="bg-[#DDAA00] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded shadow-sm">

@@ -73,6 +73,7 @@ interface MadrasahContextType {
   prayerConfig: PrayerTimeConfig;
   loggedStudent: StudentProfile | null;
   isAdmin: boolean;
+  isLoaded: boolean;
   updateInfo: (newInfo: MadrasahInfo) => void;
   updatePrayerConfig: (newConfig: PrayerTimeConfig) => void;
   updateLoggedStudent: (student: StudentProfile | null) => void;
@@ -470,6 +471,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         results,
         messages,
         isAdmin,
+        isLoaded,
         updateInfo,
         updatePrayerConfig,
         updateLoggedStudent,

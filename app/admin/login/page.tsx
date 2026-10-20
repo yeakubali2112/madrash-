@@ -16,16 +16,16 @@ import {
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const { isAdmin, loginAdmin, info } = useMadrasah();
+  const { isAdmin, isLoaded, loginAdmin, info } = useMadrasah();
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('admin');
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (isAdmin) {
+    if (isLoaded && isAdmin) {
       router.push('/admin');
     }
-  }, [isAdmin, router]);
+  }, [isLoaded, isAdmin, router]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

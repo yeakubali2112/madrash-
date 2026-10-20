@@ -45,12 +45,24 @@ export const Navbar: React.FC = () => {
     return false;
   };
 
+  const handleLogoClick = (e: React.MouseEvent) => {
+    if (isAdminRoute) {
+      e.preventDefault();
+      window.location.reload();
+    }
+  };
+
   return (
     <header className="sticky top-0 z-50 bg-white shadow-md">
       {/* Main Header / Logo Area */}
       <div className="bg-white border-b border-slate-100 py-2.5 px-4">
         <div className="max-w-7xl mx-auto flex justify-between items-center gap-4">
-          <Link href="/" className="flex items-center gap-3 group">
+          <Link
+            href={isAdminRoute ? "/admin" : "/"}
+            onClick={handleLogoClick}
+            className="flex items-center gap-3 group cursor-pointer"
+            title={isAdminRoute ? "অ্যাডমিন প্যানেল রিলোড করুন" : info.name}
+          >
             {/* Real Logo from Madrasah */}
             <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 drop-shadow-md group-hover:scale-105 transition-transform">
               <Image
