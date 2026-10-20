@@ -28,7 +28,10 @@ import {
   defaultPrayerConfig,
   StudentProfile,
   AdminUser,
-  defaultAdminUsers
+  defaultAdminUsers,
+  ClassRoutine,
+  RoutinePeriod,
+  defaultClassRoutines
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -59,6 +62,8 @@ import {
   saveStoredAdminUsers,
   getCurrentAdminUser,
   setCurrentAdminUser,
+  getStoredRoutines,
+  saveStoredRoutines,
   isAdminLoggedIn,
   setAdminLoggedIn,
   resetAllData
@@ -109,6 +114,15 @@ interface MadrasahContextType {
   submitContactMessage: (msg: Omit<ContactMessage, 'id' | 'date' | 'isRead'>) => void;
   markMessageRead: (id: string) => void;
   deleteMessage: (id: string) => void;
+  routines: ClassRoutine[];
+  updateRoutines: (routines: ClassRoutine[]) => void;
+  addClassRoutine: (routine: Omit<ClassRoutine, 'id'>) => void;
+  updateClassRoutine: (id: string, routine: Partial<ClassRoutine>) => void;
+  deleteClassRoutine: (id: string) => void;
+  addPeriodToRoutine: (routineId: string, period: Omit<RoutinePeriod, 'id'>) => void;
+  updatePeriodInRoutine: (routineId: string, periodId: string, period: Partial<RoutinePeriod>) => void;
+  deletePeriodFromRoutine: (routineId: string, periodId: string) => void;
+  resetRoutinesToDefault: () => void;
   adminUsers: AdminUser[];
   currentAdminUser: AdminUser | null;
   addAdminUser: (user: Omit<AdminUser, 'id' | 'createdAt'>) => void;
@@ -137,6 +151,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [facilities, setFacilities] = useState<FacilityItem[]>(defaultFacilities);
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
   const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
+  const [routines, setRoutines] = useState<ClassRoutine[]>(defaultClassRoutines);
   const [loggedStudent, setLoggedStudent] = useState<StudentProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -156,6 +171,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setFacilities(getStoredFacilities());
     setGallery(getStoredGallery());
     setPrayerConfig(getStoredPrayerConfig());
+    setRoutines(getStoredRoutines());
     const storedUsers = getStoredAdminUsers();
     setAdminUsers(storedUsers);
 
@@ -191,6 +207,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
       if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
       if (e.key === 'padm_prayer_config') setPrayerConfig(getStoredPrayerConfig());
+      if (e.key === 'padm_routines') setRoutines(getStoredRoutines());
       if (e.key === 'padm_admin_users') setAdminUsers(getStoredAdminUsers());
       if (e.key === 'padm_current_admin_user') setCurrentAdminUserState(getCurrentAdminUser());
       if (e.key === 'padm_logged_student') {
@@ -577,6 +594,77 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setCurrentAdminUser(null);
   };
 
+  const updateRoutines = (newRoutines: ClassRoutine[]) => {
+    setRoutines(newRoutines);
+    saveStoredRoutines(newRoutines);
+  };
+
+  const addClassRoutine = (routineData: Omit<ClassRoutine, 'id'>) => {
+    const newRoutine: ClassRoutine = {
+      ...routineData,
+      id: `routine-${Date.now()}`
+    };
+    const updated = [...routines, newRoutine];
+    updateRoutines(updated);
+  };
+
+  const updateClassRoutine = (id: string, routineData: Partial<ClassRoutine>) => {
+    const updated = routines.map(r => r.id === id ? { ...r, ...routineData } : r);
+    updateRoutines(updated);
+  };
+
+  const deleteClassRoutine = (id: string) => {
+    const updated = routines.filter(r => r.id !== id);
+    updateRoutines(updated);
+  };
+
+  const addPeriodToRoutine = (routineId: string, periodData: Omit<RoutinePeriod, 'id'>) => {
+    const newPeriod: RoutinePeriod = {
+      ...periodData,
+      id: `p-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`
+    };
+    const updated = routines.map(r => {
+      if (r.id === routineId) {
+        return {
+          ...r,
+          periods: [...r.periods, newPeriod]
+        };
+      }
+      return r;
+    });
+    updateRoutines(updated);
+  };
+
+  const updatePeriodInRoutine = (routineId: string, periodId: string, periodData: Partial<RoutinePeriod>) => {
+    const updated = routines.map(r => {
+      if (r.id === routineId) {
+        return {
+          ...r,
+          periods: r.periods.map(p => p.id === periodId ? { ...p, ...periodData } : p)
+        };
+      }
+      return r;
+    });
+    updateRoutines(updated);
+  };
+
+  const deletePeriodFromRoutine = (routineId: string, periodId: string) => {
+    const updated = routines.map(r => {
+      if (r.id === routineId) {
+        return {
+          ...r,
+          periods: r.periods.filter(p => p.id !== periodId)
+        };
+      }
+      return r;
+    });
+    updateRoutines(updated);
+  };
+
+  const resetRoutinesToDefault = () => {
+    updateRoutines(defaultClassRoutines);
+  };
+
   const resetToDefaults = () => {
     resetAllData();
     setInfo(defaultMadrasahInfo);
@@ -592,6 +680,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGallery(defaultGallery);
     setPrayerConfig(defaultPrayerConfig);
     setAdminUsers(defaultAdminUsers);
+    setRoutines(defaultClassRoutines);
     setCurrentAdminUserState(null);
   };
 
@@ -606,6 +695,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         facilities,
         gallery,
         prayerConfig,
+        routines,
         loggedStudent,
         teachers,
         applications,
@@ -650,6 +740,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         submitContactMessage,
         markMessageRead,
         deleteMessage,
+        updateRoutines,
+        addClassRoutine,
+        updateClassRoutine,
+        deleteClassRoutine,
+        addPeriodToRoutine,
+        updatePeriodInRoutine,
+        deletePeriodFromRoutine,
+        resetRoutinesToDefault,
         loginAdmin,
         logoutAdmin,
         resetToDefaults

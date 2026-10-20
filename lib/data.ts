@@ -891,6 +891,145 @@ export const defaultPrayerConfig: PrayerTimeConfig = {
   prayerQuoteSource: "আল-কুরআন, সূরা আন-নিসা: ৪/১০৩"
 };
 
+export interface RoutinePeriod {
+  id: string;
+  period: string;
+  time: string;
+  subject: string;
+  teacher: string;
+  room?: string;
+}
+
+export interface ClassRoutine {
+  id: string;
+  className: string;
+  effectiveDate?: string;
+  notes?: string;
+  periods: RoutinePeriod[];
+}
+
+export const defaultClassRoutines: ClassRoutine[] = [
+  {
+    id: 'routine-10',
+    className: '১০ম শ্রেণি (দাখিল)',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'বিশেষ প্রয়োজনে কর্তৃপক্ষ রুটিন পরিবর্তনের ক্ষমতা সংরক্ষণ করে।',
+    periods: [
+      { id: 'p10-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'কুরআন মাজীদ ও তাজবীদ', teacher: 'মাওলানা মোঃ রফিকুল ইসলাম' },
+      { id: 'p10-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'হাদীস শরীফ', teacher: 'মাওলানা মোঃ জয়নাল আবেদীন' },
+      { id: 'p10-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'আরবি ১ম পত্র', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p10-4', period: '৪র্থ ঘণ্টা', time: '১১:৩০ - ১২:১৫', subject: 'সাধারণ গণিত / পদার্থ', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p10-5', period: 'বিরতি ও যোহরের সালাত', time: '১২:১৫ - ০১:১৫', subject: 'যোহরের জামাত ও খাবার বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p10-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'ইংরেজি ১ম ও ২য় পত্র', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p10-7', period: '৬ষ্ঠ ঘণ্টা', time: '০২:০০ - ০২:৪৫', subject: 'বাংলা সাহিত্য ও ব্যাকরণ', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+      { id: 'p10-8', period: '৭ম ঘণ্টা', time: '০২:৪৫ - ০৩:৩০', subject: 'আইসিটি ল্যাব প্র্যাকটিস', teacher: 'মোঃ আহসান উল্লাহ' },
+    ]
+  },
+  {
+    id: 'routine-9',
+    className: '৯ম শ্রেণি',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'বিজ্ঞান ও সাধারণ উভয় বিভাগের জন্য প্রযোজ্য।',
+    periods: [
+      { id: 'p9-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'আকাইদ ও ফিকহ', teacher: 'মাওলানা মোঃ জয়নাল আবেদীন' },
+      { id: 'p9-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'কুরআন মাজীদ', teacher: 'মাওলানা মোঃ রফিকুল ইসলাম' },
+      { id: 'p9-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'সাধারণ গণিত', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p9-4', period: '৪র্থ ঘণ্টা', time: '১১:৩০ - ১২:১৫', subject: 'ইংরেজি ১ম পত্র', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p9-5', period: 'বিরতি ও যোহরের সালাত', time: '১২:১৫ - ০১:১৫', subject: 'যোহরের জামাত ও খাবার বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p9-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'আরবি সাহিত্য', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p9-7', period: '৬ষ্ঠ ঘণ্টা', time: '০২:০০ - ০২:৪৫', subject: 'তথ্য ও যোগাযোগ প্রযুক্তি', teacher: 'মোঃ আহসান উল্লাহ' },
+      { id: 'p9-8', period: '৭ম ঘণ্টা', time: '০২:৪৫ - ০৩:৩০', subject: 'বাংলাদেশ ও বিশ্বপরিচয়', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+    ]
+  },
+  {
+    id: 'routine-8',
+    className: '৮ম শ্রেণি (জেডিসি সমমান)',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'জেডিসি সমমান পরীক্ষার প্রস্তুতিমূলক নিয়মিত পাঠদান।',
+    periods: [
+      { id: 'p8-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'কুরআন মাজীদ ও তাজবীদ', teacher: 'মাওলানা মোঃ রফিকুল ইসলাম' },
+      { id: 'p8-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'আরবি ১ম পত্র', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p8-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'সাধারণ গণিত', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p8-4', period: '৪র্থ ঘণ্টা', time: '১১:৩০ - ১২:১৫', subject: 'ইংরেজি', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p8-5', period: 'বিরতি ও যোহরের সালাত', time: '১২:১৫ - ০১:১৫', subject: 'যোহরের জামাত ও মধ্যাহ্ন বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p8-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'আকাইদ ও ফিকহ', teacher: 'মাওলানা মোঃ জয়নাল আবেদীন' },
+      { id: 'p8-7', period: '৬ষ্ঠ ঘণ্টা', time: '০২:০০ - ০২:৪৫', subject: 'সাধারণ বিজ্ঞান', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p8-8', period: '৭ম ঘণ্টা', time: '০২:৪৫ - ০৩:৩০', subject: 'বাংলা সাহিত্য', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+    ]
+  },
+  {
+    id: 'routine-7',
+    className: '৭ম শ্রেণি',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'নতুন শিক্ষাক্রম ও মাদরাসা শিক্ষা বোর্ডের নির্দেশনা অনুযায়ী।',
+    periods: [
+      { id: 'p7-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'কুরআন ও আরবি ভাষা', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p7-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'সাধারণ গণিত', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p7-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'ইংরেজি', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p7-4', period: '৪র্থ ঘণ্টা', time: '১১:৩০ - ১২:১৫', subject: 'বাংলা সাহিত্য', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+      { id: 'p7-5', period: 'বিরতি ও যোহরের সালাত', time: '১২:১৫ - ০১:১৫', subject: 'যোহরের জামাত ও খাবার বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p7-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'দ্বীনিয়াত ও আখলাক', teacher: 'মাওলানা মোঃ রফিকুল ইসলাম' },
+      { id: 'p7-7', period: '৬ষ্ঠ ঘণ্টা', time: '০২:০০ - ০২:৪৫', subject: 'বিজ্ঞান ও স্বাস্থ্য সুরক্ষা', teacher: 'মোঃ আহসান উল্লাহ' },
+    ]
+  },
+  {
+    id: 'routine-6',
+    className: '৬ষ্ঠ শ্রেণি',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'নতুন শিক্ষাক্রমের আলোকে নিয়মিত বিষয়ভিত্তিক পাঠদান।',
+    periods: [
+      { id: 'p6-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'কুরআন মাজীদ ও তাজবীদ', teacher: 'মাওলানা মোঃ রফিকুল ইসলাম' },
+      { id: 'p6-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'বাংলা ভাষা ও সাহিত্য', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+      { id: 'p6-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'সাধারণ গণিত', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p6-4', period: '৪র্থ ঘণ্টা', time: '১১:৩০ - ১২:১৫', subject: 'ইংরেজি পাঠ', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p6-5', period: 'বিরতি ও যোহরের সালাত', time: '১২:১৫ - ০১:১৫', subject: 'যোহরের জামাত ও খাবার বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p6-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'আরবি ১ম পত্র', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p6-7', period: '৬ষ্ঠ ঘণ্টা', time: '০২:০০ - ০২:৪৫', subject: 'ডিজিটাল প্রযুক্তি ও তথ্যজ্ঞান', teacher: 'মোঃ আহসান উল্লাহ' },
+    ]
+  },
+  {
+    id: 'routine-5',
+    className: 'পঞ্চম শ্রেণি (ইবতেদায়ী সমাপনী)',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'ইবতেদায়ী সমাপনী পরীক্ষার বিশেষ প্রস্তুতি ক্লাস।',
+    periods: [
+      { id: 'p5-1', period: '১ম ঘণ্টা', time: '০৯:১৫ - ১০:০০', subject: 'কুরআন মাজীদ ও আকাইদ', teacher: 'মাওলানা মোঃ জয়নাল আবেদীন' },
+      { id: 'p5-2', period: '২য় ঘণ্টা', time: '১০:০০ - ১০:৪৫', subject: 'আরবি ভাষা ও সাহিত্য', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'p5-3', period: '৩য় ঘণ্টা', time: '১০:৪৫ - ১১:৩০', subject: 'সাধারণ গণিত', teacher: 'মোঃ মাহবুবুল হক' },
+      { id: 'p5-4', period: 'বিরতি ও যোহরের সালাত', time: '১১:৩০ - ১২:৩০', subject: 'যোহরের সালাত ও টিফিন বিরতি', teacher: 'সকল শিক্ষক ও শিক্ষার্থী' },
+      { id: 'p5-5', period: '৪র্থ ঘণ্টা', time: '১২:৩০ - ০১:১৫', subject: 'ইংরেজি', teacher: 'মোঃ মোস্তাফিজুর রহমান' },
+      { id: 'p5-6', period: '৫ম ঘণ্টা', time: '০১:১৫ - ০২:০০', subject: 'বাংলা', teacher: 'মোছাঃ ফাতেমা আক্তার' },
+    ]
+  },
+  {
+    id: 'routine-hifz',
+    className: 'হিফজুল কুরআন বিভাগ',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'হিফজুল কুরআন আবাসিক ও অনাবাসিক শিক্ষার্থীদের সার্বক্ষণিক পাঠদান রুটিন।',
+    periods: [
+      { id: 'ph-1', period: 'ফজরের পর', time: '০৫:৩০ - ০৭:০০', subject: 'সাবাখ (নতুন পড়া মুখস্থ ও তিলাওয়াত)', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+      { id: 'ph-2', period: 'সকালের বিরতি', time: '০৭:০০ - ০৮:৩০', subject: 'নাশতা ও বিশ্রাম', teacher: 'হোস্টেল সুপারভাইজার' },
+      { id: 'ph-3', period: '১ম অধিবেশন', time: '০৮:৩০ - ১১:৩০', subject: 'সাবাখী (পূর্বের দিনের পাঠ মজবুতকরণ)', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+      { id: 'ph-4', period: 'দুপুরের বিরতি', time: '১১:৩০ - ০২:০০', subject: 'গোসল, খাবার ও যোহরের সালাত', teacher: 'সকল শিক্ষক' },
+      { id: 'ph-5', period: '২য় অধিবেশন', time: '০২:০০ - আসর', subject: 'আমোকথা (পেছনের পারা রিভিশন)', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+      { id: 'ph-6', period: 'মাগরিবের পর', time: 'মাগরিব - এশা', subject: 'দৈনিক পাঠের চূড়ান্ত যাচাই ও পরীক্ষা', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+    ]
+  },
+  {
+    id: 'routine-nurani',
+    className: 'নূরানী ও নাজেরা বিভাগ',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'ছোট শিশুদের বিশুদ্ধ মাখরাজ ও সহীহ কুরআন পাঠ প্রশিক্ষণ।',
+    periods: [
+      { id: 'pn-1', period: '১ম অধিবেশন', time: '০৮:৩০ - ০৯:১৫', subject: 'নূরানী কায়দা ও মাখরাজ প্রশিক্ষণ', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+      { id: 'pn-2', period: '২য় অধিবেশন', time: '০৯:১৫ - ১০:০০', subject: 'নাজেরা কুরআন তিলাওয়াত', teacher: 'হাফেজ ক্বারী মোঃ ইব্রাহিম খলিল' },
+      { id: 'pn-3', period: '৩য় অধিবেশন', time: '১০:০০ - ১০:৪৫', subject: 'হুসনুল খত (আরবি ও বাংলা হস্তলিপি)', teacher: 'মাওলানা মোঃ আব্দুল করিম' },
+      { id: 'pn-4', period: 'টিফিন বিরতি', time: '১০:৪৫ - ১১:১৫', subject: 'নাশতা ও খেলাধুলা', teacher: 'দায়িত্বপ্রাপ্ত শিক্ষক' },
+      { id: 'pn-5', period: '৪র্থ অধিবেশন', time: '১১:১৫ - ১২:০০', subject: 'মাসনূন দোয়া ও দ্বীনিয়াহ', teacher: 'মাওলানা মোঃ জয়নাল আবেদীন' },
+    ]
+  }
+];
+
 export interface AdminPermission {
   id: string;
   name: string;
@@ -917,6 +1056,7 @@ export interface AdminUser {
 export const availablePermissions: AdminPermission[] = [
   { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', title: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
   { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', title: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
+  { id: 'routine', name: 'ক্লাস রুটিন ব্যবস্থাপনা', title: 'ক্লাস রুটিন ব্যবস্থাপনা', description: 'সকল শ্রেণির নিয়মিত ক্লাস রুটিন, পিরিয়ড ও শিক্ষক নির্ধারণ', category: 'academic' },
   { id: 'results', name: 'ফলাফল ও মার্কস', title: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },
   { id: 'admissions', name: 'ভর্তি আবেদন', title: 'ভর্তি আবেদন', description: 'অনলাইন নতুন ভর্তি আবেদন যাচাই, অনুমোদন ও বাতিল', category: 'academic' },
   { id: 'teachers', name: 'শিক্ষক ও স্টাফ তালিকা', title: 'শিক্ষক ও স্টাফ তালিকা', description: 'শিক্ষক-কর্মচারীদের তথ্য ও প্রোফাইল ব্যবস্থাপনা', category: 'academic' },
@@ -954,6 +1094,7 @@ export const defaultAdminUsers: AdminUser[] = [
       'gallery',
       'teachers',
       'attendance',
+      'routine',
       'authorities',
       'results',
       'messages',

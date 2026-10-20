@@ -21,7 +21,10 @@ import {
   PrayerTimeConfig,
   defaultPrayerConfig,
   AdminUser,
-  availablePermissions
+  availablePermissions,
+  ClassRoutine,
+  RoutinePeriod,
+  defaultClassRoutines
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -138,10 +141,18 @@ export default function AdminDashboardPage() {
     deleteMessage,
     prayerConfig,
     updatePrayerConfig,
+    routines,
+    addClassRoutine,
+    updateClassRoutine,
+    deleteClassRoutine,
+    addPeriodToRoutine,
+    updatePeriodInRoutine,
+    deletePeriodFromRoutine,
+    resetRoutinesToDefault,
     resetToDefaults
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup' | 'users'>('overview');
   const [mounted, setMounted] = useState(false);
 
   // User Permission verification
@@ -788,6 +799,166 @@ export default function AdminDashboardPage() {
     return matchesSearch && matchesStatus;
   });
 
+  // ==========================================
+  // CLASS ROUTINE MANAGEMENT STATE & HANDLERS
+  // ==========================================
+  const [selectedRoutineClassId, setSelectedRoutineClassId] = useState<string>('');
+  const activeRoutine = routines.find(r => r.id === selectedRoutineClassId) || routines[0];
+
+  // Class Add/Edit Modal
+  const [showClassModal, setShowClassModal] = useState(false);
+  const [editingClassRoutine, setEditingClassRoutine] = useState<ClassRoutine | null>(null);
+  const [classForm, setClassForm] = useState({
+    className: '',
+    effectiveDate: '০১ জানুয়ারি ২০২৬',
+    notes: 'বিশেষ প্রয়োজনে কর্তৃপক্ষ রুটিন পরিবর্তনের ক্ষমতা সংরক্ষণ করে।'
+  });
+
+  // Period Add/Edit Modal
+  const [showPeriodModal, setShowPeriodModal] = useState(false);
+  const [editingPeriod, setEditingPeriod] = useState<RoutinePeriod | null>(null);
+  const [periodForm, setPeriodForm] = useState({
+    period: '১ম ঘণ্টা',
+    time: '০৯:১৫ - ১০:০০',
+    subject: '',
+    teacher: '',
+    room: ''
+  });
+
+  const [routineToast, setRoutineToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const showRoutineAlert = (message: string) => {
+    setRoutineToast({ show: true, message });
+    setTimeout(() => setRoutineToast({ show: false, message: '' }), 3500);
+  };
+
+  const handleOpenAddClass = () => {
+    setEditingClassRoutine(null);
+    setClassForm({
+      className: '',
+      effectiveDate: '০১ জানুয়ারি ২০২৬',
+      notes: 'বিশেষ প্রয়োজনে কর্তৃপক্ষ রুটিন পরিবর্তনের ক্ষমতা সংরক্ষণ করে।'
+    });
+    setShowClassModal(true);
+  };
+
+  const handleOpenEditClass = (routine: ClassRoutine) => {
+    setEditingClassRoutine(routine);
+    setClassForm({
+      className: routine.className,
+      effectiveDate: routine.effectiveDate || '০১ জানুয়ারি ২০২৬',
+      notes: routine.notes || ''
+    });
+    setShowClassModal(true);
+  };
+
+  const handleSaveClass = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanName = classForm.className.trim();
+    if (!cleanName) {
+      alert('অনুগ্রহ করে শ্রেণির নাম লিখুন।');
+      return;
+    }
+
+    if (editingClassRoutine) {
+      updateClassRoutine(editingClassRoutine.id, {
+        className: cleanName,
+        effectiveDate: classForm.effectiveDate.trim(),
+        notes: classForm.notes.trim()
+      });
+      showRoutineAlert(`"${cleanName}" শ্রেণির তথ্য আপডেট করা হয়েছে!`);
+    } else {
+      const exists = routines.some(r => r.className.toLowerCase() === cleanName.toLowerCase());
+      if (exists) {
+        alert('এই নামের শ্রেণি রুটিনে ইতিমধ্যে বিদ্যমান আছে!');
+        return;
+      }
+      addClassRoutine({
+        className: cleanName,
+        effectiveDate: classForm.effectiveDate.trim(),
+        notes: classForm.notes.trim(),
+        periods: []
+      });
+      showRoutineAlert(`নতুন শ্রেণি "${cleanName}" যুক্ত করা হয়েছে!`);
+    }
+    setShowClassModal(false);
+  };
+
+  const handleDeleteClass = (routine: ClassRoutine) => {
+    if (confirm(`আপনি কি নিশ্চিত যে "${routine.className}" শ্রেণির সম্পূর্ণ রুটিন মুছে ফেলতে চান?`)) {
+      deleteClassRoutine(routine.id);
+      showRoutineAlert(`"${routine.className}" শ্রেণির রুটিন মুছে ফেলা হয়েছে!`);
+    }
+  };
+
+  const handleOpenAddPeriod = () => {
+    if (!activeRoutine) return;
+    setEditingPeriod(null);
+    const count = activeRoutine.periods.length + 1;
+    const defaultPeriodName = count === 1 ? '১ম ঘণ্টা' : count === 2 ? '২য় ঘণ্টা' : count === 3 ? '৩য় ঘণ্টা' : count === 4 ? '৪র্থ ঘণ্টা' : `${count}ম ঘণ্টা`;
+    setPeriodForm({
+      period: defaultPeriodName,
+      time: '০৯:১৫ - ১০:০০',
+      subject: '',
+      teacher: teachers[0]?.name || '',
+      room: ''
+    });
+    setShowPeriodModal(true);
+  };
+
+  const handleOpenEditPeriod = (period: RoutinePeriod) => {
+    setEditingPeriod(period);
+    setPeriodForm({
+      period: period.period,
+      time: period.time,
+      subject: period.subject,
+      teacher: period.teacher,
+      room: period.room || ''
+    });
+    setShowPeriodModal(true);
+  };
+
+  const handleSavePeriod = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeRoutine) return;
+    if (!periodForm.period.trim()) {
+      alert('অনুগ্রহ করে পিরিয়ড / ঘণ্টার নাম দিন।');
+      return;
+    }
+    if (!periodForm.subject.trim()) {
+      alert('অনুগ্রহ করে বিষয়ের নাম লিখুন।');
+      return;
+    }
+
+    if (editingPeriod) {
+      updatePeriodInRoutine(activeRoutine.id, editingPeriod.id, {
+        period: periodForm.period.trim(),
+        time: periodForm.time.trim(),
+        subject: periodForm.subject.trim(),
+        teacher: periodForm.teacher.trim(),
+        room: periodForm.room.trim()
+      });
+      showRoutineAlert('পিরিয়ড সফলভাবে আপডেট করা হয়েছে!');
+    } else {
+      addPeriodToRoutine(activeRoutine.id, {
+        period: periodForm.period.trim(),
+        time: periodForm.time.trim(),
+        subject: periodForm.subject.trim(),
+        teacher: periodForm.teacher.trim(),
+        room: periodForm.room.trim()
+      });
+      showRoutineAlert('নতুন পিরিয়ড সফলভাবে যোগ করা হয়েছে!');
+    }
+    setShowPeriodModal(false);
+  };
+
+  const handleDeletePeriod = (periodId: string, periodName: string) => {
+    if (!activeRoutine) return;
+    if (confirm(`আপনি কি "${periodName}" পিরিয়ডটি মুছে ফেলতে চান?`)) {
+      deletePeriodFromRoutine(activeRoutine.id, periodId);
+      showRoutineAlert(`"${periodName}" পিরিয়ড মুছে ফেলা হয়েছে!`);
+    }
+  };
+
   // Helper for compressing/resizing images to prevent localStorage quota overflow
   const handleImageUpload = (file: File, callback: (dataUrl: string) => void) => {
     const reader = new FileReader();
@@ -1369,6 +1540,25 @@ export default function AdminDashboardPage() {
                 <div className="flex items-center gap-2.5">
                   <UserCheck className="w-4 h-4 text-emerald-400" />
                   <span>দৈনিক হাজিরা ও উপস্থিতি</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  নতুন
+                </span>
+              </button>
+            )}
+
+            {canAccessTab('routine') && (
+              <button
+                onClick={() => setActiveTab('routine')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'routine'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-emerald-400" />
+                  <span>ক্লাস রুটিন</span>
                 </div>
                 <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
                   নতুন
@@ -5087,6 +5277,315 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
+
+          {/* TAB: ROUTINE MANAGEMENT */}
+          {activeTab === 'routine' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2 py-0.5 rounded-md flex items-center gap-1">
+                      <Calendar className="w-3.5 h-3.5" /> ক্লাস রুটিন
+                    </span>
+                    <h2 className="text-xl font-bold text-slate-900">ক্লাস ও শিক্ষা রুটিন ব্যবস্থাপনা</h2>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    সকল শ্রেণির দৈনিক পাঠদান সময়সূচি, ঘণ্টা/পিরিয়ড, বিষয় ও দায়িত্বপ্রাপ্ত শিক্ষক নির্ধারণ করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <a
+                    href="/routine"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>লাইভ রুটিন দেখুন</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenAddClass}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 shadow-sm transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-amber-300" />
+                    <span>+ নতুন শ্রেণি যুক্ত করুন</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('আপনি কি সকল রুটিন ডিফল্ট অবস্থায় রিস্টোর করতে চান?')) {
+                        resetRoutinesToDefault();
+                        showRoutineAlert('সকল রুটিন সফলভাবে ডিফল্ট অবস্থায় রিস্টোর করা হয়েছে!');
+                      }
+                    }}
+                    className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
+                    title="ডিফল্ট রুটিন রিস্টোর করুন"
+                  >
+                    <RefreshCw className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Class Selector Bar */}
+              <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <School className="w-4 h-4 text-emerald-700" />
+                    <span className="text-xs font-bold text-slate-800">রুটিন সম্পাদনার জন্য শ্রেণি নির্বাচন করুন:</span>
+                    <span className="text-[11px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      {routines.length}টি শ্রেণি
+                    </span>
+                  </div>
+
+                  {/* Dropdown for quick access */}
+                  <select
+                    value={activeRoutine?.id || ''}
+                    onChange={(e) => setSelectedRoutineClassId(e.target.value)}
+                    className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-700 cursor-pointer"
+                  >
+                    {routines.map((r) => (
+                      <option key={r.id} value={r.id}>
+                        {r.className} ({r.periods.length}টি পিরিয়ড)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Horizontal Class Pills */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {routines.map((r) => {
+                    const isCurrent = activeRoutine?.id === r.id;
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => setSelectedRoutineClassId(r.id)}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                          isCurrent
+                            ? 'bg-emerald-800 text-white shadow-sm ring-2 ring-emerald-700/50'
+                            : 'bg-white hover:bg-slate-100 text-slate-700 border border-slate-200'
+                        }`}
+                      >
+                        <span>{r.className}</span>
+                        <span
+                          className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono ${
+                            isCurrent
+                              ? 'bg-emerald-950 text-amber-300'
+                              : 'bg-slate-100 text-slate-600'
+                          }`}
+                        >
+                          {r.periods.length}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Active Class Info & Action Card */}
+              {activeRoutine ? (
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-emerald-900 to-emerald-950 text-white rounded-2xl p-4 sm:p-5 shadow-sm border border-emerald-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2.5 flex-wrap">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <h3 className="text-lg sm:text-xl font-black text-white">
+                          {activeRoutine.className}
+                        </h3>
+                        <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                          {activeRoutine.periods.length}টি পিরিয়ড অন্তর্ভুক্ত
+                        </span>
+                      </div>
+                      <div className="text-xs text-emerald-200 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
+                        <span>
+                          কার্যকরের তারিখ:{' '}
+                          <strong>{activeRoutine.effectiveDate || '০১ জানুয়ারি ২০২৬'}</strong>
+                        </span>
+                        {activeRoutine.notes && (
+                          <span className="text-emerald-300/90 italic">
+                            নোট: {activeRoutine.notes}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEditClass(activeRoutine)}
+                        className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-colors border border-white/20 flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5 text-amber-300" />
+                        <span>শ্রেণি তথ্য সম্পাদনা</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteClass(activeRoutine)}
+                        className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-200 text-xs font-bold transition-colors border border-rose-400/30 flex items-center gap-1 cursor-pointer"
+                        title="এই শ্রেণির সম্পূর্ণ রুটিন মুছে ফেলুন"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-rose-300" />
+                        <span>শ্রেণি মুছুন</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleOpenAddPeriod}
+                        className="px-4 py-2 rounded-xl bg-[#DDAA00] hover:bg-[#c99b00] text-slate-950 text-xs font-black transition-all shadow-md flex items-center gap-1.5 cursor-pointer active:scale-95 ml-auto md:ml-0"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>+ নতুন পিরিয়ড যোগ করুন</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Periods Table */}
+                  <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-emerald-700" />
+                        <h4 className="font-bold text-slate-800 text-sm">
+                          {activeRoutine.className}-এর নিয়মিত বিষয়ভিত্তিক সময়সূচি
+                        </h4>
+                      </div>
+                      <span className="text-xs text-slate-500">
+                        মোট পিরিয়ড: <strong>{activeRoutine.periods.length}টি</strong>
+                      </span>
+                    </div>
+
+                    {activeRoutine.periods.length > 0 ? (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold uppercase tracking-wider text-[11px]">
+                            <tr>
+                              <th className="py-3 px-4">ক্রম</th>
+                              <th className="py-3 px-4">ঘণ্টা / অধিবেশন</th>
+                              <th className="py-3 px-4">সময়সূচি</th>
+                              <th className="py-3 px-4">বিষয়</th>
+                              <th className="py-3 px-4">দায়িত্বপ্রাপ্ত শিক্ষক</th>
+                              <th className="py-3 px-4">রুম / কক্ষ</th>
+                              <th className="py-3 px-4 text-right">অ্যাকশন</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100">
+                            {activeRoutine.periods.map((period, idx) => {
+                              const isBreak =
+                                period.subject.includes('বিরতি') ||
+                                period.period.includes('বিরতি') ||
+                                period.subject.includes('সালাত');
+
+                              return (
+                                <tr
+                                  key={period.id || idx}
+                                  className={
+                                    isBreak
+                                      ? 'bg-amber-50/70 font-semibold'
+                                      : 'hover:bg-slate-50/80 transition-colors'
+                                  }
+                                >
+                                  <td className="py-3 px-4 font-mono text-slate-400">
+                                    {idx + 1}
+                                  </td>
+                                  <td className="py-3 px-4 font-bold text-slate-900 whitespace-nowrap">
+                                    {period.period}
+                                  </td>
+                                  <td className="py-3 px-4 font-mono font-bold text-emerald-800 whitespace-nowrap">
+                                    {period.time}
+                                  </td>
+                                  <td className="py-3 px-4 font-bold text-slate-800">
+                                    {period.subject}
+                                    {isBreak && (
+                                      <span className="ml-2 text-[10px] bg-amber-200 text-amber-900 font-bold px-1.5 py-0.5 rounded">
+                                        বিরতি
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-slate-600 font-medium">
+                                    {period.teacher}
+                                  </td>
+                                  <td className="py-3 px-4 text-slate-500 font-mono">
+                                    {period.room || '—'}
+                                  </td>
+                                  <td className="py-3 px-4 text-right whitespace-nowrap">
+                                    <div className="flex items-center justify-end gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => handleOpenEditPeriod(period)}
+                                        className="p-1.5 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors cursor-pointer"
+                                        title="সম্পাদনা করুন"
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeletePeriod(period.id, period.period)}
+                                        className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors cursor-pointer"
+                                        title="মুছে ফেলুন"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      <div className="py-12 text-center p-6 space-y-3">
+                        <Clock className="w-10 h-10 text-slate-300 mx-auto" />
+                        <h4 className="font-bold text-slate-700 text-sm">
+                          এই শ্রেণিতে এখনো কোনো পিরিয়ড বা ঘণ্টা যুক্ত করা হয়নি
+                        </h4>
+                        <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                          নিচের বাটনে ক্লিক করে পাঠদানের ঘণ্টা, সময়, বিষয় ও দায়িত্বপ্রাপ্ত শিক্ষক যোগ করুন।
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddPeriod}
+                          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 shadow-sm cursor-pointer"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-amber-300" />
+                          <span>+ ১ম পিরিয়ড যোগ করুন</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div className="py-16 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-6 space-y-3">
+                  <School className="w-12 h-12 text-slate-400 mx-auto" />
+                  <h3 className="font-bold text-slate-800 text-base">কোনো শ্রেণি পাওয়া যায়নি</h3>
+                  <p className="text-xs text-slate-500">
+                    রুটিন তৈরি করতে নতুন শ্রেণি যুক্ত করুন অথবা ডিফল্ট রুটিন রিস্টোর করুন।
+                  </p>
+                  <div className="flex justify-center gap-2 pt-2">
+                    <button
+                      type="button"
+                      onClick={handleOpenAddClass}
+                      className="px-4 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold cursor-pointer"
+                    >
+                      + নতুন শ্রেণি তৈরি
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetRoutinesToDefault}
+                      className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+                    >
+                      ডিফল্ট রিস্টোর
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </main>
       </div>
 
@@ -6742,6 +7241,248 @@ export default function AdminDashboardPage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Routine Class Add/Edit Modal */}
+      {showClassModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                  <School className="w-4 h-4" />
+                </div>
+                <h3 className="font-bold text-slate-900 text-base">
+                  {editingClassRoutine ? 'শ্রেণির তথ্য সম্পাদনা' : 'নতুন শ্রেণি রুটিনে যোগ করুন'}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowClassModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveClass} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  শ্রেণির নাম <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={classForm.className}
+                  onChange={(e) => setClassForm({ ...classForm, className: e.target.value })}
+                  placeholder="যেমন: ৪র্থ শ্রেণি, ৩য় শ্রেণি বা দাখিল বিজ্ঞান"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  রুটিন কার্যকরের তারিখ
+                </label>
+                <input
+                  type="text"
+                  value={classForm.effectiveDate}
+                  onChange={(e) => setClassForm({ ...classForm, effectiveDate: e.target.value })}
+                  placeholder="যেমন: ০১ জানুয়ারি ২০২৬"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  বিশেষ নির্দেশনা / নোট
+                </label>
+                <textarea
+                  rows={2}
+                  value={classForm.notes}
+                  onChange={(e) => setClassForm({ ...classForm, notes: e.target.value })}
+                  placeholder="যেমন: বিশেষ প্রয়োজনে কর্তৃপক্ষ রুটিন পরিবর্তনের ক্ষমতা সংরক্ষণ করে।"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowClassModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 shadow-sm"
+                >
+                  {editingClassRoutine ? 'সংরক্ষণ করুন' : 'শ্রেণি তৈরি করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Routine Period Add/Edit Modal */}
+      {showPeriodModal && activeRoutine && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-emerald-700" />
+                  <h3 className="font-bold text-slate-900 text-base">
+                    {editingPeriod ? 'পিরিয়ড সম্পাদনা' : 'নতুন পিরিয়ড / পাঠদান ঘণ্টা যোগ'}
+                  </h3>
+                </div>
+                <p className="text-[11px] text-emerald-800 font-bold mt-0.5">
+                  শ্রেণি: {activeRoutine.className}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowPeriodModal(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSavePeriod} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ঘণ্টা / অধিবেশন <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={periodForm.period}
+                    onChange={(e) => setPeriodForm({ ...periodForm, period: e.target.value })}
+                    placeholder="যেমন: ১ম ঘণ্টা, ২য় ঘণ্টা বা বিরতি"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  />
+                  {/* Quick Preset Buttons */}
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {['১ম ঘণ্টা', '২য় ঘণ্টা', '৩য় ঘণ্টা', '৪র্থ ঘণ্টা', 'বিরতি', '৫ম ঘণ্টা', '৬ষ্ঠ ঘণ্টা'].map((p) => (
+                      <button
+                        key={p}
+                        type="button"
+                        onClick={() => setPeriodForm({ ...periodForm, period: p })}
+                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded cursor-pointer"
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    সময়সূচি <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={periodForm.time}
+                    onChange={(e) => setPeriodForm({ ...periodForm, time: e.target.value })}
+                    placeholder="যেমন: ০৯:১৫ - ১০:০০"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  />
+                  {/* Quick Preset Times */}
+                  <div className="flex flex-wrap gap-1 mt-1.5">
+                    {['০৯:১৫ - ১০:০০', '১০:০০ - ১০:৪৫', '১০:৪৫ - ১১:৩০', '১১:৩০ - ১২:১৫', '১২:১৫ - ০১:১৫', '০১:১৫ - ০২:০০'].map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setPeriodForm({ ...periodForm, time: t })}
+                        className="text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-1.5 py-0.5 rounded font-mono cursor-pointer"
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  বিষয়ের নাম <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={periodForm.subject}
+                  onChange={(e) => setPeriodForm({ ...periodForm, subject: e.target.value })}
+                  placeholder="যেমন: কুরআন মাজীদ ও তাজবীদ, সাধারণ গণিত, আরবি ১ম পত্র"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    দায়িত্বপ্রাপ্ত শিক্ষক
+                  </label>
+                  <input
+                    type="text"
+                    list="teachersList"
+                    value={periodForm.teacher}
+                    onChange={(e) => setPeriodForm({ ...periodForm, teacher: e.target.value })}
+                    placeholder="শিক্ষকের নাম লিখুন বা সিলেক্ট করুন"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  />
+                  <datalist id="teachersList">
+                    {teachers.map((t) => (
+                      <option key={t.id} value={t.name} />
+                    ))}
+                    <option value="সকল শিক্ষক ও শিক্ষার্থী" />
+                  </datalist>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    রুম / কক্ষ নম্বর (ঐচ্ছিক)
+                  </label>
+                  <input
+                    type="text"
+                    value={periodForm.room}
+                    onChange={(e) => setPeriodForm({ ...periodForm, room: e.target.value })}
+                    placeholder="যেমন: কক্ষ ১০১, বিজ্ঞান ল্যাব"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowPeriodModal(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-800 text-white text-xs font-bold hover:bg-emerald-900 shadow-sm"
+                >
+                  {editingPeriod ? 'সংরক্ষণ করুন' : 'পিরিয়ড যোগ করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Routine Toast Notification */}
+      {routineToast.show && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-emerald-700 animate-in fade-in slide-in-from-bottom-4">
+          <CheckCircle className="w-4 h-4 text-amber-300" />
+          <span>{routineToast.message}</span>
         </div>
       )}
     </div>

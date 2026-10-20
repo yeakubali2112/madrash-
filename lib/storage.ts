@@ -25,7 +25,10 @@ import {
   defaultPrayerConfig,
   AdminUser,
   defaultAdminUsers,
-  availablePermissions
+  availablePermissions,
+  ClassRoutine,
+  RoutinePeriod,
+  defaultClassRoutines
 } from './data';
 
 const STORAGE_KEYS = {
@@ -43,7 +46,8 @@ const STORAGE_KEYS = {
   GALLERY: 'padm_gallery',
   PRAYER_CONFIG: 'padm_prayer_config',
   ADMIN_USERS: 'padm_admin_users',
-  CURRENT_ADMIN_USER: 'padm_current_admin_user'
+  CURRENT_ADMIN_USER: 'padm_current_admin_user',
+  ROUTINES: 'padm_routines'
 };
 
 export const getStoredInfo = (): MadrasahInfo => {
@@ -251,7 +255,32 @@ export const resetAllData = () => {
   localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(defaultGallery));
   localStorage.setItem(STORAGE_KEYS.PRAYER_CONFIG, JSON.stringify(defaultPrayerConfig));
   localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(defaultAdminUsers));
+  localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultClassRoutines));
   localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
+};
+
+export const getStoredRoutines = (): ClassRoutine[] => {
+  if (typeof window === 'undefined') return defaultClassRoutines;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.ROUTINES);
+    if (!data) {
+      localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultClassRoutines));
+      return defaultClassRoutines;
+    }
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultClassRoutines;
+  } catch {
+    return defaultClassRoutines;
+  }
+};
+
+export const saveStoredRoutines = (routines: ClassRoutine[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(routines));
+  } catch (err) {
+    console.error('Error saving class routines:', err);
+  }
 };
 
 export const getStoredAdminUsers = (): AdminUser[] => {
