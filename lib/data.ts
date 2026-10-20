@@ -890,3 +890,116 @@ export const defaultPrayerConfig: PrayerTimeConfig = {
   prayerQuoteBangla: "নিশ্চয়ই সালাত মুমিনদের ওপর নির্দিষ্ট সময়ে ফরয করা হয়েছে। (সূরা আন-নিসা: ১০৩)",
   prayerQuoteSource: "আল-কুরআন, সূরা আন-নিসা: ৪/১০৩"
 };
+
+export interface AdminPermission {
+  id: string;
+  name: string;
+  description: string;
+  category: 'core' | 'academic' | 'media' | 'system';
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  username: string;
+  password: string;
+  role: string;
+  phone?: string;
+  email?: string;
+  isSuperAdmin?: boolean;
+  isActive: boolean;
+  permissions: string[];
+  createdAt: string;
+  lastLogin?: string;
+}
+
+export const availablePermissions: AdminPermission[] = [
+  { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
+  { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
+  { id: 'results', name: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },
+  { id: 'admissions', name: 'ভর্তি আবেদন', description: 'অনলাইন নতুন ভর্তি আবেদন যাচাই, অনুমোদন ও বাতিল', category: 'academic' },
+  { id: 'teachers', name: 'শিক্ষক ও স্টাফ তালিকা', description: 'শিক্ষক-কর্মচারীদের তথ্য ও প্রোফাইল ব্যবস্থাপনা', category: 'academic' },
+  { id: 'notices', name: 'নোটিশ ব্যবস্থাপনা', description: 'সাধারণ ও অ্যাকাডেমিক নোটিশ যুক্ত ও প্রকাশ', category: 'core' },
+  { id: 'urgent-notices', name: 'জরুরি নোটিশ (স্ক্রল)', description: 'হোমপেজের জরুরি স্ক্রলিং টিকার নোটিশ নিয়ন্ত্রণ', category: 'core' },
+  { id: 'hero', name: 'হিরো ব্যানার স্লাইডশো', description: 'হোমপেজের মূল ব্যানার, ছবি ও স্লাইডশো পরিবর্তন', category: 'media' },
+  { id: 'facilities', name: 'সুযোগ-সুবিধাসমূহ', description: 'মাদ্রাসার ল্যাব, লাইব্রেরি ও ক্যাম্পাসের সুবিধা এডিট', category: 'media' },
+  { id: 'gallery', name: 'ফটো গ্যালারি', description: 'ক্যাম্পাস, অনুষ্ঠান ও পুরস্কারের ছবি আপলোড', category: 'media' },
+  { id: 'authorities', name: 'কর্তৃপক্ষের বাণী', description: 'সভাপতি ও অধ্যক্ষ মহোদয়ের বাণী ও ছবি পরিবর্তন', category: 'media' },
+  { id: 'messages', name: 'প্রাপ্ত বার্তা (ইনবক্স)', description: 'ওয়েবসাইটের যোগাযোগ ফরম থেকে আসা মেসেজ দেখা', category: 'core' },
+  { id: 'prayer', name: 'সালাতের সময়সূচি', description: 'পাঁচ ওয়াক্ত সালাতের আযান ও জামাতের সময়সূচি পরিবর্তন', category: 'core' },
+  { id: 'settings', name: 'মাদ্রাসা সাধারণ সেটিংস', description: 'মাদ্রাসার নাম, কোড, ঠিকানা, ফোন ও অন্যান্য সেটিংস', category: 'system' },
+  { id: 'backup', name: 'ব্যাকআপ ও রিস্টোর', description: 'ডাটাবেজ এক্সপোর্ট, ইমপোর্ট ও ব্যাকআপ ফাইল ডাউনলোড', category: 'system' },
+  { id: 'users', name: 'ইউজার ও পারমিশন কন্ট্রোল', description: 'নতুন অ্যাডমিন তৈরি ও তাদের এক্সেস পারমিশন নিয়ন্ত্রণ', category: 'system' }
+];
+
+export const defaultAdminUsers: AdminUser[] = [
+  {
+    id: 'admin-super',
+    name: 'প্রধান সুপার অ্যাডমিন',
+    username: 'admin',
+    password: 'madrasah123',
+    role: 'সুপার অ্যাডমিন (Super Admin)',
+    phone: '01773542057',
+    email: 'admin@madrasah.edu.bd',
+    isSuperAdmin: true,
+    isActive: true,
+    permissions: [
+      'overview',
+      'hero',
+      'admissions',
+      'notices',
+      'urgent-notices',
+      'facilities',
+      'gallery',
+      'teachers',
+      'attendance',
+      'authorities',
+      'results',
+      'messages',
+      'settings',
+      'prayer',
+      'backup',
+      'users'
+    ],
+    createdAt: '২০২৬-০১-০১'
+  },
+  {
+    id: 'admin-attendance',
+    name: 'মাওলানা মোঃ রফিকুল ইসলাম',
+    username: 'attendance_staff',
+    password: 'att123',
+    role: 'হাজিরা ও শিক্ষক ইনচার্জ',
+    phone: '01711223344',
+    email: 'attendance@madrasah.edu.bd',
+    isSuperAdmin: false,
+    isActive: true,
+    permissions: ['overview', 'attendance', 'teachers'],
+    createdAt: '২০২৬-০২-০১'
+  },
+  {
+    id: 'admin-exam',
+    name: 'মোঃ মাহবুবুল হক',
+    username: 'exam_admin',
+    password: 'exam123',
+    role: 'পরীক্ষা ও ফলাফল নিয়ন্ত্রক',
+    phone: '01819876543',
+    email: 'exam@madrasah.edu.bd',
+    isSuperAdmin: false,
+    isActive: true,
+    permissions: ['overview', 'results', 'notices'],
+    createdAt: '২০২৬-০২-১৫'
+  },
+  {
+    id: 'admin-admission',
+    name: 'মোঃ কামরুল হাসান',
+    username: 'admission_staff',
+    password: 'adm123',
+    role: 'ভর্তি ও নোটিশ কর্মকর্তা',
+    phone: '01912345678',
+    email: 'admission@madrasah.edu.bd',
+    isSuperAdmin: false,
+    isActive: true,
+    permissions: ['overview', 'admissions', 'notices', 'urgent-notices', 'messages'],
+    createdAt: '২০২৬-০৩-০১'
+  }
+];

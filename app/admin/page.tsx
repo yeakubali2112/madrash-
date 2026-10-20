@@ -19,7 +19,9 @@ import {
   HeroBannerSlide,
   defaultHeroSlides,
   PrayerTimeConfig,
-  defaultPrayerConfig
+  defaultPrayerConfig,
+  AdminUser,
+  availablePermissions
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -36,6 +38,12 @@ import {
   Trash2,
   Edit,
   Eye,
+  EyeOff,
+  Lock,
+  Unlock,
+  Key,
+  KeyRound,
+  ShieldAlert,
   CheckCircle2,
   XCircle,
   Clock,
@@ -84,6 +92,12 @@ export default function AdminDashboardPage() {
     isAdmin,
     isLoaded,
     logoutAdmin,
+    adminUsers,
+    currentAdminUser,
+    addAdminUser,
+    updateAdminUser,
+    deleteAdminUser,
+    toggleAdminUserStatus,
     info,
     updateInfo,
     heroSettings,
@@ -125,8 +139,17 @@ export default function AdminDashboardPage() {
     resetToDefaults
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup' | 'users'>('overview');
   const [mounted, setMounted] = useState(false);
+
+  // User Permission verification
+  const userPermissions = currentAdminUser?.permissions || availablePermissions.map(p => p.id);
+  const isSuperAdminUser = currentAdminUser ? !!currentAdminUser.isSuperAdmin : true;
+
+  const canAccessTab = (tabId: string) => {
+    if (isSuperAdminUser) return true;
+    return userPermissions.includes(tabId);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -138,6 +161,16 @@ export default function AdminDashboardPage() {
       router.push('/admin/login');
     }
   }, [mounted, isLoaded, isAdmin, router]);
+
+  // Ensure active tab is within user's allowed permissions
+  useEffect(() => {
+    if (mounted && !canAccessTab(activeTab)) {
+      const firstAllowed = availablePermissions.find(p => canAccessTab(p.id))?.id;
+      if (firstAllowed) {
+        setActiveTab(firstAllowed as any);
+      }
+    }
+  }, [activeTab, currentAdminUser, mounted]);
 
   // Universal Centered Confirmation Modal State
   const [confirmModal, setConfirmModal] = useState<{
@@ -528,6 +561,208 @@ export default function AdminDashboardPage() {
   // Pending and unread counts
   const pendingAppsCount = applications.filter(a => a.status === 'অপেক্ষমান').length;
   const unreadMessagesCount = messages.filter(m => !m.isRead).length;
+
+  // ==========================================
+  // ADMIN USERS & PERMISSIONS MANAGEMENT STATE
+  // ==========================================
+  const [showUserModal, setShowUserModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
+  const [userForm, setUserForm] = useState<{
+    name: string;
+    username: string;
+    password: string;
+    role: string;
+    phone: string;
+    email: string;
+    isActive: boolean;
+    permissions: string[];
+  }>({
+    name: '',
+    username: '',
+    password: '',
+    role: 'সহকারী অ্যাডমিন / ইনচার্জ',
+    phone: '',
+    email: '',
+    isActive: true,
+    permissions: ['overview', 'attendance', 'notices']
+  });
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [userStatusFilter, setUserStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
+  const [userToast, setUserToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
+  const handleOpenAddUser = () => {
+    setEditingUser(null);
+    setUserForm({
+      name: '',
+      username: '',
+      password: '',
+      role: 'সহকারী অ্যাডমিন / ইনচার্জ',
+      phone: '',
+      email: '',
+      isActive: true,
+      permissions: ['overview', 'attendance', 'notices']
+    });
+    setShowUserModal(true);
+  };
+
+  const handleOpenEditUser = (user: AdminUser) => {
+    setEditingUser(user);
+    setUserForm({
+      name: user.name,
+      username: user.username,
+      password: user.password,
+      role: user.role,
+      phone: user.phone || '',
+      email: user.email || '',
+      isActive: user.isActive,
+      permissions: user.permissions || []
+    });
+    setShowUserModal(true);
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userForm.name.trim()) {
+      alert('অনুগ্রহ করে ব্যবহারকারীর পূর্ণ নাম লিখুন।');
+      return;
+    }
+    const cleanUsername = userForm.username.trim().toLowerCase();
+    if (!cleanUsername) {
+      alert('অনুগ্রহ করে ইউজারনেম দিন।');
+      return;
+    }
+    if (!userForm.password.trim()) {
+      alert('অনুগ্রহ করে পাসওয়ার্ড দিন।');
+      return;
+    }
+
+    const duplicate = adminUsers.find(
+      u => u.username.toLowerCase() === cleanUsername && (!editingUser || u.id !== editingUser.id)
+    );
+    if (duplicate) {
+      alert(`"${cleanUsername}" ইউজারনেমটি ইতিমধ্যে বিদ্যমান! অনুগ্রহ করে অন্য ইউজারনেম দিন।`);
+      return;
+    }
+
+    if (userForm.permissions.length === 0) {
+      alert('অনুগ্রহ করে অন্তত একটি অপশন বা পারমিশন নির্বাচন করুন।');
+      return;
+    }
+
+    if (editingUser) {
+      updateAdminUser(editingUser.id, {
+        name: userForm.name.trim(),
+        username: cleanUsername,
+        password: userForm.password.trim(),
+        role: userForm.role.trim() || 'সহকারী অ্যাডমিন',
+        phone: userForm.phone.trim(),
+        email: userForm.email.trim(),
+        isActive: userForm.isActive,
+        permissions: editingUser.isSuperAdmin ? availablePermissions.map(p => p.id) : userForm.permissions
+      });
+      setUserToast({ show: true, message: `"${userForm.name}"-এর প্রোফাইল ও পারমিশন সফলভাবে আপডেট হয়েছে!` });
+    } else {
+      addAdminUser({
+        name: userForm.name.trim(),
+        username: cleanUsername,
+        password: userForm.password.trim(),
+        role: userForm.role.trim() || 'সহকারী অ্যাডমিন',
+        phone: userForm.phone.trim(),
+        email: userForm.email.trim(),
+        isActive: userForm.isActive,
+        isSuperAdmin: false,
+        permissions: userForm.permissions
+      });
+      setUserToast({ show: true, message: `নতুন প্রোফাইল "${userForm.name}" সফলভাবে তৈরি করা হয়েছে!` });
+    }
+
+    setShowUserModal(false);
+    setEditingUser(null);
+    setTimeout(() => setUserToast({ show: false, message: '' }), 3500);
+  };
+
+  const handleDeleteUser = (user: AdminUser) => {
+    if (user.isSuperAdmin) {
+      alert('প্রধান সুপার অ্যাডমিন প্রোফাইল মুছে ফেলা যাবে না!');
+      return;
+    }
+    openConfirmModal({
+      title: 'প্রোফাইল মুছে ফেলার নিশ্চিতকরণ',
+      message: `আপনি কি নিশ্চিতভাবে "${user.name}" (${user.username}) প্রোফাইলটি মুছে ফেলতে চান? মুছে ফেললে তিনি আর অ্যাডমিন প্যানেলে লগইন করতে পারবেন না।`,
+      confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+      cancelLabel: 'বাতিল',
+      type: 'danger',
+      onConfirm: () => {
+        deleteAdminUser(user.id);
+        setUserToast({ show: true, message: `"${user.name}" প্রোফাইলটি সফলভাবে মুছে ফেলা হয়েছে!` });
+        setTimeout(() => setUserToast({ show: false, message: '' }), 3500);
+        closeConfirmModal();
+      }
+    });
+  };
+
+  const handleToggleUserActive = (user: AdminUser) => {
+    if (user.isSuperAdmin) {
+      alert('সুপার অ্যাডমিন প্রোফাইল নিষ্ক্রিয় করা যাবে না!');
+      return;
+    }
+    toggleAdminUserStatus(user.id);
+    setUserToast({
+      show: true,
+      message: `"${user.name}" প্রোফাইলটি ${user.isActive ? 'নিষ্ক্রিয়' : 'সক্রিয়'} করা হয়েছে!`
+    });
+    setTimeout(() => setUserToast({ show: false, message: '' }), 3500);
+  };
+
+  const togglePasswordVisibility = (userId: string) => {
+    setVisiblePasswords(prev => ({
+      ...prev,
+      [userId]: !prev[userId]
+    }));
+  };
+
+  const togglePermission = (permId: string) => {
+    setUserForm(prev => {
+      const exists = prev.permissions.includes(permId);
+      return {
+        ...prev,
+        permissions: exists
+          ? prev.permissions.filter(p => p !== permId)
+          : [...prev.permissions, permId]
+      };
+    });
+  };
+
+  const selectAllPermissions = () => {
+    setUserForm(prev => ({
+      ...prev,
+      permissions: availablePermissions.map(p => p.id)
+    }));
+  };
+
+  const deselectAllPermissions = () => {
+    setUserForm(prev => ({
+      ...prev,
+      permissions: ['overview']
+    }));
+  };
+
+  const filteredUsers = adminUsers.filter(user => {
+    const q = userSearchQuery.toLowerCase();
+    const matchesSearch =
+      user.name.toLowerCase().includes(q) ||
+      user.username.toLowerCase().includes(q) ||
+      user.role.toLowerCase().includes(q) ||
+      (user.phone || '').includes(q);
+    const matchesStatus =
+      userStatusFilter === 'all'
+        ? true
+        : userStatusFilter === 'active'
+        ? user.isActive
+        : !user.isActive;
+    return matchesSearch && matchesStatus;
+  });
 
   // Helper for compressing/resizing images to prevent localStorage quota overflow
   const handleImageUpload = (file: File, callback: (dataUrl: string) => void) => {
@@ -951,6 +1186,38 @@ export default function AdminDashboardPage() {
               <p className="text-xs text-emerald-200">{info.name} • {info.location || "দুপচাঁচিয়া, বগুড়া"}</p>
             </div>
           </div>
+
+          {/* User profile info & quick logout */}
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 bg-white/10 border border-white/20 px-3 py-1.5 rounded-xl text-right">
+              <div className="w-8 h-8 rounded-lg bg-[#DDAA00] text-slate-950 font-black flex items-center justify-center text-xs shadow shrink-0">
+                {currentAdminUser?.name ? currentAdminUser.name.charAt(0) : 'অ্যা'}
+              </div>
+              <div className="hidden sm:block text-right">
+                <div className="text-xs font-bold text-white flex items-center gap-1.5 justify-end">
+                  <span>{currentAdminUser?.name || 'প্রধান সুপার অ্যাডমিন'}</span>
+                  {currentAdminUser?.isSuperAdmin ? (
+                    <span className="bg-[#DDAA00] text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded">সুপার</span>
+                  ) : (
+                    <span className="bg-emerald-400 text-slate-950 text-[9px] font-black px-1.5 py-0.2 rounded">স্টাফ</span>
+                  )}
+                </div>
+                <div className="text-[10px] text-emerald-200">{currentAdminUser?.role || 'সুপার অ্যাডমিন'} • @{currentAdminUser?.username || 'admin'}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                logoutAdmin();
+                router.push('/admin/login');
+              }}
+              className="bg-rose-600/90 hover:bg-rose-600 text-white px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm cursor-pointer"
+              title="লগআউট করুন"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">লগআউট</span>
+            </button>
+          </div>
         </div>
       </header>
 
@@ -958,256 +1225,311 @@ export default function AdminDashboardPage() {
       <div className="max-w-7xl mx-auto w-full px-4 py-6 flex-1 flex flex-col lg:flex-row gap-6">
         {/* Sidebar Nav */}
         <aside className="w-full lg:w-64 bg-white rounded-2xl border border-slate-200 p-3 shadow-sm shrink-0 self-start">
-          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-2">
-            প্রধান মেনু
+          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-3 py-2 flex items-center justify-between">
+            <span>প্রধান মেনু</span>
+            {!isSuperAdminUser && (
+              <span className="text-[10px] bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded font-mono">
+                সীমাবদ্ধ অ্যাক্সেস
+              </span>
+            )}
           </div>
           <nav className="space-y-1 text-xs md:text-sm font-semibold">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'overview'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <LayoutDashboard className="w-4 h-4" />
-                <span>ওভারভিউ</span>
-              </div>
-            </button>
+            {canAccessTab('overview') && (
+              <button
+                onClick={() => setActiveTab('overview')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'overview'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <LayoutDashboard className="w-4 h-4" />
+                  <span>ওভারভিউ</span>
+                </div>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('hero')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'hero'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Sliders className="w-4 h-4 text-emerald-400" />
-                <span>হিরো ব্যানার</span>
-              </div>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                হোমপেজ
-              </span>
-            </button>
+            {canAccessTab('hero') && (
+              <button
+                onClick={() => setActiveTab('hero')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'hero'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sliders className="w-4 h-4 text-emerald-400" />
+                  <span>হিরো ব্যানার</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  হোমপেজ
+                </span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('admissions')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'admissions'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <GraduationCap className="w-4 h-4" />
-                <span>ভর্তি আবেদন</span>
-              </div>
-              {pendingAppsCount > 0 && (
+            {canAccessTab('admissions') && (
+              <button
+                onClick={() => setActiveTab('admissions')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'admissions'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <GraduationCap className="w-4 h-4" />
+                  <span>ভর্তি আবেদন</span>
+                </div>
+                {pendingAppsCount > 0 && (
+                  <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {pendingAppsCount} নতুন
+                  </span>
+                )}
+              </button>
+            )}
+
+            {canAccessTab('notices') && (
+              <button
+                onClick={() => setActiveTab('notices')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'notices'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Bell className="w-4 h-4" />
+                  <span>নোটিশ ব্যবস্থাপনা</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono font-bold">
+                  {notices.length}
+                </span>
+              </button>
+            )}
+
+            {canAccessTab('urgent-notices') && (
+              <button
+                onClick={() => setActiveTab('urgent-notices')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'urgent-notices'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Megaphone className="w-4 h-4 text-amber-500" />
+                  <span>জরুরি নোটিশ (স্ক্রল)</span>
+                </div>
                 <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
-                  {pendingAppsCount} নতুন
+                  {urgentNotices.filter(n => n.isActive).length}টি সক্রিয়
                 </span>
-              )}
-            </button>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('notices')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'notices'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Bell className="w-4 h-4" />
-                <span>নোটিশ ব্যবস্থাপনা</span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono font-bold">
-                {notices.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('urgent-notices')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'urgent-notices'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Megaphone className="w-4 h-4 text-amber-500" />
-                <span>জরুরি নোটিশ (স্ক্রল)</span>
-              </div>
-              <span className="bg-amber-500 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
-                {urgentNotices.filter(n => n.isActive).length}টি সক্রিয়
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('facilities')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'facilities'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Sparkles className="w-4 h-4 text-emerald-400" />
-                <span>সুযোগ-সুবিধাসমূহ</span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono font-bold">
-                {facilities.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('gallery')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'gallery'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Camera className="w-4 h-4 text-amber-500" />
-                <span>ফটো গ্যালারি</span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono font-bold">
-                {gallery.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('teachers')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'teachers'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4" />
-                <span>শিক্ষক ও স্টাফ</span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono font-bold">
-                {teachers.length}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('attendance')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'attendance'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <UserCheck className="w-4 h-4 text-emerald-400" />
-                <span>দৈনিক হাজিরা ও উপস্থিতি</span>
-              </div>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                নতুন
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('authorities')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'authorities'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Quote className="w-4 h-4 text-emerald-500" />
-                <span>কর্তৃপক্ষের বাণী</span>
-              </div>
-              <span className="text-[11px] text-slate-400 font-mono font-bold">
-                ২টি বাণী
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('results')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'results'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Award className="w-4 h-4" />
-                <span>ফলাফল ও মার্কস</span>
-              </div>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('messages')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'messages'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <MessageSquare className="w-4 h-4" />
-                <span>প্রাপ্ত বার্তা</span>
-              </div>
-              {unreadMessagesCount > 0 && (
-                <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
-                  {unreadMessagesCount}
+            {canAccessTab('facilities') && (
+              <button
+                onClick={() => setActiveTab('facilities')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'facilities'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Sparkles className="w-4 h-4 text-emerald-400" />
+                  <span>সুযোগ-সুবিধাসমূহ</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono font-bold">
+                  {facilities.length}
                 </span>
-              )}
-            </button>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'settings'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Settings className="w-4 h-4" />
-                <span>মাদ্রাসা সেটিংস</span>
-              </div>
-            </button>
+            {canAccessTab('gallery') && (
+              <button
+                onClick={() => setActiveTab('gallery')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'gallery'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Camera className="w-4 h-4 text-amber-500" />
+                  <span>ফটো গ্যালারি</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono font-bold">
+                  {gallery.length}
+                </span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('prayer')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'prayer'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Compass className="w-4 h-4 text-[#DDAA00]" />
-                <span>সালাতের সময়সূচি</span>
-              </div>
-              <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                নতুন
-              </span>
-            </button>
+            {canAccessTab('teachers') && (
+              <button
+                onClick={() => setActiveTab('teachers')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'teachers'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Users className="w-4 h-4" />
+                  <span>শিক্ষক ও স্টাফ</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono font-bold">
+                  {teachers.length}
+                </span>
+              </button>
+            )}
 
-            <button
-              onClick={() => setActiveTab('backup')}
-              className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                activeTab === 'backup'
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-slate-700 hover:bg-slate-100'
-              }`}
-            >
-              <div className="flex items-center gap-2.5">
-                <Database className="w-4 h-4" />
-                <span>ব্যাকআপ ও রিস্টোর</span>
-              </div>
-            </button>
+            {canAccessTab('attendance') && (
+              <button
+                onClick={() => setActiveTab('attendance')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'attendance'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="w-4 h-4 text-emerald-400" />
+                  <span>দৈনিক হাজিরা ও উপস্থিতি</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  নতুন
+                </span>
+              </button>
+            )}
+
+            {canAccessTab('authorities') && (
+              <button
+                onClick={() => setActiveTab('authorities')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'authorities'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Quote className="w-4 h-4 text-emerald-500" />
+                  <span>কর্তৃপক্ষের বাণী</span>
+                </div>
+                <span className="text-[11px] text-slate-400 font-mono font-bold">
+                  ২টি বাণী
+                </span>
+              </button>
+            )}
+
+            {canAccessTab('results') && (
+              <button
+                onClick={() => setActiveTab('results')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'results'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Award className="w-4 h-4" />
+                  <span>ফলাফল ও মার্কস</span>
+                </div>
+              </button>
+            )}
+
+            {canAccessTab('messages') && (
+              <button
+                onClick={() => setActiveTab('messages')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'messages'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <MessageSquare className="w-4 h-4" />
+                  <span>প্রাপ্ত বার্তা</span>
+                </div>
+                {unreadMessagesCount > 0 && (
+                  <span className="bg-rose-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">
+                    {unreadMessagesCount}
+                  </span>
+                )}
+              </button>
+            )}
+
+            {canAccessTab('settings') && (
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'settings'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Settings className="w-4 h-4" />
+                  <span>মাদ্রাসা সেটিংস</span>
+                </div>
+              </button>
+            )}
+
+            {canAccessTab('prayer') && (
+              <button
+                onClick={() => setActiveTab('prayer')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'prayer'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Compass className="w-4 h-4 text-[#DDAA00]" />
+                  <span>সালাতের সময়সূচি</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  নতুন
+                </span>
+              </button>
+            )}
+
+            {canAccessTab('backup') && (
+              <button
+                onClick={() => setActiveTab('backup')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'backup'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Database className="w-4 h-4" />
+                  <span>ব্যাকআপ ও রিস্টোর</span>
+                </div>
+              </button>
+            )}
+
+            {/* NEW TAB: USER & PERMISSION PROFILES */}
+            {canAccessTab('users') && (
+              <button
+                onClick={() => setActiveTab('users')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
+                  activeTab === 'users'
+                    ? 'bg-emerald-800 text-white shadow-sm'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <ShieldCheck className="w-4 h-4 text-[#DDAA00]" />
+                  <span>ইউজার ও পারমিশন</span>
+                </div>
+                <span className="text-[10px] bg-amber-100 text-amber-900 font-black px-1.5 py-0.5 rounded">
+                  {adminUsers.length} প্রোফাইল
+                </span>
+              </button>
+            )}
           </nav>
 
           <div className="mt-6 pt-4 border-t border-slate-100 px-2 space-y-2">
@@ -1216,7 +1538,7 @@ export default function AdminDashboardPage() {
                 logoutAdmin();
                 router.push('/admin/login');
               }}
-              className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm hover:shadow"
+              className="w-full flex items-center justify-center gap-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold py-2.5 px-3 rounded-xl transition-all shadow-sm hover:shadow cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>লগআউট করুন</span>
@@ -4426,6 +4748,395 @@ export default function AdminDashboardPage() {
               </div>
             </div>
           )}
+
+          {/* TAB 16: ADMIN USERS & PERMISSION MANAGEMENT */}
+          {activeTab === 'users' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-slate-200">
+                <div>
+                  <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+                    <ShieldCheck className="w-6 h-6 text-[#006837]" />
+                    <span>অ্যাডমিন প্রোফাইল ও পারমিশন কন্ট্রোল</span>
+                  </h2>
+                  <p className="text-xs text-slate-500 mt-1">
+                    মাদ্রাসার প্রশাসনিক ও স্টাফ প্রোফাইল তৈরি করুন এবং প্রতিটি ব্যবহারকারী অ্যাডমিন প্যানেলের কোন কোন মেনু ব্যবহার করতে পারবেন তা নিয়ন্ত্রণ করুন।
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenAddUser}
+                  className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 to-[#006837] hover:from-emerald-800 hover:to-emerald-900 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer self-start sm:self-auto"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>নতুন প্রোফাইল তৈরি করুন</span>
+                </button>
+              </div>
+
+              {/* Toast Alert */}
+              {userToast.show && (
+                <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  <span>{userToast.message}</span>
+                </div>
+              )}
+
+              {/* Stat Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                {/* মোট প্রোফাইল */}
+                <div className="bg-gradient-to-br from-emerald-50 to-white p-4 rounded-2xl border border-emerald-200/80 shadow-xs flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-emerald-700 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-slate-900">{adminUsers.length} জন</div>
+                    <div className="text-[11px] font-bold text-slate-500">মোট ইউজার প্রোফাইল</div>
+                  </div>
+                </div>
+
+                {/* সক্রিয় প্রোফাইল */}
+                <div className="bg-gradient-to-br from-teal-50 to-white p-4 rounded-2xl border border-teal-200/80 shadow-xs flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-teal-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-teal-900">
+                      {adminUsers.filter(u => u.isActive).length} জন
+                    </div>
+                    <div className="text-[11px] font-bold text-teal-700">সক্রিয় ইউজার একাউন্ট</div>
+                  </div>
+                </div>
+
+                {/* সুপার অ্যাডমিন */}
+                <div className="bg-gradient-to-br from-amber-50 to-white p-4 rounded-2xl border border-amber-200/80 shadow-xs flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <ShieldAlert className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-amber-900">
+                      {adminUsers.filter(u => u.isSuperAdmin).length} জন
+                    </div>
+                    <div className="text-[11px] font-bold text-amber-800">মাস্টার সুপার অ্যাডমিন</div>
+                  </div>
+                </div>
+
+                {/* স্টাফ ও ইনচার্জ */}
+                <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-200/80 shadow-xs flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-xl sm:text-2xl font-black text-blue-900">
+                      {adminUsers.filter(u => !u.isSuperAdmin).length} জন
+                    </div>
+                    <div className="text-[11px] font-bold text-blue-700">স্টাফ ও ইনচার্জ প্রোফাইল</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Info Box */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 border border-amber-200 text-amber-900 text-xs flex items-start gap-3">
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-800 shrink-0 mt-0.5">
+                  <Key className="w-4 h-4" />
+                </div>
+                <div className="space-y-1">
+                  <div className="font-black text-sm text-amber-950">কীভাবে ইউজার ও অপশন পারমিশন কাজ করে?</div>
+                  <p className="text-amber-800 leading-relaxed">
+                    এখানে আপনি মাদ্রাসার বিভিন্ন দায়িত্বশীল শিক্ষক ও কর্মচারীদের জন্য আলাদা ইউজারনেম ও পাসওয়ার্ড দিয়ে প্রোফাইল তৈরি করতে পারবেন। প্রতিটি প্রোফাইলে ঠিক যে কয়টি মডিউলে টিকচিহ্ন দেওয়া থাকবে, সেই ইউজার অ্যাডমিন প্যানেলে লগইন করার পর শুধুমাত্র সেই নির্দিষ্ট অপশনগুলোই দেখতে ও সম্পাদনা করতে পারবেন। বাকি অপশনগুলো তার স্ক্রিন থেকে স্বয়ংক্রিয়ভাবে লুকিয়ে রাখা হবে।
+                  </p>
+                </div>
+              </div>
+
+              {/* Search & Filter Toolbar */}
+              <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between bg-white p-3 rounded-2xl border border-slate-200 shadow-xs">
+                <div className="relative flex-1 max-w-md">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={userSearchQuery}
+                    onChange={(e) => setUserSearchQuery(e.target.value)}
+                    placeholder="নাম, ইউজারনেম, পদবী বা মোবাইল দিয়ে খুঁজুন..."
+                    className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700 font-medium"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      userStatusFilter === 'all'
+                        ? 'bg-white text-slate-900 shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    সকল ({adminUsers.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('active')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      userStatusFilter === 'active'
+                        ? 'bg-emerald-700 text-white shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    সক্রিয় ({adminUsers.filter(u => u.isActive).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUserStatusFilter('inactive')}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                      userStatusFilter === 'inactive'
+                        ? 'bg-rose-600 text-white shadow-xs font-black'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    নিষ্ক্রিয় ({adminUsers.filter(u => !u.isActive).length})
+                  </button>
+                </div>
+              </div>
+
+              {/* User Profiles Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {filteredUsers.map((user) => {
+                  const isVisiblePass = !!visiblePasswords[user.id];
+                  const isCurrent = currentAdminUser?.id === user.id;
+
+                  return (
+                    <div
+                      key={user.id}
+                      className={`bg-white rounded-2xl border transition-all duration-200 p-5 space-y-4 shadow-xs hover:shadow-md ${
+                        user.isSuperAdmin
+                          ? 'border-amber-300 ring-1 ring-amber-200/50 bg-gradient-to-br from-amber-50/20 via-white to-white'
+                          : user.isActive
+                          ? 'border-slate-200 hover:border-emerald-300'
+                          : 'border-slate-200 bg-slate-50/60 opacity-80'
+                      }`}
+                    >
+                      {/* Top Header of Card */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-sm shrink-0 shadow-sm relative ${
+                              user.isSuperAdmin
+                                ? 'bg-gradient-to-br from-amber-400 to-amber-600 text-white'
+                                : user.isActive
+                                ? 'bg-gradient-to-br from-emerald-600 to-teal-700 text-white'
+                                : 'bg-slate-300 text-slate-600'
+                            }`}
+                          >
+                            {user.name.charAt(0) || 'U'}
+                            {/* Status Dot */}
+                            <span
+                              className={`absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full border-2 border-white ${
+                                user.isActive ? 'bg-emerald-500' : 'bg-slate-400'
+                              }`}
+                              title={user.isActive ? 'সক্রিয় অ্যাকাউন্ট' : 'নিষ্ক্রিয় অ্যাকাউন্ট'}
+                            />
+                          </div>
+
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h3 className="font-black text-slate-900 text-sm">{user.name}</h3>
+                              {user.isSuperAdmin && (
+                                <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full border border-amber-300">
+                                  👑 সুপার অ্যাডমিন
+                                </span>
+                              )}
+                              {isCurrent && (
+                                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                                  বর্তমান লগইন
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-emerald-800">{user.role}</span>
+                              <span>•</span>
+                              <span className="font-mono text-slate-600 font-bold">@{user.username}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div>
+                          <span
+                            className={`inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                              user.isActive
+                                ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                : 'bg-slate-100 text-slate-600 border border-slate-200'
+                            }`}
+                          >
+                            {user.isActive ? (
+                              <>
+                                <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                <span>সক্রিয়</span>
+                              </>
+                            ) : (
+                              <>
+                                <XCircle className="w-3 h-3 text-slate-400" />
+                                <span>নিষ্ক্রিয়</span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Credentials & Details Strip */}
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-200/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <span className="font-bold text-slate-700">ইউজারনেম:</span>
+                          <span className="font-mono font-bold text-slate-900">{user.username}</span>
+                        </div>
+
+                        <div className="flex items-center justify-between gap-1">
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <span className="font-bold text-slate-700">পাসওয়ার্ড:</span>
+                            <span className="font-mono font-bold text-slate-900">
+                              {isVisiblePass ? user.password : '••••••••'}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => togglePasswordVisibility(user.id)}
+                            className="p-1 text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+                            title={isVisiblePass ? 'পাসওয়ার্ড লুকান' : 'পাসওয়ার্ড দেখুন'}
+                          >
+                            {isVisiblePass ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                          </button>
+                        </div>
+
+                        {user.phone && (
+                          <div className="flex items-center gap-2 text-slate-600">
+                            <span className="font-bold text-slate-700">মোবাইল:</span>
+                            <span className="font-mono text-slate-800">{user.phone}</span>
+                          </div>
+                        )}
+
+                        {user.email && (
+                          <div className="flex items-center gap-2 text-slate-600 truncate">
+                            <span className="font-bold text-slate-700">ইমেইল:</span>
+                            <span className="truncate text-slate-800">{user.email}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Permitted Modules Section */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[11px] font-bold text-slate-700">
+                            অনুমোদিত অপশন ও পারমিশন:
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md">
+                            {user.isSuperAdmin
+                              ? 'সকল ১৬টি মডিউলে পূর্ণ অধিকার'
+                              : `${(user.permissions || []).length} টি অপশন অনুমোদিত`}
+                          </span>
+                        </div>
+
+                        {user.isSuperAdmin ? (
+                          <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex items-center gap-2">
+                            <ShieldAlert className="w-4 h-4 text-amber-700 shrink-0" />
+                            <span>মাস্টার সুপার অ্যাডমিন — অ্যাডমিন প্যানেলের সকল সেটিংস ও অপশনে অ্যাক্সেস বিদ্যমান।</span>
+                          </div>
+                        ) : (
+                          <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto p-2 bg-slate-50/70 rounded-xl border border-slate-200/70">
+                            {(user.permissions || []).map((permId) => {
+                              const permInfo = availablePermissions.find(p => p.id === permId);
+                              if (!permInfo) return null;
+                              return (
+                                <span
+                                  key={permId}
+                                  className="inline-flex items-center gap-1 bg-white border border-emerald-200 text-emerald-900 text-[10px] font-bold px-2 py-0.5 rounded-lg shadow-2xs"
+                                >
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                                  <span>{permInfo.title}</span>
+                                </span>
+                              );
+                            })}
+                            {(user.permissions || []).length === 0 && (
+                              <span className="text-rose-600 text-[11px] font-bold">
+                                কোনো অপশন অনুমোদিত নয় (লগইন সীমাবদ্ধ)
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditUser(user)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold transition-colors cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>সম্পাদনা ও পারমিশন</span>
+                          </button>
+
+                          {!user.isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleToggleUserActive(user)}
+                              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors cursor-pointer ${
+                                user.isActive
+                                  ? 'bg-amber-50 hover:bg-amber-100 text-amber-800'
+                                  : 'bg-emerald-50 hover:bg-emerald-100 text-emerald-800'
+                              }`}
+                            >
+                              {user.isActive ? (
+                                <>
+                                  <Lock className="w-3.5 h-3.5" />
+                                  <span>নিষ্ক্রিয় করুন</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Unlock className="w-3.5 h-3.5" />
+                                  <span>সক্রিয় করুন</span>
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
+
+                        {!user.isSuperAdmin && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteUser(user)}
+                            className="p-1.5 rounded-lg text-rose-500 hover:text-rose-700 hover:bg-rose-50 transition-colors cursor-pointer"
+                            title="প্রোফাইল মুছে ফেলুন"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {filteredUsers.length === 0 && (
+                  <div className="col-span-full py-12 text-center bg-white rounded-2xl border border-dashed border-slate-300 p-6 space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 mx-auto flex items-center justify-center">
+                      <Search className="w-6 h-6" />
+                    </div>
+                    <h3 className="font-bold text-slate-700 text-sm">কোনো ইউজার প্রোফাইল পাওয়া যায়নি</h3>
+                    <p className="text-xs text-slate-400">
+                      অনুসন্ধান শব্দ পরিবর্তন করে দেখুন অথবা নতুন প্রোফাইল তৈরি করুন।
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddUser}
+                      className="inline-flex items-center gap-2 bg-emerald-800 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>নতুন প্রোফাইল তৈরি</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </main>
       </div>
 
@@ -5640,6 +6351,291 @@ export default function AdminDashboardPage() {
           </div>
         </div>
       )}
+
+      {/* User Add / Edit & Permissions Modal */}
+      {showUserModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-3xl max-w-2xl w-full p-5 sm:p-7 shadow-2xl border border-slate-200 space-y-5 my-8 max-h-[90vh] flex flex-col">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold">
+                  <ShieldCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base sm:text-lg">
+                    {editingUser ? 'প্রোফাইল ও পারমিশন সম্পাদনা' : 'নতুন ইউজার প্রোফাইল তৈরি'}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editingUser
+                      ? `${editingUser.name} (@${editingUser.username}) এর তথ্য ও মডিউল পারমিশন পরিবর্তন করুন`
+                      : 'নতুন ইউজার তৈরি করুন এবং অ্যাডমিন প্যানেলের কোন কোন অপশন ব্যবহার করতে পারবে তা নির্ধারণ করুন'}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowUserModal(false);
+                  setEditingUser(null);
+                }}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Body */}
+            <form onSubmit={handleSaveUser} className="space-y-5 overflow-y-auto pr-1 flex-1">
+              {/* Section 1: বেসিক তথ্য */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600" />
+                  <span>১. বেসিক তথ্য ও পদবী</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      পূর্ণ নাম <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={userForm.name}
+                      onChange={(e) => setUserForm({ ...userForm, name: e.target.value })}
+                      placeholder="যেমন: মাওলানা আরিফুল ইসলাম"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      পদবী / দায়িত্ব <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={userForm.role}
+                      onChange={(e) => setUserForm({ ...userForm, role: e.target.value })}
+                      placeholder="যেমন: ভর্তি ইনচার্জ / সহকারী শিক্ষক / হিসাবরক্ষক"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      মোবাইল নম্বর
+                    </label>
+                    <input
+                      type="text"
+                      value={userForm.phone}
+                      onChange={(e) => setUserForm({ ...userForm, phone: e.target.value })}
+                      placeholder="যেমন: 01712-345678"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ইমেইল ঠিকানা (ঐচ্ছিক)
+                    </label>
+                    <input
+                      type="email"
+                      value={userForm.email}
+                      onChange={(e) => setUserForm({ ...userForm, email: e.target.value })}
+                      placeholder="যেমন: arif@gmail.com"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: লগইন ক্রেডেনশিয়াল */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-blue-600" />
+                  <span>২. লগইন ইউজারনেম ও পাসওয়ার্ড</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      ইউজারনেম (Username) <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-mono">@</span>
+                      <input
+                        type="text"
+                        required
+                        disabled={editingUser?.isSuperAdmin}
+                        value={userForm.username}
+                        onChange={(e) => setUserForm({ ...userForm, username: e.target.value.toLowerCase().replace(/\s+/g, '') })}
+                        placeholder="admission_staff"
+                        className="w-full pl-7 pr-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:bg-slate-100 disabled:text-slate-500"
+                      />
+                    </div>
+                    <span className="text-[10px] text-slate-400 mt-1 block">ইংরেজি ছোট হাতের অক্ষর ও নম্বর</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      লগইন পাসওয়ার্ড <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={userForm.password}
+                      onChange={(e) => setUserForm({ ...userForm, password: e.target.value })}
+                      placeholder="পাসওয়ার্ড লিখুন"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">ইউজারকে এই পাসওয়ার্ড দেওয়া হবে</span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      অ্যাকাউন্ট স্ট্যাটাস
+                    </label>
+                    <select
+                      disabled={editingUser?.isSuperAdmin}
+                      value={userForm.isActive ? 'active' : 'inactive'}
+                      onChange={(e) => setUserForm({ ...userForm, isActive: e.target.value === 'active' })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-700 disabled:bg-slate-100 disabled:text-slate-500"
+                    >
+                      <option value="active">সক্রিয় (Active)</option>
+                      <option value="inactive">নিষ্ক্রিয় (Inactive)</option>
+                    </select>
+                    <span className="text-[10px] text-slate-400 mt-1 block">নিষ্ক্রিয় থাকলে লগইন বন্ধ থাকবে</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: পারমিশন মেট্রিক্স */}
+              <div className="space-y-3 pt-3 border-t border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                  <div>
+                    <h4 className="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500" />
+                      <span>৩. অপশন ও মডিউল পারমিশন নির্বাচন</span>
+                    </h4>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      যে যে অপশনগুলোতে টিকচিহ্ন থাকবে, এই ইউজার কেবল সেগুলোই দেখতে ও পরিচালনা করতে পারবেন।
+                    </p>
+                  </div>
+
+                  {!editingUser?.isSuperAdmin && (
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={selectAllPermissions}
+                        className="text-[11px] font-bold text-emerald-800 hover:text-emerald-950 bg-emerald-50 hover:bg-emerald-100 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        সবগুলো সিলেক্ট
+                      </button>
+                      <button
+                        type="button"
+                        onClick={deselectAllPermissions}
+                        className="text-[11px] font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                      >
+                        ক্লিয়ার করুন
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {editingUser?.isSuperAdmin ? (
+                  <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-medium space-y-1">
+                    <div className="font-bold flex items-center gap-2 text-amber-950">
+                      <ShieldAlert className="w-4 h-4 text-amber-700" />
+                      <span>সুপার অ্যাডমিন অ্যাকাউন্ট</span>
+                    </div>
+                    <p className="text-amber-800">
+                      সুপার অ্যাডমিন প্রোফাইল মাদ্রাসার প্রধান অ্যাডমিন। এই প্রোফাইলের মাধ্যমে স্বয়ংক্রিয়ভাবে সকল ১৬টি অপশনে পূর্ণ মাস্টার এক্সেস বজায় থাকে।
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-72 overflow-y-auto p-1">
+                    {availablePermissions.map((perm) => {
+                      const isChecked = userForm.permissions.includes(perm.id);
+
+                      return (
+                        <div
+                          key={perm.id}
+                          onClick={() => togglePermission(perm.id)}
+                          className={`p-3 rounded-xl border text-xs cursor-pointer transition-all flex items-start gap-2.5 select-none ${
+                            isChecked
+                              ? 'bg-emerald-50/80 border-emerald-400 shadow-2xs'
+                              : 'bg-white border-slate-200 hover:border-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // handled by parent div onClick
+                            className="mt-0.5 rounded text-emerald-700 focus:ring-emerald-700 cursor-pointer"
+                          />
+                          <div className="space-y-0.5 flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-1">
+                              <span className={`font-bold ${isChecked ? 'text-emerald-950' : 'text-slate-800'}`}>
+                                {perm.title}
+                              </span>
+                              <span
+                                className={`text-[9px] font-black px-1.5 py-0.2 rounded ${
+                                  perm.category === 'academic'
+                                    ? 'bg-blue-100 text-blue-800'
+                                    : perm.category === 'core'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : perm.category === 'media'
+                                    ? 'bg-purple-100 text-purple-800'
+                                    : 'bg-slate-100 text-slate-700'
+                                }`}
+                              >
+                                {perm.category === 'academic'
+                                  ? 'একাডেমিক'
+                                  : perm.category === 'core'
+                                  ? 'প্রাতিষ্ঠানিক'
+                                  : perm.category === 'media'
+                                  ? 'মিডিয়া'
+                                  : 'সিস্টেম'}
+                              </span>
+                            </div>
+                            <p className="text-[11px] text-slate-500 line-clamp-1">
+                              {perm.description}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer Buttons */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowUserModal(false);
+                    setEditingUser(null);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 text-xs font-bold transition-all cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl bg-gradient-to-r from-emerald-700 to-[#006837] hover:from-emerald-800 hover:to-emerald-900 text-white text-xs font-bold shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingUser ? 'পরিবর্তন সংরক্ষণ করুন' : 'প্রোফাইল তৈরি করুন'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* 🔴 Universal Centered Confirmation Modal (স্ক্রিনের কেন্দ্রে প্রিমিয়াম পপআপ) */}
       {confirmModal.isOpen && (
         <div 

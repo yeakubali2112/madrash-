@@ -22,7 +22,9 @@ import {
   defaultFacilities,
   defaultGallery,
   PrayerTimeConfig,
-  defaultPrayerConfig
+  defaultPrayerConfig,
+  AdminUser,
+  defaultAdminUsers
 } from './data';
 
 const STORAGE_KEYS = {
@@ -38,7 +40,9 @@ const STORAGE_KEYS = {
   HERO_SETTINGS: 'padm_hero_settings',
   FACILITIES: 'padm_facilities',
   GALLERY: 'padm_gallery',
-  PRAYER_CONFIG: 'padm_prayer_config'
+  PRAYER_CONFIG: 'padm_prayer_config',
+  ADMIN_USERS: 'padm_admin_users',
+  CURRENT_ADMIN_USER: 'padm_current_admin_user'
 };
 
 export const getStoredInfo = (): MadrasahInfo => {
@@ -245,6 +249,52 @@ export const resetAllData = () => {
   localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(defaultFacilities));
   localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(defaultGallery));
   localStorage.setItem(STORAGE_KEYS.PRAYER_CONFIG, JSON.stringify(defaultPrayerConfig));
+  localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(defaultAdminUsers));
+  localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
+};
+
+export const getStoredAdminUsers = (): AdminUser[] => {
+  if (typeof window === 'undefined') return defaultAdminUsers;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.ADMIN_USERS);
+    if (!data) return defaultAdminUsers;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultAdminUsers;
+  } catch {
+    return defaultAdminUsers;
+  }
+};
+
+export const saveStoredAdminUsers = (users: AdminUser[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(users));
+  } catch (err) {
+    console.error('Error saving admin users to storage:', err);
+  }
+};
+
+export const getCurrentAdminUser = (): AdminUser | null => {
+  if (typeof window === 'undefined') return null;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
+    return data ? JSON.parse(data) : null;
+  } catch {
+    return null;
+  }
+};
+
+export const setCurrentAdminUser = (user: AdminUser | null) => {
+  if (typeof window === 'undefined') return;
+  if (user) {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CURRENT_ADMIN_USER, JSON.stringify(user));
+    } catch (err) {
+      console.error('Error saving current admin user:', err);
+    }
+  } else {
+    localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
+  }
 };
 
 export const getStoredPrayerConfig = (): PrayerTimeConfig => {

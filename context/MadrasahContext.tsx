@@ -26,7 +26,9 @@ import {
   defaultGallery,
   PrayerTimeConfig,
   defaultPrayerConfig,
-  StudentProfile
+  StudentProfile,
+  AdminUser,
+  defaultAdminUsers
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -53,6 +55,10 @@ import {
   saveStoredGallery,
   getStoredPrayerConfig,
   saveStoredPrayerConfig,
+  getStoredAdminUsers,
+  saveStoredAdminUsers,
+  getCurrentAdminUser,
+  setCurrentAdminUser,
   isAdminLoggedIn,
   setAdminLoggedIn,
   resetAllData
@@ -103,7 +109,13 @@ interface MadrasahContextType {
   submitContactMessage: (msg: Omit<ContactMessage, 'id' | 'date' | 'isRead'>) => void;
   markMessageRead: (id: string) => void;
   deleteMessage: (id: string) => void;
-  loginAdmin: (pass: string) => boolean;
+  adminUsers: AdminUser[];
+  currentAdminUser: AdminUser | null;
+  addAdminUser: (user: Omit<AdminUser, 'id' | 'createdAt'>) => void;
+  updateAdminUser: (id: string, user: Partial<AdminUser>) => void;
+  deleteAdminUser: (id: string) => boolean;
+  toggleAdminUserStatus: (id: string) => void;
+  loginAdmin: (pass: string, username?: string) => boolean;
   logoutAdmin: () => void;
   resetToDefaults: () => void;
 }
@@ -126,6 +138,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [loggedStudent, setLoggedStudent] = useState<StudentProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>(defaultAdminUsers);
+  const [currentAdminUser, setCurrentAdminUserState] = useState<AdminUser | null>(null);
 
   useEffect(() => {
     setInfo(getStoredInfo());
@@ -140,7 +154,21 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setFacilities(getStoredFacilities());
     setGallery(getStoredGallery());
     setPrayerConfig(getStoredPrayerConfig());
-    setIsAdmin(isAdminLoggedIn());
+    const storedUsers = getStoredAdminUsers();
+    setAdminUsers(storedUsers);
+
+    const loggedIn = isAdminLoggedIn();
+    setIsAdmin(loggedIn);
+
+    const storedCurrent = getCurrentAdminUser();
+    if (storedCurrent) {
+      setCurrentAdminUserState(storedCurrent);
+    } else if (loggedIn) {
+      const superAdmin = storedUsers.find(u => u.isSuperAdmin) || defaultAdminUsers[0];
+      setCurrentAdminUserState(superAdmin);
+      setCurrentAdminUser(superAdmin);
+    }
+
     try {
       const savedStudent = localStorage.getItem('padm_logged_student');
       if (savedStudent) setLoggedStudent(JSON.parse(savedStudent));
@@ -158,6 +186,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
       if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
       if (e.key === 'padm_prayer_config') setPrayerConfig(getStoredPrayerConfig());
+      if (e.key === 'padm_admin_users') setAdminUsers(getStoredAdminUsers());
+      if (e.key === 'padm_current_admin_user') setCurrentAdminUserState(getCurrentAdminUser());
       if (e.key === 'padm_logged_student') {
         try {
           setLoggedStudent(e.newValue ? JSON.parse(e.newValue) : null);
@@ -423,19 +453,107 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveStoredMessages(updated);
   };
 
-  const loginAdmin = (pass: string) => {
-    // Default admin password
-    if (pass === 'admin' || pass === 'madrasah123' || pass === '123456') {
+  const addAdminUser = (userData: Omit<AdminUser, 'id' | 'createdAt'>) => {
+    const newUser: AdminUser = {
+      ...userData,
+      id: `user-${Date.now()}`,
+      createdAt: new Date().toLocaleDateString('bn-BD', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      })
+    };
+    const updated = [newUser, ...adminUsers];
+    setAdminUsers(updated);
+    saveStoredAdminUsers(updated);
+  };
+
+  const updateAdminUser = (id: string, updatedFields: Partial<AdminUser>) => {
+    const updated = adminUsers.map(u => {
+      if (u.id === id) {
+        const merged = { ...u, ...updatedFields };
+        if (currentAdminUser && currentAdminUser.id === id) {
+          setCurrentAdminUserState(merged);
+          setCurrentAdminUser(merged);
+        }
+        return merged;
+      }
+      return u;
+    });
+    setAdminUsers(updated);
+    saveStoredAdminUsers(updated);
+  };
+
+  const deleteAdminUser = (id: string): boolean => {
+    const target = adminUsers.find(u => u.id === id);
+    if (target?.isSuperAdmin) {
+      return false; // Cannot delete Super Admin
+    }
+    const updated = adminUsers.filter(u => u.id !== id);
+    setAdminUsers(updated);
+    saveStoredAdminUsers(updated);
+    return true;
+  };
+
+  const toggleAdminUserStatus = (id: string) => {
+    const updated = adminUsers.map(u => {
+      if (u.id === id) {
+        if (u.isSuperAdmin) return u;
+        return { ...u, isActive: !u.isActive };
+      }
+      return u;
+    });
+    setAdminUsers(updated);
+    saveStoredAdminUsers(updated);
+  };
+
+  const loginAdmin = (pass: string, username?: string): boolean => {
+    const cleanPass = pass.trim();
+    const cleanUser = (username || '').trim().toLowerCase();
+
+    // If username is provided and not 'admin'
+    if (cleanUser && cleanUser !== 'admin') {
+      const foundUser = adminUsers.find(u => u.username.toLowerCase() === cleanUser);
+      if (foundUser && foundUser.isActive && foundUser.password === cleanPass) {
+        setIsAdmin(true);
+        setAdminLoggedIn(true);
+        setCurrentAdminUserState(foundUser);
+        setCurrentAdminUser(foundUser);
+        return true;
+      }
+      return false;
+    }
+
+    // Default admin or 'admin' username
+    const superAdmin = adminUsers.find(u => u.isSuperAdmin) || defaultAdminUsers[0];
+    const isSuperPassMatch = cleanPass === superAdmin.password || cleanPass === 'admin' || cleanPass === 'madrasah123' || cleanPass === '123456';
+
+    if (isSuperPassMatch) {
       setIsAdmin(true);
       setAdminLoggedIn(true);
+      setCurrentAdminUserState(superAdmin);
+      setCurrentAdminUser(superAdmin);
       return true;
     }
+
+    // Try finding by username even if pass was entered
+    const anyUser = adminUsers.find(u => u.username.toLowerCase() === cleanUser);
+    if (anyUser && anyUser.isActive && anyUser.password === cleanPass) {
+      setIsAdmin(true);
+      setAdminLoggedIn(true);
+      setCurrentAdminUserState(anyUser);
+      setCurrentAdminUser(anyUser);
+      return true;
+    }
+
     return false;
   };
 
   const logoutAdmin = () => {
     setIsAdmin(false);
     setAdminLoggedIn(false);
+    setCurrentAdminUserState(null);
+    setCurrentAdminUser(null);
   };
 
   const resetToDefaults = () => {
@@ -452,6 +570,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setFacilities(defaultFacilities);
     setGallery(defaultGallery);
     setPrayerConfig(defaultPrayerConfig);
+    setAdminUsers(defaultAdminUsers);
+    setCurrentAdminUserState(null);
   };
 
   return (
@@ -472,6 +592,12 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         messages,
         isAdmin,
         isLoaded,
+        adminUsers,
+        currentAdminUser,
+        addAdminUser,
+        updateAdminUser,
+        deleteAdminUser,
+        toggleAdminUserStatus,
         updateInfo,
         updatePrayerConfig,
         updateLoggedStudent,
