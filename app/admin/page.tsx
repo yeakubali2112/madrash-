@@ -885,10 +885,18 @@ export default function AdminDashboardPage() {
   };
 
   const handleDeleteClass = (routine: ClassRoutine) => {
-    if (confirm(`আপনি কি নিশ্চিত যে "${routine.className}" শ্রেণির সম্পূর্ণ রুটিন মুছে ফেলতে চান?`)) {
-      deleteClassRoutine(routine.id);
-      showRoutineAlert(`"${routine.className}" শ্রেণির রুটিন মুছে ফেলা হয়েছে!`);
-    }
+    openConfirmModal({
+      title: 'শ্রেণির রুটিন মুছে ফেলা',
+      message: `আপনি কি নিশ্চিত যে "${routine.className}" শ্রেণির সম্পূর্ণ রুটিন মুছে ফেলতে চান? এটি মুছে ফেললে ক্লাসের সকল পিরিয়ড ও সময়সূচি স্থায়ীভাবে মুছে যাবে।`,
+      confirmLabel: 'হ্যাঁ, সম্পূর্ণ রুটিন মুছুন',
+      cancelLabel: 'বাতিল',
+      type: 'danger',
+      onConfirm: () => {
+        deleteClassRoutine(routine.id);
+        showRoutineAlert(`"${routine.className}" শ্রেণির রুটিন মুছে ফেলা হয়েছে!`);
+        closeConfirmModal();
+      }
+    });
   };
 
   const handleOpenAddPeriod = () => {
@@ -922,11 +930,11 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     if (!activeRoutine) return;
     if (!periodForm.period.trim()) {
-      alert('অনুগ্রহ করে পিরিয়ড / ঘণ্টার নাম দিন।');
+      showRoutineAlert('অনুগ্রহ করে পিরিয়ড / ঘণ্টার নাম দিন।');
       return;
     }
     if (!periodForm.subject.trim()) {
-      alert('অনুগ্রহ করে বিষয়ের নাম লিখুন।');
+      showRoutineAlert('অনুগ্রহ করে বিষয়ের নাম লিখুন।');
       return;
     }
 
@@ -954,10 +962,18 @@ export default function AdminDashboardPage() {
 
   const handleDeletePeriod = (periodId: string, periodName: string) => {
     if (!activeRoutine) return;
-    if (confirm(`আপনি কি "${periodName}" পিরিয়ডটি মুছে ফেলতে চান?`)) {
-      deletePeriodFromRoutine(activeRoutine.id, periodId);
-      showRoutineAlert(`"${periodName}" পিরিয়ড মুছে ফেলা হয়েছে!`);
-    }
+    openConfirmModal({
+      title: 'পিরিয়ড মুছে ফেলা',
+      message: `আপনি কি নিশ্চিত যে "${periodName}" পিরিয়ডটি মুছে ফেলতে চান?`,
+      confirmLabel: 'হ্যাঁ, পিরিয়ড মুছুন',
+      cancelLabel: 'বাতিল',
+      type: 'danger',
+      onConfirm: () => {
+        deletePeriodFromRoutine(activeRoutine.id, periodId);
+        showRoutineAlert(`"${periodName}" পিরিয়ড মুছে ফেলা হয়েছে!`);
+        closeConfirmModal();
+      }
+    });
   };
 
   // Helper for compressing/resizing images to prevent localStorage quota overflow
@@ -5319,10 +5335,18 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      if (confirm('আপনি কি সকল রুটিন ডিফল্ট অবস্থায় রিস্টোর করতে চান?')) {
-                        resetRoutinesToDefault();
-                        showRoutineAlert('সকল রুটিন সফলভাবে ডিফল্ট অবস্থায় রিস্টোর করা হয়েছে!');
-                      }
+                      openConfirmModal({
+                        title: 'সকল রুটিন রিস্টোর',
+                        message: 'আপনি কি সকল শ্রেণির রুটিন ডিফল্ট অবস্থায় ফিরিয়ে নিতে চান? এতে আপনার করা কাস্টম পরিবর্তনগুলো মুছে যাবে।',
+                        confirmLabel: 'হ্যাঁ, ডিফল্ট রিস্টোর করুন',
+                        cancelLabel: 'বাতিল',
+                        type: 'warning',
+                        onConfirm: () => {
+                          resetRoutinesToDefault();
+                          showRoutineAlert('সকল রুটিন সফলভাবে ডিফল্ট অবস্থায় রিস্টোর করা হয়েছে!');
+                          closeConfirmModal();
+                        }
+                      });
                     }}
                     className="p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-slate-200 transition-colors cursor-pointer"
                     title="ডিফল্ট রুটিন রিস্টোর করুন"
