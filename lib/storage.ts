@@ -268,7 +268,27 @@ export const getStoredRoutines = (): ClassRoutine[] => {
       return defaultClassRoutines;
     }
     const parsed = JSON.parse(data);
-    return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultClassRoutines;
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultClassRoutines));
+      return defaultClassRoutines;
+    }
+    const healed: ClassRoutine[] = parsed.map((item: any, idx: number) => ({
+      id: item.id || `routine-${idx}-${Date.now()}`,
+      className: item.className || `শ্রেণি ${idx + 1}`,
+      effectiveDate: item.effectiveDate || '০১ জানুয়ারি ২০২৬',
+      notes: item.notes || '',
+      periods: Array.isArray(item.periods)
+        ? item.periods.map((p: any, pIdx: number) => ({
+            id: p.id || `p-${pIdx}-${Date.now()}`,
+            period: p.period || `${pIdx + 1}ম ঘণ্টা`,
+            time: p.time || '০৯:১৫ - ১০:০০',
+            subject: p.subject || '',
+            teacher: p.teacher || '',
+            room: p.room || ''
+          }))
+        : []
+    }));
+    return healed;
   } catch {
     return defaultClassRoutines;
   }

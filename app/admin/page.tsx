@@ -86,7 +86,8 @@ import {
   Sun,
   Sunrise,
   Sunset,
-  Calendar
+  Calendar,
+  School
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -803,7 +804,7 @@ export default function AdminDashboardPage() {
   // CLASS ROUTINE MANAGEMENT STATE & HANDLERS
   // ==========================================
   const [selectedRoutineClassId, setSelectedRoutineClassId] = useState<string>('');
-  const activeRoutine = routines.find(r => r.id === selectedRoutineClassId) || routines[0];
+  const activeRoutine = (routines || []).find(r => r.id === selectedRoutineClassId) || (routines && routines[0]) || null;
 
   // Class Add/Edit Modal
   const [showClassModal, setShowClassModal] = useState(false);
@@ -893,7 +894,7 @@ export default function AdminDashboardPage() {
   const handleOpenAddPeriod = () => {
     if (!activeRoutine) return;
     setEditingPeriod(null);
-    const count = activeRoutine.periods.length + 1;
+    const count = (activeRoutine.periods || []).length + 1;
     const defaultPeriodName = count === 1 ? '১ম ঘণ্টা' : count === 2 ? '২য় ঘণ্টা' : count === 3 ? '৩য় ঘণ্টা' : count === 4 ? '৪র্থ ঘণ্টা' : `${count}ম ঘণ্টা`;
     setPeriodForm({
       period: defaultPeriodName,
@@ -5348,9 +5349,9 @@ export default function AdminDashboardPage() {
                     onChange={(e) => setSelectedRoutineClassId(e.target.value)}
                     className="px-3 py-1.5 rounded-xl border border-slate-300 text-xs font-bold bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-700 cursor-pointer"
                   >
-                    {routines.map((r) => (
+                    {(routines || []).map((r) => (
                       <option key={r.id} value={r.id}>
-                        {r.className} ({r.periods.length}টি পিরিয়ড)
+                        {r.className} ({(r.periods || []).length}টি পিরিয়ড)
                       </option>
                     ))}
                   </select>
@@ -5358,7 +5359,7 @@ export default function AdminDashboardPage() {
 
                 {/* Horizontal Class Pills */}
                 <div className="flex flex-wrap gap-2 pt-1">
-                  {routines.map((r) => {
+                  {(routines || []).map((r) => {
                     const isCurrent = activeRoutine?.id === r.id;
                     return (
                       <button
@@ -5379,7 +5380,7 @@ export default function AdminDashboardPage() {
                               : 'bg-slate-100 text-slate-600'
                           }`}
                         >
-                          {r.periods.length}
+                          {(r.periods || []).length}
                         </span>
                       </button>
                     );
@@ -5398,7 +5399,7 @@ export default function AdminDashboardPage() {
                           {activeRoutine.className}
                         </h3>
                         <span className="bg-amber-400 text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
-                          {activeRoutine.periods.length}টি পিরিয়ড অন্তর্ভুক্ত
+                          {(activeRoutine.periods || []).length}টি পিরিয়ড অন্তর্ভুক্ত
                         </span>
                       </div>
                       <div className="text-xs text-emerald-200 mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
@@ -5455,11 +5456,11 @@ export default function AdminDashboardPage() {
                         </h4>
                       </div>
                       <span className="text-xs text-slate-500">
-                        মোট পিরিয়ড: <strong>{activeRoutine.periods.length}টি</strong>
+                        মোট পিরিয়ড: <strong>{(activeRoutine.periods || []).length}টি</strong>
                       </span>
                     </div>
 
-                    {activeRoutine.periods.length > 0 ? (
+                    {(activeRoutine.periods || []).length > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-xs text-left">
                           <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold uppercase tracking-wider text-[11px]">
@@ -5474,11 +5475,11 @@ export default function AdminDashboardPage() {
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100">
-                            {activeRoutine.periods.map((period, idx) => {
-                              const isBreak =
-                                period.subject.includes('বিরতি') ||
-                                period.period.includes('বিরতি') ||
-                                period.subject.includes('সালাত');
+                            {(activeRoutine.periods || []).map((period, idx) => {
+                              const isBreak = Boolean(
+                                (period.subject && (period.subject.includes('বিরতি') || period.subject.includes('সালাত'))) ||
+                                (period.period && period.period.includes('বিরতি'))
+                              );
 
                               return (
                                 <tr
@@ -7340,7 +7341,7 @@ export default function AdminDashboardPage() {
                   </h3>
                 </div>
                 <p className="text-[11px] text-emerald-800 font-bold mt-0.5">
-                  শ্রেণি: {activeRoutine.className}
+                  শ্রেণি: {activeRoutine?.className || ''}
                 </p>
               </div>
               <button
