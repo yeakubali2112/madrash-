@@ -1589,48 +1589,6 @@ export default function AdminDashboardPage() {
                 </button>
               </div>
 
-              {/* User & Permission Management Quick Banner in Overview */}
-              {canAccessTab('users') && (
-                <div className="bg-gradient-to-r from-slate-900 via-[#00341c] to-[#006837] text-white border border-emerald-500/30 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-                  <div className="flex items-start sm:items-center gap-3.5">
-                    <div className="w-12 h-12 rounded-2xl bg-[#DDAA00] text-slate-950 flex items-center justify-center shrink-0 shadow-md font-black">
-                      <ShieldCheck className="w-6 h-6" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-black text-sm sm:text-base text-white">
-                          অ্যাডমিন প্রোফাইল ও অপশন পারমিশন কন্ট্রোল
-                        </h3>
-                        <span className="bg-[#DDAA00] text-slate-950 text-[10px] font-black px-2 py-0.5 rounded-full">
-                          {adminUsers.length}টি প্রোফাইল সক্রিয়
-                        </span>
-                      </div>
-                      <p className="text-xs text-emerald-100/90 mt-1 max-w-2xl leading-relaxed">
-                        মাদ্রাসার শিক্ষক ও দায়িত্বপ্রাপ্তদের জন্য নতুন প্রোফাইল তৈরি করুন এবং কে অ্যাডমিন প্যানেলের কোন কোন মেনু ব্যবহার করতে পারবেন তা এক ক্লিকে নিয়ন্ত্রণ করুন।
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 self-stretch md:self-auto shrink-0 flex-wrap sm:flex-nowrap">
-                    <button
-                      type="button"
-                      onClick={handleOpenAddUser}
-                      className="flex-1 sm:flex-initial bg-white/10 hover:bg-white/20 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition-colors border border-white/20 flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5 text-[#DDAA00]" />
-                      <span>নতুন প্রোফাইল তৈরি</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('users')}
-                      className="flex-1 sm:flex-initial bg-[#DDAA00] hover:bg-[#c99b00] text-slate-950 font-black px-4 py-2 rounded-xl text-xs shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <Users className="w-3.5 h-3.5" />
-                      <span>ইউজার ব্যবস্থাপনা খুলুন →</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* Recent Applications Section */}
               <div className="space-y-3 pt-4 border-t border-slate-200">
                 <div className="flex justify-between items-center">
