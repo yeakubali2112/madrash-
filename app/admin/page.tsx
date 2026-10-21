@@ -534,6 +534,7 @@ export default function AdminDashboardPage() {
   // Teacher Form State
   const [showTeacherModal, setShowTeacherModal] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+  const [teacherSaving, setTeacherSaving] = useState(false);
   const [teacherForm, setTeacherForm] = useState({
     name: '',
     designation: '',
@@ -1093,28 +1094,45 @@ export default function AdminDashboardPage() {
       alert('শিক্ষকের নাম ও পদবী পূরণ করুন।');
       return;
     }
+    if (teacherSaving) return;
 
-    const finalTeacherData = {
-      ...teacherForm,
-      image: teacherForm.image?.trim() || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400'
-    };
+    setTeacherSaving(true);
 
-    if (editingTeacher) {
-      updateTeacher(editingTeacher.id, finalTeacherData);
-    } else {
-      addTeacher(finalTeacherData);
-    }
-    setShowTeacherModal(false);
-    setEditingTeacher(null);
-    setTeacherForm({
-      name: '',
-      designation: '',
-      qualification: '',
-      subject: '',
-      phone: '',
-      email: '',
-      image: ''
-    });
+    setTimeout(() => {
+      const finalTeacherData = {
+        ...teacherForm,
+        email: teacherForm.email?.trim() || '',
+        image: teacherForm.image?.trim() || 'https://images.unsplash.com/photo-1544717305-2782549b5136?auto=format&fit=crop&q=80&w=400'
+      };
+
+      if (editingTeacher) {
+        updateTeacher(editingTeacher.id, finalTeacherData);
+      } else {
+        addTeacher(finalTeacherData);
+      }
+      setTeacherSaving(false);
+      setShowTeacherModal(false);
+      setEditingTeacher(null);
+      setTeacherForm({
+        name: '',
+        designation: '',
+        qualification: '',
+        subject: '',
+        phone: '',
+        email: '',
+        image: ''
+      });
+
+      try {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.6 }
+        });
+      } catch {
+        // ignore
+      }
+    }, 450);
   };
 
   // Handle Settings Save with professional loading & celebration animation
@@ -3344,6 +3362,11 @@ export default function AdminDashboardPage() {
                         <p><strong>যোগ্যতা:</strong> {t.qualification}</p>
                         <p><strong>বিষয়:</strong> {t.subject}</p>
                         <p><strong>ফোন:</strong> {t.phone}</p>
+                        {t.email && (
+                          <p className="truncate text-slate-500 font-mono text-[11px]" title={t.email}>
+                            <strong>ইমেইল:</strong> {t.email}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -3357,7 +3380,7 @@ export default function AdminDashboardPage() {
                             qualification: t.qualification,
                             subject: t.subject,
                             phone: t.phone,
-                            email: t.email,
+                            email: t.email || '',
                             image: t.image
                           });
                           setShowTeacherModal(true);
@@ -6566,26 +6589,43 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">শিক্ষাগত যোগ্যতা</label>
+                <input
+                  type="text"
+                  value={teacherForm.qualification}
+                  onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
+                  className="w-full px-3 py-2 rounded-lg border text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                  placeholder="যেমন: কামিল (হাদিস), এম.এ (ইসলামিক স্টাডিজ)"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">শিক্ষাগত যোগ্যতা</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Phone className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>মোবাইল নম্বর</span>
+                  </label>
                   <input
-                    type="text"
-                    value={teacherForm.qualification}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, qualification: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border text-xs"
-                    placeholder="যেমন: কামিল, এম.এ"
+                    type="tel"
+                    value={teacherForm.phone}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    placeholder="017XXXXXXXX"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">মোবাইল নম্বর</label>
+                  <label className="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1">
+                    <Mail className="w-3.5 h-3.5 text-emerald-700" />
+                    <span>ইমেইল অ্যাড্রেস (Email)</span>
+                  </label>
                   <input
-                    type="text"
-                    value={teacherForm.phone}
-                    onChange={(e) => setTeacherForm({ ...teacherForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 rounded-lg border text-xs font-mono"
-                    placeholder="017XXXXXXXX"
+                    type="email"
+                    value={teacherForm.email}
+                    onChange={(e) => setTeacherForm({ ...teacherForm, email: e.target.value })}
+                    className="w-full px-3 py-2 rounded-lg border text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                    placeholder="teacher@poschimalohali.edu.bd"
                   />
                 </div>
               </div>
@@ -6737,11 +6777,25 @@ export default function AdminDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="relative overflow-hidden group px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold shadow-md shadow-emerald-900/20 hover:shadow-xl hover:shadow-emerald-800/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 flex items-center gap-2 cursor-pointer btn-pulse-glow"
+                  disabled={teacherSaving}
+                  className={`relative overflow-hidden group px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                    teacherSaving
+                      ? 'bg-emerald-600 opacity-90 cursor-wait'
+                      : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 shadow-emerald-900/20 hover:shadow-xl hover:shadow-emerald-800/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 btn-pulse-glow'
+                  }`}
                 >
                   <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                  <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
-                  <span>সংরক্ষণ করুন</span>
+                  {teacherSaving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>সংরক্ষণ হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
+                      <span>সংরক্ষণ করুন</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
