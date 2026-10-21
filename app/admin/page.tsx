@@ -35,7 +35,6 @@ import {
   Award,
   Settings,
   MessageSquare,
-  Database,
   LogOut,
   Plus,
   Trash2,
@@ -149,11 +148,10 @@ export default function AdminDashboardPage() {
     addPeriodToRoutine,
     updatePeriodInRoutine,
     deletePeriodFromRoutine,
-    resetRoutinesToDefault,
-    resetToDefaults
+    resetRoutinesToDefault
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'backup' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users'>('overview');
   const [mounted, setMounted] = useState(false);
 
   // User Permission verification
@@ -1083,25 +1081,6 @@ export default function AdminDashboardPage() {
     setTimeout(() => setSettingsSaved(false), 3000);
   };
 
-  // Export Data JSON
-  const handleExportData = () => {
-    const backupData = {
-      info,
-      notices,
-      teachers,
-      applications,
-      results,
-      messages,
-      exportDate: new Date().toISOString()
-    };
-    const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `madrasah_backup_${new Date().toISOString().split('T')[0]}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   // Filtered applications
   const filteredApps = (applications || []).filter(a => {
@@ -1671,21 +1650,6 @@ export default function AdminDashboardPage() {
               </button>
             )}
 
-            {canAccessTab('backup') && (
-              <button
-                onClick={() => setActiveTab('backup')}
-                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors ${
-                  activeTab === 'backup'
-                    ? 'bg-emerald-800 text-white shadow-sm'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <Database className="w-4 h-4" />
-                  <span>ব্যাকআপ ও রিস্টোর</span>
-                </div>
-              </button>
-            )}
 
             {/* TAB: USER & PERMISSION PROFILES */}
             {canAccessTab('users') && (
@@ -4808,67 +4772,6 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* TAB 8: BACKUP & RESTORE */}
-          {activeTab === 'backup' && (
-            <div className="space-y-6">
-              <div className="border-b border-slate-200 pb-4">
-                <h2 className="text-xl font-bold text-slate-900">ডাটা ব্যাকআপ ও রিসেট ব্যবস্থাপনা</h2>
-                <p className="text-xs text-slate-500">ওয়েবসাইটের সকল তথ্য এক্সপোর্ট করুন অথবা প্রয়োজন অনুযায়ী ডিফল্ট তথ্যে ফিরিয়ে আনুন</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="p-6 rounded-2xl border border-slate-200 bg-slate-50 space-y-4">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 text-base">ব্যাকআপ ডাউনলোড করুন</h3>
-                    <p className="text-xs text-slate-600 mt-1">
-                      বর্তমান সকল নোটিশ, শিক্ষক তালিকা, ভর্তি আবেদন ও সেটিংসের একটি ব্যাকআপ JSON ফাইল ডাউনলোড করুন।
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleExportData}
-                    className="w-full bg-emerald-800 hover:bg-emerald-900 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>JSON ব্যাকআপ ডাউনলোড</span>
-                  </button>
-                </div>
-
-                <div className="p-6 rounded-2xl border border-rose-200 bg-rose-50 space-y-4">
-                  <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-800 flex items-center justify-center">
-                    <RefreshCw className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-rose-950 text-base">ডিফল্ট ডেমো তথ্যে রিসেট</h3>
-                    <p className="text-xs text-rose-800 mt-1">
-                      যদি কোনো ডাটা এলোমেলো হয়ে যায় তবে এক ক্লিকে প্রাথমিক অফিসিয়াল ডেমো তথ্যে ফিরে যেতে পারবেন।
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => {
-                      openConfirmModal({
-                        title: 'ফ্যাক্টরি রিসেট নিশ্চিতকরণ',
-                        message: 'আপনি কি নিশ্চিত যে সকল তথ্য প্রাথমিক ডেমো অবস্থায় ফিরিয়ে নিতে চান? এতে সকল কাস্টম ডাটা রিসেট হয়ে যাবে।',
-                        confirmLabel: 'হ্যাঁ, ফ্যাক্টরি রিসেট করুন',
-                        cancelLabel: 'বাতিল',
-                        type: 'danger',
-                        onConfirm: () => {
-                          resetToDefaults();
-                          closeConfirmModal();
-                        }
-                      });
-                    }}
-                    className="w-full bg-rose-700 hover:bg-rose-800 text-white font-bold py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 cursor-pointer shadow transition-all active:scale-95"
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    <span>ফ্যাক্টরি রিসেট করুন</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* TAB 16: ADMIN USERS & PERMISSION MANAGEMENT */}
           {activeTab === 'users' && (

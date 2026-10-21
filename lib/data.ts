@@ -1069,7 +1069,6 @@ export const availablePermissions: AdminPermission[] = [
   { id: 'messages', name: 'প্রাপ্ত বার্তা (ইনবক্স)', title: 'প্রাপ্ত বার্তা (ইনবক্স)', description: 'ওয়েবসাইটের যোগাযোগ ফরম থেকে আসা মেসেজ দেখা', category: 'core' },
   { id: 'prayer', name: 'সালাতের সময়সূচি', title: 'সালাতের সময়সূচি', description: 'পাঁচ ওয়াক্ত সালাতের আযান ও জামাতের সময়সূচি পরিবর্তন', category: 'core' },
   { id: 'settings', name: 'মাদ্রাসা সাধারণ সেটিংস', title: 'মাদ্রাসা সাধারণ সেটিংস', description: 'মাদ্রাসার নাম, কোড, ঠিকানা, ফোন ও অন্যান্য সেটিংস', category: 'system' },
-  { id: 'backup', name: 'ব্যাকআপ ও রিস্টোর', title: 'ব্যাকআপ ও রিস্টোর', description: 'ডাটাবেজ এক্সপোর্ট, ইমপোর্ট ও ব্যাকআপ ফাইল ডাউনলোড', category: 'system' },
   { id: 'users', name: 'ইউজার ও পারমিশন কন্ট্রোল', title: 'ইউজার ও পারমিশন কন্ট্রোল', description: 'নতুন অ্যাডমিন তৈরি ও তাদের এক্সেস পারমিশন নিয়ন্ত্রণ', category: 'system' }
 ];
 
