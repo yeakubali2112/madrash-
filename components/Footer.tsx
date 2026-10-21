@@ -11,8 +11,7 @@ import {
   MapPin,
   Clock,
   ExternalLink,
-  ChevronRight,
-  ShieldCheck
+  ChevronRight
 } from 'lucide-react';
 
 export const Footer: React.FC = () => {
@@ -179,15 +178,7 @@ export const Footer: React.FC = () => {
               </li>
             </ul>
 
-            <div className="pt-2">
-              <Link
-                href="/admin"
-                className="inline-flex items-center gap-1.5 text-xs text-[#DDAA00] hover:text-white font-bold bg-[#002b66] border border-[#003580] px-3 py-1.5 rounded transition-all hover:border-[#DDAA00]"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-[#DDAA00]" />
-                <span>অফিসিয়াল অ্যাডমিন লগইন</span>
-              </Link>
-            </div>
+
           </div>
 
           {/* Col 4: Contact & Office */}
