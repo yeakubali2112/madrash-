@@ -36,6 +36,7 @@ export const Navbar: React.FC = () => {
     { name: 'নোটিশ বোর্ড', href: '/notices', icon: FileText },
     { name: 'ফলাফল', href: '/results', icon: Award },
     { name: 'শিক্ষকবৃন্দ', href: '/teachers', icon: Users },
+    { name: 'প্রাক্তন শিক্ষার্থী', href: '/alumni', icon: GraduationCap },
     { name: 'রুটিন', href: '/routine', icon: Calendar },
     { name: 'গ্যালারি', href: '/gallery', icon: ImageIcon },
     { name: 'যোগাযোগ', href: '/contact', icon: Phone },
@@ -201,7 +202,7 @@ export const Navbar: React.FC = () => {
                   <li key={link.href}>
                     <Link
                       href={link.href}
-                      className={`flex items-center gap-1.5 px-3.5 py-3 text-sm font-semibold transition-all relative ${
+                      className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-3 text-xs xl:text-sm font-semibold transition-all relative ${
                         active
                           ? 'bg-[#003580] text-[#DDAA00] shadow-inner border-b-3 border-[#DDAA00]'
                           : 'text-white/95 hover:bg-[#00542c] hover:text-[#DDAA00]'

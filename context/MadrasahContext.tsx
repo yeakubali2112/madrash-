@@ -31,7 +31,9 @@ import {
   defaultAdminUsers,
   ClassRoutine,
   RoutinePeriod,
-  defaultClassRoutines
+  defaultClassRoutines,
+  AlumniStudent,
+  defaultAlumniStudents
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -64,6 +66,8 @@ import {
   setCurrentAdminUser,
   getStoredRoutines,
   saveStoredRoutines,
+  getStoredAlumni,
+  saveStoredAlumni,
   isAdminLoggedIn,
   setAdminLoggedIn,
   resetAllData
@@ -123,6 +127,11 @@ interface MadrasahContextType {
   updatePeriodInRoutine: (routineId: string, periodId: string, period: Partial<RoutinePeriod>) => void;
   deletePeriodFromRoutine: (routineId: string, periodId: string) => void;
   resetRoutinesToDefault: () => void;
+  alumniStudents: AlumniStudent[];
+  addAlumniStudent: (student: Omit<AlumniStudent, 'id' | 'createdAt'>) => void;
+  updateAlumniStudent: (id: string, student: Partial<AlumniStudent>) => void;
+  deleteAlumniStudent: (id: string) => void;
+  resetAlumniToDefault: () => void;
   adminUsers: AdminUser[];
   currentAdminUser: AdminUser | null;
   addAdminUser: (user: Omit<AdminUser, 'id' | 'createdAt'>) => void;
@@ -152,6 +161,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
   const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
   const [routines, setRoutines] = useState<ClassRoutine[]>(defaultClassRoutines);
+  const [alumniStudents, setAlumniStudents] = useState<AlumniStudent[]>(defaultAlumniStudents);
   const [loggedStudent, setLoggedStudent] = useState<StudentProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -172,6 +182,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGallery(getStoredGallery());
     setPrayerConfig(getStoredPrayerConfig());
     setRoutines(getStoredRoutines());
+    setAlumniStudents(getStoredAlumni());
     const storedUsers = getStoredAdminUsers();
     setAdminUsers(storedUsers);
 
@@ -678,6 +689,34 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     updateRoutines(defaultClassRoutines);
   };
 
+  const addAlumniStudent = (studentData: Omit<AlumniStudent, 'id' | 'createdAt'>) => {
+    const newStudent: AlumniStudent = {
+      ...studentData,
+      id: `alm-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    const updated = [newStudent, ...alumniStudents];
+    setAlumniStudents(updated);
+    saveStoredAlumni(updated);
+  };
+
+  const updateAlumniStudent = (id: string, studentData: Partial<AlumniStudent>) => {
+    const updated = alumniStudents.map(s => s.id === id ? { ...s, ...studentData } : s);
+    setAlumniStudents(updated);
+    saveStoredAlumni(updated);
+  };
+
+  const deleteAlumniStudent = (id: string) => {
+    const updated = alumniStudents.filter(s => s.id !== id);
+    setAlumniStudents(updated);
+    saveStoredAlumni(updated);
+  };
+
+  const resetAlumniToDefault = () => {
+    setAlumniStudents(defaultAlumniStudents);
+    saveStoredAlumni(defaultAlumniStudents);
+  };
+
   const resetToDefaults = () => {
     resetAllData();
     setInfo(defaultMadrasahInfo);
@@ -694,6 +733,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPrayerConfig(defaultPrayerConfig);
     setAdminUsers(defaultAdminUsers);
     setRoutines(defaultClassRoutines);
+    setAlumniStudents(defaultAlumniStudents);
     setCurrentAdminUserState(null);
   };
 
@@ -709,6 +749,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         gallery,
         prayerConfig,
         routines,
+        alumniStudents,
         loggedStudent,
         teachers,
         applications,
@@ -761,6 +802,10 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updatePeriodInRoutine,
         deletePeriodFromRoutine,
         resetRoutinesToDefault,
+        addAlumniStudent,
+        updateAlumniStudent,
+        deleteAlumniStudent,
+        resetAlumniToDefault,
         loginAdmin,
         logoutAdmin,
         resetToDefaults

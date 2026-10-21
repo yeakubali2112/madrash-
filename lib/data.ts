@@ -142,6 +142,29 @@ export interface StudentProfile {
   application?: AdmissionApplication;
 }
 
+export interface AlumniStudent {
+  id: string;
+  name: string;
+  nameEn?: string;
+  passingYear: string;
+  examType: string;
+  rollNo?: string;
+  regNo?: string;
+  gpa?: string;
+  group?: string;
+  fatherName?: string;
+  motherName?: string;
+  phone?: string;
+  email?: string;
+  bloodGroup?: string;
+  currentStatus?: string;
+  presentInstitute?: string;
+  address?: string;
+  photo?: string;
+  achievements?: string;
+  createdAt: string;
+}
+
 export interface FacilityItem {
   id: string;
   title: string;
@@ -1040,6 +1063,229 @@ export const defaultClassRoutines: ClassRoutine[] = [
   }
 ];
 
+export const defaultAlumniStudents: AlumniStudent[] = [
+  {
+    id: 'alm-2024-01',
+    name: 'মোঃ তানভীর হাসান',
+    nameEn: 'Md. Tanvir Hasan',
+    passingYear: '২০২৪',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '৪১২০৫১',
+    regNo: '১৯১২৩৪৫৬৭৮',
+    gpa: '৫.০০ (গোল্ডেন A+)',
+    group: 'বিজ্ঞান বিভাগ',
+    fatherName: 'মোঃ রফিকুল ইসলাম',
+    motherName: 'মোছাঃ জাহানারা বেগম',
+    phone: '01711-223344',
+    email: 'tanvir.hasan@example.com',
+    bloodGroup: 'A+',
+    currentStatus: 'উচ্চ মাধ্যমিক (বিজ্ঞান)',
+    presentInstitute: 'নটর ডেম কলেজ, ঢাকা',
+    address: 'পশ্চিম আলোহালী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=250',
+    achievements: 'দাখিল পরীক্ষায় মাদ্রাসায় সর্বোচ্চ নম্বর ও গোল্ডেন জিপিএ ৫.০০ প্রাপ্তি।',
+    createdAt: '২০২৪-০৭-১৫'
+  },
+  {
+    id: 'alm-2024-02',
+    name: 'মোছাঃ মারিয়া আক্তার',
+    nameEn: 'Mst. Maria Akter',
+    passingYear: '২০২৪',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '৪১২০৫২',
+    regNo: '১৯১২৩৪৫৬৭৯',
+    gpa: '৫.০০ (A+)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ আশরাফুল আলম',
+    motherName: 'মোছাঃ সেলিনা পারভীন',
+    phone: '01722-334455',
+    email: 'maria.akter@example.com',
+    bloodGroup: 'B+',
+    currentStatus: 'একাদশ শ্রেণিতে অধ্যয়নরত',
+    presentInstitute: 'রাজশাহী সরকারি মহিলা কলেজ',
+    address: 'চৌকড়ী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=250',
+    achievements: 'উপজেলা পর্যায়ে কিরাত ও ইসলামিক সাধারণ জ্ঞানে ১ম স্থান অধিকারী।',
+    createdAt: '২০২৪-০৭-১৫'
+  },
+  {
+    id: 'alm-2023-01',
+    name: 'হাফেজ মোঃ নাঈমুল ইসলাম',
+    nameEn: 'Hafez Md. Naimul Islam',
+    passingYear: '২০২৩',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '৩১৮০২১',
+    regNo: '১৮১২৩৪৫৮০১',
+    gpa: '৪.৮৮ (A+)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মাওলানা মোঃ নুরুল হুদা',
+    motherName: 'মোছাঃ খাদিজা বেগম',
+    phone: '01733-445566',
+    email: 'naimul.quran@example.com',
+    bloodGroup: 'O+',
+    currentStatus: 'অনার্স ১ম বর্ষ (আরবি সাহিত্য)',
+    presentInstitute: 'রাজশাহী বিশ্ববিদ্যালয়',
+    address: 'পশ্চিম আলোহালী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=250',
+    achievements: 'হিফজুল কুরআন সম্পন্নকারী ও বিভাগীয় কুরআন তিলাওয়াত প্রতিযোগিতার রানারআপ।',
+    createdAt: '২০২৩-০৮-১০'
+  },
+  {
+    id: 'alm-2023-02',
+    name: 'মোছাঃ ফাতেমা খাতুন',
+    nameEn: 'Mst. Fatema Khatun',
+    passingYear: '২০২৩',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '৩১৮০২২',
+    regNo: '১৮১২৩৪৫৮০২',
+    gpa: '৪.৭৫ (A)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ আব্দুল মান্নান',
+    motherName: 'মোছাঃ আয়েশা বেগম',
+    phone: '01744-556677',
+    email: 'fatema.khatun@example.com',
+    bloodGroup: 'AB+',
+    currentStatus: 'দ্বাদশ শ্রেণি (মানবিক বিভাগ)',
+    presentInstitute: 'সিংড়া গোল-ই-আফরোজ সরকারি কলেজ',
+    address: 'বিলদহর, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=250',
+    achievements: 'শ্রেষ্ঠ বিতার্কিক ও সাহিত্য সাংস্কৃতিক প্রতিযোগিতায় পুরষ্কারপ্রাপ্ত।',
+    createdAt: '২০২৩-০৮-১০'
+  },
+  {
+    id: 'alm-2022-01',
+    name: 'মোঃ সাইফুল ইসলাম',
+    nameEn: 'Md. Saiful Islam',
+    passingYear: '২০২২',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '২২৪০১১',
+    regNo: '১৭১২৩৪৬০০১',
+    gpa: '৫.০০ (গোল্ডেন A+)',
+    group: 'বিজ্ঞান বিভাগ',
+    fatherName: 'মোঃ গোলাম মোস্তফা',
+    motherName: 'মোছাঃ রাবেয়া বসরী',
+    phone: '01755-667788',
+    email: 'saiful.buet@example.com',
+    bloodGroup: 'A+',
+    currentStatus: 'বিএসসি ইঞ্জিনিয়ারিং (ইইই)',
+    presentInstitute: 'বাংলাদেশ প্রকৌশল বিশ্ববিদ্যালয় (BUET)',
+    address: 'পশ্চিম আলোহালী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=250',
+    achievements: 'বুয়েট ভর্তি পরীক্ষায় কৃতিত্বের সাথে চান্স লাভ ও জাতীয় গণিত অলিম্পিয়াড অংশগ্রহণকারী।',
+    createdAt: '২০২২-০৭-২০'
+  },
+  {
+    id: 'alm-2022-02',
+    name: 'মোঃ আল-আমিন হোসেন',
+    nameEn: 'Md. Al-Amin Hossain',
+    passingYear: '২০২২',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '২২৪০১২',
+    regNo: '১৭১২৩৪৬০০২',
+    gpa: '৪.৬০ (A)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ মোকছেদ আলী',
+    motherName: 'মোছাঃ শাহিদা পারভীন',
+    phone: '01766-778899',
+    email: 'alamin.madrasah@example.com',
+    bloodGroup: 'B+',
+    currentStatus: 'ফাজিল (স্নাতক) ২য় বর্ষ',
+    presentInstitute: 'কাদেরিয়া তৈয়্যেবিয়া আলিয়া কামিল মাদ্রাসা, ঢাকা',
+    address: 'বটতলী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?auto=format&fit=crop&q=80&w=250',
+    achievements: 'ইসলামিক ক্যালিগ্রাফিতে জাতীয় পুরষ্কারপ্রাপ্ত।',
+    createdAt: '২০২২-০৭-২০'
+  },
+  {
+    id: 'alm-2021-01',
+    name: 'মোছাঃ সাবিনা ইয়াসমিন',
+    nameEn: 'Mst. Sabina Yasmin',
+    passingYear: '২০২১',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '২১৩০১৪',
+    regNo: '১৬১২৩৪৬১০৫',
+    gpa: '৪.৯২ (A+)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ জহুরুল হক',
+    motherName: 'মোছাঃ মমতাজ বেগম',
+    phone: '01777-889900',
+    email: 'sabina.du@example.com',
+    bloodGroup: 'O+',
+    currentStatus: 'অনার্স ৩য় বর্ষ (ইসলামিক স্টাডিজ)',
+    presentInstitute: 'ঢাকা বিশ্ববিদ্যালয়',
+    address: 'পশ্চিম আলোহালী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1567532939604-b6b5b0db2604?auto=format&fit=crop&q=80&w=250',
+    achievements: 'বিশ্ববিদ্যালয় মেধা বৃত্তিপ্রাপ্ত শিক্ষার্থী।',
+    createdAt: '২০২১-০৭-১৮'
+  },
+  {
+    id: 'alm-2020-01',
+    name: 'মোঃ হাসিবুর রহমান',
+    nameEn: 'Md. Hasibur Rahman',
+    passingYear: '২০২০',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '২০২০১৫',
+    regNo: '১৫১২৩৪৬২১১',
+    gpa: '৫.০০ (A+)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ শাহজাহান আলী',
+    motherName: 'মোছাঃ ফরিদা বেগম',
+    phone: '01788-990011',
+    email: 'hasibur.edu@example.com',
+    bloodGroup: 'A+',
+    currentStatus: 'সহকারী শিক্ষক (সরকারি প্রাথমিক বিদ্যালয়)',
+    presentInstitute: 'প্রাথমিক ও গণশিক্ষা মন্ত্রণালয়',
+    address: 'সিংড়া পৌরসভা, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=250',
+    achievements: 'বিসিএস ও প্রাথমিক শিক্ষক নিয়োগ পরীক্ষায় প্রথম সারিতে উত্তীর্ণ।',
+    createdAt: '২০২০-০৬-৩০'
+  },
+  {
+    id: 'alm-2019-01',
+    name: 'ইঞ্জিনিয়ার মোঃ আরিফুল ইসলাম',
+    nameEn: 'Engr. Md. Ariful Islam',
+    passingYear: '২০১৯',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '১৯১০১৮',
+    regNo: '১৪১২৩৪৬৩২৫',
+    gpa: '৪.৬৫ (A)',
+    group: 'বিজ্ঞান বিভাগ',
+    fatherName: 'মোঃ ইব্রাহিম খলিল',
+    motherName: 'মোছাঃ নাসিমা আক্তার',
+    phone: '01799-001122',
+    email: 'ariful.dev@example.com',
+    bloodGroup: 'AB+',
+    currentStatus: 'সিনিয়র সফটওয়্যার ইঞ্জিনিয়ার',
+    presentInstitute: 'টেকনো সল্যুশনস লিমিটেড, ঢাকা',
+    address: 'উত্তরা, ঢাকা (মূল বাড়ি: পশ্চিম আলোহালী)',
+    photo: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&q=80&w=250',
+    achievements: 'মাদ্রাসার আইসিটি ল্যাব প্রতিষ্ঠায় আর্থিক ও প্রযুক্তিগত অনুদান দাতা।',
+    createdAt: '২০১৯-০৬-২৫'
+  },
+  {
+    id: 'alm-2018-01',
+    name: 'মাওলানা মোঃ মাহমুদুল হাসান',
+    nameEn: 'Mawlana Md. Mahmudul Hasan',
+    passingYear: '২০১৮',
+    examType: 'দাখিল পরীক্ষা',
+    rollNo: '১৮১০১০',
+    regNo: '১৩১২৩৪৬৪০১',
+    gpa: '৪.৮০ (A+)',
+    group: 'সাধারণ বিভাগ',
+    fatherName: 'মোঃ আব্দুল কুদ্দুস',
+    motherName: 'মোছাঃ খাদিজাতুল কোবরা',
+    phone: '01811-223344',
+    email: 'mahmud.khatib@example.com',
+    bloodGroup: 'O+',
+    currentStatus: 'খতিব ও সিনিয়র আরবি প্রভাষক',
+    presentInstitute: 'বায়তুস সালাম কেন্দ্রীয় জামে মসজিদ ও ফাজিল মাদ্রাসা',
+    address: 'পশ্চিম আলোহালী, সিংড়া, নাটোর',
+    photo: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&q=80&w=250',
+    achievements: 'কামিল হাদিস বিভাগে জাতীয় মেধা তালিকায় ১০ম স্থান।',
+    createdAt: '২০১৮-০৭-১০'
+  }
+];
+
 export interface AdminPermission {
   id: string;
   name: string;
@@ -1067,6 +1313,7 @@ export const availablePermissions: AdminPermission[] = [
   { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', title: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
   { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', title: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
   { id: 'routine', name: 'ক্লাস রুটিন ব্যবস্থাপনা', title: 'ক্লাস রুটিন ব্যবস্থাপনা', description: 'সকল শ্রেণির নিয়মিত ক্লাস রুটিন, পিরিয়ড ও শিক্ষক নির্ধারণ', category: 'academic' },
+  { id: 'alumni', name: 'পুরাতন শিক্ষার্থী তালিকা', title: 'পুরাতন শিক্ষার্থী তালিকা', description: 'মাদ্রাসার প্রাক্তন ও উত্তীর্ণ শিক্ষার্থীদের তথ্য, ব্যাচ ও ডাটাবেজ ব্যবস্থাপনা', category: 'academic' },
   { id: 'results', name: 'ফলাফল ও মার্কস', title: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },
   { id: 'admissions', name: 'ভর্তি আবেদন', title: 'ভর্তি আবেদন', description: 'অনলাইন নতুন ভর্তি আবেদন যাচাই, অনুমোদন ও বাতিল', category: 'academic' },
   { id: 'teachers', name: 'শিক্ষক ও স্টাফ তালিকা', title: 'শিক্ষক ও স্টাফ তালিকা', description: 'শিক্ষক-কর্মচারীদের তথ্য ও প্রোফাইল ব্যবস্থাপনা', category: 'academic' },
@@ -1104,6 +1351,7 @@ export const defaultAdminUsers: AdminUser[] = [
       'teachers',
       'attendance',
       'routine',
+      'alumni',
       'authorities',
       'results',
       'messages',

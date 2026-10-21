@@ -107,6 +107,12 @@ export const Footer: React.FC = () => {
                 </Link>
               </li>
               <li>
+                <Link href="/alumni" className="flex items-center gap-1.5 hover:text-[#DDAA00] transition-colors">
+                  <ChevronRight className="w-3.5 h-3.5 text-[#006837]" />
+                  <span className="text-amber-300 font-semibold">প্রাক্তন শিক্ষার্থী (অ্যালামনাই)</span>
+                </Link>
+              </li>
+              <li>
                 <Link href="/gallery" className="flex items-center gap-1.5 hover:text-[#DDAA00] transition-colors">
                   <ChevronRight className="w-3.5 h-3.5 text-[#006837]" />
                   <span>ফটো ও ভিডিও গ্যালারি</span>
