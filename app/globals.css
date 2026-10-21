@@ -152,11 +152,78 @@ body {
     box-shadow: 0 4px 14px 0 rgba(0, 104, 55, 0.28);
   }
   50% {
-    box-shadow: 0 6px 20px 2px rgba(0, 104, 55, 0.45);
+    box-shadow: 0 8px 24px 3px rgba(0, 104, 55, 0.5);
   }
 }
 
 .btn-pulse-glow {
-  animation: pulseGlow 3s ease-in-out infinite;
+  animation: pulseGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes successPop {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-success-pop {
+  animation: successPop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes shineSweep {
+  0% {
+    transform: translateX(-150%) skewX(-25deg);
+  }
+  100% {
+    transform: translateX(350%) skewX(-25deg);
+  }
+}
+
+.btn-shimmer-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-shimmer-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.35), transparent);
+  transform: translateX(-150%) skewX(-25deg);
+  pointer-events: none;
+}
+
+.btn-shimmer-effect:hover::after {
+  animation: shineSweep 0.85s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Global button micro-interactions across Admin Panel */
+button {
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+/* Sidebar navigation buttons hover elevation & slide */
+aside nav button {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+aside nav button:hover:not(.bg-emerald-800) {
+  transform: translateX(4px);
+  background-color: #f1f5f9;
 }
 

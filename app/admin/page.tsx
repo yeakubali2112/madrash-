@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useMadrasah } from '@/context/MadrasahContext';
+import confetti from 'canvas-confetti';
 import {
   Notice,
   Teacher,
@@ -239,6 +240,7 @@ export default function AdminDashboardPage() {
   // Hero Section Form State
   const [heroForm, setHeroForm] = useState<HeroSettings>(heroSettings || defaultHeroSettings);
   const [heroSettingsSaved, setHeroSettingsSaved] = useState(false);
+  const [heroSaving, setHeroSaving] = useState(false);
 
   useEffect(() => {
     if (heroSettings) {
@@ -248,9 +250,26 @@ export default function AdminDashboardPage() {
 
   const handleHeroSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    updateHeroSettings(heroForm);
-    setHeroSettingsSaved(true);
-    setTimeout(() => setHeroSettingsSaved(false), 3000);
+    if (heroSaving) return;
+    setHeroSaving(true);
+    setHeroSettingsSaved(false);
+
+    setTimeout(() => {
+      updateHeroSettings(heroForm);
+      setHeroSaving(false);
+      setHeroSettingsSaved(true);
+
+      try {
+        confetti({
+          particleCount: 85,
+          spread: 70,
+          origin: { y: 0.75 },
+          colors: ['#006837', '#DDAA00', '#10b981', '#ffffff']
+        });
+      } catch (err) {}
+
+      setTimeout(() => setHeroSettingsSaved(false), 4000);
+    }, 600);
   };
 
   const handleHeroReset = () => {
@@ -528,10 +547,12 @@ export default function AdminDashboardPage() {
   // Settings Form State
   const [settingsForm, setSettingsForm] = useState<MadrasahInfo>(info);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState(false);
 
   // Prayer Schedule Form State
   const [prayerForm, setPrayerForm] = useState<PrayerTimeConfig>(prayerConfig || defaultPrayerConfig);
   const [prayerSaved, setPrayerSaved] = useState(false);
+  const [prayerSaving, setPrayerSaving] = useState(false);
 
   useEffect(() => {
     if (prayerConfig) {
@@ -541,9 +562,28 @@ export default function AdminDashboardPage() {
 
   const handlePrayerSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    updatePrayerConfig(prayerForm);
-    setPrayerSaved(true);
-    setTimeout(() => setPrayerSaved(false), 3000);
+    if (prayerSaving) return;
+    setPrayerSaving(true);
+    setPrayerSaved(false);
+
+    setTimeout(() => {
+      updatePrayerConfig(prayerForm);
+      setPrayerSaving(false);
+      setPrayerSaved(true);
+
+      try {
+        confetti({
+          particleCount: 85,
+          spread: 70,
+          origin: { y: 0.75 },
+          colors: ['#006837', '#DDAA00', '#10b981', '#ffffff']
+        });
+      } catch (err) {
+        // fallback
+      }
+
+      setTimeout(() => setPrayerSaved(false), 4000);
+    }, 600);
   };
 
   // Authority Speeches Form State
@@ -558,6 +598,7 @@ export default function AdminDashboardPage() {
     presidentImage: info.presidentImage || ''
   });
   const [authoritySaved, setAuthoritySaved] = useState(false);
+  const [authoritySaving, setAuthoritySaving] = useState(false);
 
   useEffect(() => {
     setSettingsForm(info);
@@ -1076,12 +1117,32 @@ export default function AdminDashboardPage() {
     });
   };
 
-  // Handle Settings Save
-  const handleSaveSettings = (e: React.FormEvent) => {
-    e.preventDefault();
-    updateInfo(settingsForm);
-    setSettingsSaved(true);
-    setTimeout(() => setSettingsSaved(false), 3000);
+  // Handle Settings Save with professional loading & celebration animation
+  const handleSaveSettings = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (settingsSaving) return;
+
+    setSettingsSaving(true);
+    setSettingsSaved(false);
+
+    setTimeout(() => {
+      updateInfo(settingsForm);
+      setSettingsSaving(false);
+      setSettingsSaved(true);
+
+      try {
+        confetti({
+          particleCount: 100,
+          spread: 75,
+          origin: { y: 0.75 },
+          colors: ['#006837', '#DDAA00', '#10b981', '#3b82f6', '#ffffff']
+        });
+      } catch (err) {
+        // fallback
+      }
+
+      setTimeout(() => setSettingsSaved(false), 4500);
+    }, 600);
   };
 
   // Handle Settings Image Upload (Logo, Banner, Photos, Seal, Signature)
@@ -2317,10 +2378,31 @@ export default function AdminDashboardPage() {
 
                     <button
                       type="submit"
-                      className="btn-pulse-glow w-full sm:w-auto flex items-center justify-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-black py-3 px-6 rounded-xl transition-all shadow-md active:scale-95"
+                      disabled={heroSaving}
+                      className={`btn-pulse-glow btn-shimmer-effect w-full sm:w-auto flex items-center justify-center gap-2 text-white text-xs font-black py-3 px-6 rounded-xl transition-all shadow-md active:scale-95 cursor-pointer ${
+                        heroSaving
+                          ? 'bg-slate-700 text-slate-200 cursor-wait'
+                          : heroSettingsSaved
+                          ? 'bg-gradient-to-r from-emerald-600 to-green-600 ring-4 ring-emerald-300 shadow-emerald-900/30 scale-105'
+                          : 'bg-emerald-700 hover:bg-emerald-800'
+                      }`}
                     >
-                      <Save className="w-4 h-4" />
-                      <span>পরিবর্তন সংরক্ষণ করুন</span>
+                      {heroSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#DDAA00]" />
+                          <span>সংরক্ষণ হচ্ছে...</span>
+                        </>
+                      ) : heroSettingsSaved ? (
+                        <>
+                          <CheckCircle2 className="w-4 h-4 text-white animate-success-pop" />
+                          <span>পরিবর্তন সংরক্ষিত! 🎉</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4" />
+                          <span>পরিবর্তন সংরক্ষণ করুন</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -4063,19 +4145,36 @@ export default function AdminDashboardPage() {
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
-                  updateInfo({
-                    ...info,
-                    principalName: authorityForm.principalName,
-                    principalTitle: authorityForm.principalTitle,
-                    principalMessage: authorityForm.principalMessage,
-                    principalImage: authorityForm.principalImage,
-                    presidentName: authorityForm.presidentName,
-                    presidentTitle: authorityForm.presidentTitle,
-                    presidentMessage: authorityForm.presidentMessage,
-                    presidentImage: authorityForm.presidentImage
-                  });
-                  setAuthoritySaved(true);
-                  setTimeout(() => setAuthoritySaved(false), 3000);
+                  if (authoritySaving) return;
+                  setAuthoritySaving(true);
+                  setAuthoritySaved(false);
+
+                  setTimeout(() => {
+                    updateInfo({
+                      ...info,
+                      principalName: authorityForm.principalName,
+                      principalTitle: authorityForm.principalTitle,
+                      principalMessage: authorityForm.principalMessage,
+                      principalImage: authorityForm.principalImage,
+                      presidentName: authorityForm.presidentName,
+                      presidentTitle: authorityForm.presidentTitle,
+                      presidentMessage: authorityForm.presidentMessage,
+                      presidentImage: authorityForm.presidentImage
+                    });
+                    setAuthoritySaving(false);
+                    setAuthoritySaved(true);
+
+                    try {
+                      confetti({
+                        particleCount: 85,
+                        spread: 70,
+                        origin: { y: 0.75 },
+                        colors: ['#006837', '#DDAA00', '#10b981', '#ffffff']
+                      });
+                    } catch (err) {}
+
+                    setTimeout(() => setAuthoritySaved(false), 4000);
+                  }, 600);
                 }}
                 className="space-y-6"
               >
@@ -4328,11 +4427,31 @@ export default function AdminDashboardPage() {
                 <div className="pt-4 border-t border-slate-200 flex justify-end">
                   <button
                     type="submit"
-                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
+                    disabled={authoritySaving}
+                    className={`relative overflow-hidden group inline-flex items-center gap-2 text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-all cursor-pointer btn-shimmer-effect ${
+                      authoritySaving
+                        ? 'bg-slate-700 text-slate-200 cursor-wait'
+                        : authoritySaved
+                        ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white ring-4 ring-emerald-400/40 shadow-emerald-900/30 scale-105'
+                        : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:scale-95 btn-pulse-glow'
+                    }`}
                   >
-                    <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                    <Save className="w-4 h-4 text-[#DDAA00] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
-                    <span>কর্তৃপক্ষের বাণী সংরক্ষণ করুন (Save Changes)</span>
+                    {authoritySaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#DDAA00]" />
+                        <span>বাণী সংরক্ষণ করা হচ্ছে...</span>
+                      </>
+                    ) : authoritySaved ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-white animate-success-pop" />
+                        <span className="font-black">বাণী সফলভাবে সংরক্ষিত! 🎉</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 text-[#DDAA00] transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
+                        <span>কর্তৃপক্ষের বাণী সংরক্ষণ করুন (Save Changes)</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
@@ -4372,10 +4491,31 @@ export default function AdminDashboardPage() {
                   <button
                     type="button"
                     onClick={handleSaveSettings}
-                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 active:scale-95 transition-all cursor-pointer btn-pulse-glow"
+                    disabled={settingsSaving}
+                    className={`relative overflow-hidden group inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold shadow-md transition-all cursor-pointer btn-shimmer-effect ${
+                      settingsSaving
+                        ? 'bg-slate-700 text-slate-200 cursor-wait'
+                        : settingsSaved
+                        ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white ring-4 ring-emerald-300 shadow-emerald-900/30 scale-105'
+                        : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl hover:shadow-emerald-900/25 active:scale-95 btn-pulse-glow'
+                    }`}
                   >
-                    <Save className="w-4 h-4 transition-transform group-hover:scale-125" />
-                    <span>সেভ করুন</span>
+                    {settingsSaving ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#DDAA00]" />
+                        <span>সংরক্ষণ হচ্ছে...</span>
+                      </>
+                    ) : settingsSaved ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-white animate-success-pop" />
+                        <span className="font-black">সংরক্ষিত! ✅</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 transition-transform group-hover:scale-125" />
+                        <span>সেভ করুন</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>
@@ -5134,11 +5274,31 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-3 w-full sm:w-auto">
                     <button
                       type="submit"
-                      className="w-full sm:w-auto relative overflow-hidden group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs sm:text-sm font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-900/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
+                      disabled={settingsSaving}
+                      className={`w-full sm:w-auto relative overflow-hidden group inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl font-bold text-xs sm:text-sm shadow-lg transition-all duration-300 cursor-pointer btn-shimmer-effect ${
+                        settingsSaving
+                          ? 'bg-slate-700 text-slate-200 cursor-wait scale-[0.98]'
+                          : settingsSaved
+                          ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white ring-4 ring-emerald-400/50 shadow-emerald-900/30 scale-105'
+                          : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl hover:shadow-emerald-900/30 hover:-translate-y-0.5 active:scale-95 btn-pulse-glow'
+                      }`}
                     >
-                      <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                      <Save className="w-4 h-4 transition-transform group-hover:scale-125" />
-                      <span>সকল সেটিংস ও মিডিয়া সংরক্ষণ করুন</span>
+                      {settingsSaving ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-[#DDAA00]" />
+                          <span className="tracking-wide">সংরক্ষণ করা হচ্ছে...</span>
+                        </>
+                      ) : settingsSaved ? (
+                        <>
+                          <CheckCircle2 className="w-5 h-5 text-white animate-success-pop" />
+                          <span className="tracking-wide font-black">সফলভাবে সংরক্ষিত হয়েছে! 🎉</span>
+                        </>
+                      ) : (
+                        <>
+                          <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125" />
+                          <span>সকল সেটিংস ও মিডিয়া সংরক্ষণ করুন</span>
+                        </>
+                      )}
                     </button>
                   </div>
                 </div>
@@ -5463,10 +5623,31 @@ export default function AdminDashboardPage() {
                   </div>
                   <button
                     type="submit"
-                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
+                    disabled={prayerSaving}
+                    className={`relative overflow-hidden group inline-flex items-center gap-2 text-xs font-bold px-6 py-2.5 rounded-xl shadow-md transition-all duration-200 cursor-pointer btn-shimmer-effect ${
+                      prayerSaving
+                        ? 'bg-slate-700 text-slate-200 cursor-wait'
+                        : prayerSaved
+                        ? 'bg-gradient-to-r from-emerald-600 to-green-600 text-white ring-4 ring-emerald-400/40 shadow-emerald-900/30 scale-105'
+                        : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:scale-95 btn-pulse-glow'
+                    }`}
                   >
-                    <Save className="w-4 h-4" />
-                    <span>সালাতের সময়সূচি সংরক্ষণ করুন</span>
+                    {prayerSaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-[#DDAA00]" />
+                        <span>সময়সূচি সংরক্ষণ হচ্ছে...</span>
+                      </>
+                    ) : prayerSaved ? (
+                      <>
+                        <CheckCircle2 className="w-4 h-4 text-white animate-success-pop" />
+                        <span className="font-black">সময়সূচি সংরক্ষিত! ✅</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4" />
+                        <span>সালাতের সময়সূচি সংরক্ষণ করুন</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </form>
