@@ -54,7 +54,16 @@ export const getStoredInfo = (): MadrasahInfo => {
   if (typeof window === 'undefined') return defaultMadrasahInfo;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.INFO);
-    return data ? JSON.parse(data) : defaultMadrasahInfo;
+    if (!data) return defaultMadrasahInfo;
+    const parsed = JSON.parse(data);
+    return {
+      ...defaultMadrasahInfo,
+      ...parsed,
+      stats: {
+        ...defaultMadrasahInfo.stats,
+        ...(parsed.stats || {})
+      }
+    };
   } catch {
     return defaultMadrasahInfo;
   }

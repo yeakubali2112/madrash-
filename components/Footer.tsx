@@ -34,11 +34,12 @@ export const Footer: React.FC = () => {
             <div className="flex items-center gap-3">
               <div className="relative w-14 h-14 shrink-0 drop-shadow-md">
                 <Image
-                  src="/logo.png"
+                  src={info.logo || "/logo.png"}
                   alt={info.name}
                   width={56}
                   height={56}
                   className="w-full h-full object-contain"
+                  unoptimized
                 />
               </div>
               <div>

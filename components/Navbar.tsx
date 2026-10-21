@@ -68,12 +68,13 @@ export const Navbar: React.FC = () => {
             {/* Real Logo from Madrasah */}
             <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 drop-shadow-md group-hover:scale-105 transition-transform">
               <Image
-                src="/logo.png"
+                src={info.logo || "/logo.png"}
                 alt={info.name}
                 width={80}
                 height={80}
                 className="w-full h-full object-contain"
                 priority
+                unoptimized
               />
             </div>
 

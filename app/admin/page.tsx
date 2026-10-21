@@ -86,7 +86,10 @@ import {
   Sunrise,
   Sunset,
   Calendar,
-  School
+  School,
+  Globe,
+  Phone,
+  Mail
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -1079,6 +1082,31 @@ export default function AdminDashboardPage() {
     updateInfo(settingsForm);
     setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 3000);
+  };
+
+  // Handle Settings Image Upload (Logo, Banner, Photos, Seal, Signature)
+  const handleSettingsImageUpload = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    fieldKey: keyof MadrasahInfo
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('ছবির আকার সর্বোচ্চ ৫ মেগাবাইট (5MB) হতে পারবে। অনুগ্রহ করে ছোট সাইজের ছবি নির্বাচন করুন।');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setSettingsForm(prev => ({
+          ...prev,
+          [fieldKey]: reader.result
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
 
@@ -4311,135 +4339,808 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
-          {/* TAB 7: SETTINGS */}
+          {/* TAB 7: MADRASAH SETTINGS & MEDIA ASSETS */}
           {activeTab === 'settings' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+            <div className="space-y-8 animate-in fade-in duration-200">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200 pb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">মাদ্রাসার সাধারণ তথ্য ও সেটিংস</h2>
-                  <p className="text-xs text-slate-500">মাদ্রাসার নাম, কোড, ফোন, ঠিকানা ও বাণী পরিবর্তন করুন</p>
+                  <div className="inline-flex items-center gap-2 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full mb-1.5">
+                    <Settings className="w-3.5 h-3.5 text-[#006837]" />
+                    <span>প্রাতিষ্ঠানিক পরিচিতি ও ব্র্যান্ডিং কনফিগ</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+                    <span>মাদ্রাসার সাধারণ সেটিংস ও মিডিয়া আপলোড</span>
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+                    মাদ্রাসার মূল লোগো, কভার ব্যানার, অফিশিয়াল কোড, যোগাযোগের তথ্য ও প্রতিষ্ঠান প্রধানের প্রোফাইল পরিবর্তন করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSettingsForm(info);
+                      alert('সেটিংস পূর্বাবস্থায় ফিরিয়ে আনা হয়েছে');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 text-xs font-bold transition shadow-xs cursor-pointer"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>রিলোড</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveSettings}
+                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-5 py-2 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 active:scale-95 transition-all cursor-pointer btn-pulse-glow"
+                  >
+                    <Save className="w-4 h-4 transition-transform group-hover:scale-125" />
+                    <span>সেভ করুন</span>
+                  </button>
                 </div>
               </div>
 
+              {/* Toast Feedback */}
               {settingsSaved && (
-                <div className="p-3 bg-emerald-100 border border-emerald-300 rounded-xl text-emerald-900 text-xs font-bold flex items-center gap-2">
-                  <Check className="w-4 h-4" />
-                  <span>সেটিংস সফলভাবে সংরক্ষিত হয়েছে! সম্পূর্ণ ওয়েবসাইটে নতুন তথ্য হালনাগাদ করা হয়েছে।</span>
+                <div className="p-4 bg-gradient-to-r from-emerald-500 to-[#006837] text-white rounded-2xl shadow-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                      <Check className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-sm">সেটিংস সফলভাবে সংরক্ষিত হয়েছে!</h4>
+                      <p className="text-xs text-emerald-100">মাদ্রাসার লোগো, ব্যানার ও সকল তথ্য লাইভ ওয়েবসাইটে হালনাগাদ করা হয়েছে।</p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] bg-white/20 px-2.5 py-1 rounded-full font-mono">লাইভ সিঙ্ক সম্পন্ন</span>
                 </div>
               )}
 
-              <form onSubmit={handleSaveSettings} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">মাদ্রাসার নাম (বাংলা)</label>
-                    <input
-                      type="text"
-                      value={settingsForm.name}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs font-semibold"
-                    />
+              <form onSubmit={handleSaveSettings} className="space-y-8">
+                {/* ======================================================== */}
+                {/* SECTION 1: LOGO & COVER BANNER MEDIA UPLOAD */}
+                {/* ======================================================== */}
+                <div className="bg-gradient-to-br from-emerald-50/60 via-white to-slate-50 p-5 sm:p-7 rounded-2xl border-2 border-emerald-200/80 shadow-xs space-y-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-emerald-100 pb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-700 to-[#006837] text-white flex items-center justify-center shadow-sm">
+                        <ImageIcon className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-black text-slate-900 text-base">১. প্রাতিষ্ঠানিক লোগো ও কভার ব্যানার আপলোড</h3>
+                        <p className="text-xs text-slate-500">মাদ্রাসার অফিসিয়াল ব্র্যান্ডিং ও রিয়েল ইমেজ পরিবর্তন করুন</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] bg-emerald-100 text-emerald-800 font-bold px-2.5 py-1 rounded-lg self-start sm:self-auto">
+                      সরাসরি লাইভ প্রিভিউ
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">মাদ্রাসার নাম (ইংরেজি)</label>
-                    <input
-                      type="text"
-                      value={settingsForm.englishName}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, englishName: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs"
-                    />
-                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* LOGO UPLOAD CARD */}
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                            <Sparkles className="w-4 h-4 text-[#DDAA00]" />
+                            <span>মাদ্রাসার অফিশিয়াল লোগো (Logo)</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm(prev => ({ ...prev, logo: '/logo.png' }))}
+                            className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-bold cursor-pointer"
+                          >
+                            মূল লোগো ফিরিয়ে আনুন
+                          </button>
+                        </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">EIIN নম্বর</label>
-                    <input
-                      type="text"
-                      value={settingsForm.eiin}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, eiin: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs font-mono"
-                    />
-                  </div>
+                        {/* Dual Preview: Light & Header view */}
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Light Preview */}
+                          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-xl p-3 flex flex-col items-center justify-center text-center min-h-[140px]">
+                            <div className="relative w-20 h-20 drop-shadow-md">
+                              <Image
+                                src={settingsForm.logo || '/logo.png'}
+                                alt={settingsForm.name}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-contain"
+                                unoptimized
+                              />
+                            </div>
+                            <span className="text-[10px] text-slate-500 font-bold mt-2">লাইট ব্যাকগ্রাউন্ডে প্রিভিউ</span>
+                          </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">মাদ্রাসা কোড</label>
-                    <input
-                      type="text"
-                      value={settingsForm.madrasahCode}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, madrasahCode: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs font-mono"
-                    />
-                  </div>
+                          {/* Header Dark Green Preview */}
+                          <div className="bg-[#006837] rounded-xl p-3 flex flex-col items-center justify-center text-center min-h-[140px] text-white shadow-inner">
+                            <div className="relative w-20 h-20 drop-shadow-lg">
+                              <Image
+                                src={settingsForm.logo || '/logo.png'}
+                                alt={settingsForm.name}
+                                width={80}
+                                height={80}
+                                className="w-full h-full object-contain"
+                                unoptimized
+                              />
+                            </div>
+                            <span className="text-[10px] text-emerald-200 font-bold mt-2">গ্রিন হেডারে প্রিভিউ</span>
+                          </div>
+                        </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">প্রধান ফোন নম্বর</label>
-                    <input
-                      type="text"
-                      value={settingsForm.phone}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs font-mono"
-                    />
-                  </div>
+                        {/* Upload Controls */}
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <label
+                              htmlFor="madrasah-logo-file"
+                              className="flex-1 bg-gradient-to-r from-emerald-700 to-[#006837] hover:from-emerald-800 hover:to-emerald-900 text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer transition active:scale-95"
+                            >
+                              <Upload className="w-4 h-4" />
+                              <span>কম্পিউটার/মোবাইল থেকে নতুন লোগো আপলোড</span>
+                            </label>
+                            <input
+                              id="madrasah-logo-file"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleSettingsImageUpload(e, 'logo')}
+                              className="hidden"
+                            />
+                          </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">ইমেইল ঠিকানা</label>
-                    <input
-                      type="email"
-                      value={settingsForm.email}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs"
-                    />
-                  </div>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={settingsForm.logo || ''}
+                              onChange={(e) => setSettingsForm({ ...settingsForm, logo: e.target.value })}
+                              placeholder="অথবা লোগোর ওয়েব লিংক দিন (https://...)"
+                              className="w-full px-3 py-2 pl-8 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                            />
+                            <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+                          </div>
+                        </div>
+                      </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">মাদ্রাসার পূর্ণ ঠিকানা</label>
-                    <input
-                      type="text"
-                      value={settingsForm.address}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs"
-                    />
-                  </div>
+                      <div className="text-[11px] text-slate-500 bg-emerald-50/70 p-2.5 rounded-xl border border-emerald-100 space-y-0.5">
+                        <p className="font-bold text-emerald-900">💡 লোগো ব্যবহারের নিয়মাবলী:</p>
+                        <p>স্কয়ার বা গোল আকারের PNG/WEBP ফরম্যাট এবং স্বচ্ছ (Transparent) ব্যাকগ্রাউন্ড সবচেয়ে আকর্ষণীয় ফলাফল দেবে। সর্বোচ্চ সাইজ: ৫ মেগাবাইট।</p>
+                      </div>
+                    </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">সুপারিনটেনডেন্টের নাম ও পদবী</label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <input
-                        type="text"
-                        placeholder="নাম"
-                        value={settingsForm.principalName}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, principalName: e.target.value })}
-                        className="px-3 py-2 rounded-lg border text-xs"
-                      />
-                      <input
-                        type="text"
-                        placeholder="পদবী"
-                        value={settingsForm.principalTitle}
-                        onChange={(e) => setSettingsForm({ ...settingsForm, principalTitle: e.target.value })}
-                        className="px-3 py-2 rounded-lg border text-xs"
-                      />
+                    {/* COVER BANNER UPLOAD CARD */}
+                    <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4 flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <label className="text-xs font-black text-slate-800 flex items-center gap-1.5">
+                            <Building className="w-4 h-4 text-emerald-700" />
+                            <span>মাদ্রাসার কভার ব্যানার (Cover Banner)</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => setSettingsForm(prev => ({
+                              ...prev,
+                              bannerImage: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=1200'
+                            }))}
+                            className="text-[11px] text-emerald-700 hover:text-emerald-900 hover:underline font-bold cursor-pointer"
+                          >
+                            ডিফল্ট ব্যানার
+                          </button>
+                        </div>
+
+                        {/* Banner Preview */}
+                        <div className="relative w-full h-36 rounded-xl overflow-hidden border-2 border-slate-200 shadow-inner group">
+                          {settingsForm.bannerImage ? (
+                            <Image
+                              src={settingsForm.bannerImage}
+                              alt="মাদ্রাসা কভার ব্যানার"
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-slate-100 flex items-center justify-center text-slate-400 text-xs font-bold">
+                              কোনো ব্যানার নির্বাচন করা হয়নি
+                            </div>
+                          )}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-3">
+                            <div className="text-white">
+                              <span className="text-[9px] bg-[#DDAA00] text-slate-950 font-black px-1.5 py-0.5 rounded">লাইভ কভার ব্যানার</span>
+                              <h4 className="font-bold text-xs line-clamp-1 drop-shadow mt-0.5">{settingsForm.name}</h4>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Banner Upload Controls */}
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center gap-2">
+                            <label
+                              htmlFor="madrasah-banner-file"
+                              className="flex-1 bg-gradient-to-r from-slate-800 to-slate-900 hover:from-black hover:to-black text-white font-bold py-2 px-3 rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs cursor-pointer transition active:scale-95"
+                            >
+                              <Upload className="w-4 h-4 text-[#DDAA00]" />
+                              <span>কম্পিউটার/মোবাইল থেকে ব্যানার ছবি আপলোড</span>
+                            </label>
+                            <input
+                              id="madrasah-banner-file"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleSettingsImageUpload(e, 'bannerImage')}
+                              className="hidden"
+                            />
+                          </div>
+
+                          <div className="relative">
+                            <input
+                              type="text"
+                              value={settingsForm.bannerImage || ''}
+                              onChange={(e) => setSettingsForm({ ...settingsForm, bannerImage: e.target.value })}
+                              placeholder="অথবা ব্যানার ছবির ওয়েব লিংক দিন (URL)..."
+                              className="w-full px-3 py-2 pl-8 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                            />
+                            <Globe className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-3" />
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-200 space-y-0.5">
+                        <p className="font-bold text-slate-800">💡 ব্যানার ব্যবহারের নিয়মাবলী:</p>
+                        <p>১২০০x৪৫০ বা ল্যান্ডস্কেপ রেজোলিউশনের ছবির মান চমৎকার আসবে। এটি মাদ্রাসার সম্পর্কে ও ক্যাম্পাস হেডার হিসেবে ব্যবহৃত হবে।</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-bold text-slate-700 mb-1">সুপারিনটেনডেন্টের বাণী</label>
-                    <textarea
-                      rows={3}
-                      value={settingsForm.principalMessage}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, principalMessage: e.target.value })}
-                      className="w-full px-3 py-2 rounded-lg border text-xs"
-                    />
+                  {/* OFFICIAL SEAL & SIGNATURE UPLOAD */}
+                  <div className="border-t border-emerald-100 pt-5">
+                    <h4 className="text-xs font-black text-slate-800 mb-3 flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-700" />
+                      <span>মাদ্রাসার অফিশিয়াল সিল ও সুপারের ডিজিটাল স্বাক্ষর (ভর্তি ফরম ও মার্কশীটের জন্য)</span>
+                    </h4>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Official Seal */}
+                      <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center gap-4">
+                        <div className="w-16 h-16 rounded-full border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex items-center justify-center shrink-0 overflow-hidden relative">
+                          {settingsForm.officialSeal ? (
+                            <Image
+                              src={settingsForm.officialSeal}
+                              alt="মাদ্রাসার সিল"
+                              width={64}
+                              height={64}
+                              className="w-full h-full object-contain"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="text-[10px] text-slate-400 text-center font-bold px-1">সিল নেই</span>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-800">মাদ্রাসার অফিশিয়াল সিল / স্ট্যাম্প</label>
+                          <div className="flex items-center gap-2">
+                            <label
+                              htmlFor="seal-file"
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold cursor-pointer transition"
+                            >
+                              আপলোড করুন
+                            </label>
+                            <input
+                              id="seal-file"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleSettingsImageUpload(e, 'officialSeal')}
+                              className="hidden"
+                            />
+                            {settingsForm.officialSeal && (
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm({ ...settingsForm, officialSeal: '' })}
+                                className="text-[11px] text-rose-600 hover:underline font-bold"
+                              >
+                                মুছে ফেলুন
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Principal Signature */}
+                      <div className="p-3.5 bg-white rounded-xl border border-slate-200 flex items-center gap-4">
+                        <div className="w-24 h-16 rounded-xl border-2 border-dashed border-emerald-300 bg-emerald-50/50 flex items-center justify-center shrink-0 overflow-hidden relative">
+                          {settingsForm.principalSignature ? (
+                            <Image
+                              src={settingsForm.principalSignature}
+                              alt="প্রধানের স্বাক্ষর"
+                              width={96}
+                              height={64}
+                              className="w-full h-full object-contain"
+                              unoptimized
+                            />
+                          ) : (
+                            <span className="text-[10px] text-slate-400 text-center font-bold px-1">স্বাক্ষর নেই</span>
+                          )}
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          <label className="block text-xs font-bold text-slate-800">সুপারিনটেনডেন্টের ডিজিটাল স্বাক্ষর</label>
+                          <div className="flex items-center gap-2">
+                            <label
+                              htmlFor="signature-file"
+                              className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold cursor-pointer transition"
+                            >
+                              আপলোড করুন
+                            </label>
+                            <input
+                              id="signature-file"
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => handleSettingsImageUpload(e, 'principalSignature')}
+                              className="hidden"
+                            />
+                            {settingsForm.principalSignature && (
+                              <button
+                                type="button"
+                                onClick={() => setSettingsForm({ ...settingsForm, principalSignature: '' })}
+                                className="text-[11px] text-rose-600 hover:underline font-bold"
+                              >
+                                মুছে ফেলুন
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-slate-200">
-                  <button
-                    type="submit"
-                    className="relative overflow-hidden group inline-flex items-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold px-6 py-2.5 rounded-xl shadow-md hover:shadow-xl hover:shadow-emerald-900/25 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
-                  >
-                    <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                    <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
-                    <span>সেটিংস সংরক্ষণ করুন</span>
-                  </button>
+                {/* ======================================================== */}
+                {/* SECTION 2: ACADEMIC DETAILS & GOVERNMENT CODES */}
+                {/* ======================================================== */}
+                <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                  <div className="flex items-center gap-2.5 border-b border-slate-200 pb-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <School className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base">২. মাদ্রাসার নাম, পরিচয় ও শিক্ষাবোর্ড কোডসমূহ</h3>
+                      <p className="text-xs text-slate-500">সরকারি ও প্রাতিষ্ঠানিক ডাটাবেজ তথ্য</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="lg:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        মাদ্রাসার পূর্ণ নাম (বাংলায়) <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.name}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, name: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        প্রতিষ্ঠা সাল (Established Year)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.established || '১৯৯৫'}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, established: e.target.value })}
+                        placeholder="যেমন: ১৯৯৫"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        মাদ্রাসার নাম (ইংরেজি / English Name)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.englishName}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, englishName: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        প্রাতিষ্ঠানিক মূল স্লোগান (Motto/Slogan)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.slogan || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, slogan: e.target.value })}
+                        placeholder="দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        EIIN নম্বর
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.eiin}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, eiin: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-[#006837] focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        মাদ্রাসা কোড (Madrasah Code)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.madrasahCode}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, madrasahCode: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        এমপিও কোড (MPO Code)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.mpoCode || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, mpoCode: e.target.value })}
+                        placeholder="৪২১০৫১২৩"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold text-slate-900 focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* SECTION 3: CONTACT INFO & OFFICE HOURS */}
+                {/* ======================================================== */}
+                <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                  <div className="flex items-center gap-2.5 border-b border-slate-200 pb-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <Phone className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base">৩. প্রাতিষ্ঠানিক যোগাযোগ, ঠিকানা ও অফিসের সময়সূচি</h3>
+                      <p className="text-xs text-slate-500">অভিভাবক ও শিক্ষার্থীদের যোগাযোগের তথ্য</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        প্রধান মোবাইল নম্বর <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.phone}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, phone: e.target.value })}
+                        placeholder="+৮৮০১৭১২-৩৪৫৬৭৮"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono font-bold focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        বিকল্প নম্বর / হেল্পলাইন
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.altPhone || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, altPhone: e.target.value })}
+                        placeholder="+৮৮০১৮১২-৩৪৫৬৭৮"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        প্রাতিষ্ঠানিক ইমেইল ঠিকানা
+                      </label>
+                      <input
+                        type="email"
+                        value={settingsForm.email}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, email: e.target.value })}
+                        placeholder="poschimalohali@gmail.com"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="lg:col-span-2">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        মাদ্রাসার পূর্ণ ঠিকানা (ক্যাম্পাস অবস্থান)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.address}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, address: e.target.value })}
+                        placeholder="পশ্চিম আলোহালী, ডাকঘর: আলোহালী, উপজেলা: দুপচাঁচিয়া, জেলা: বগুড়া"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        উপজেলা ও জেলা
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.location || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, location: e.target.value })}
+                        placeholder="দুপচাঁচিয়া, বগুড়া"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="md:col-span-2 lg:col-span-3">
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        অফিস চলার সময়সূচি (Office Hours)
+                      </label>
+                      <input
+                        type="text"
+                        value={settingsForm.officeHours || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, officeHours: e.target.value })}
+                        placeholder="শনিবার - বৃহস্পতিবার: সকাল ৯:০০ - বিকাল ৪:৩০"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* SECTION 4: PRINCIPAL & PRESIDENT PROFILES */}
+                {/* ======================================================== */}
+                <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                  <div className="flex items-center gap-2.5 border-b border-slate-200 pb-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base">৪. প্রতিষ্ঠান প্রধান (সুপারিনটেনডেন্ট) ও পরিচালনা পর্ষদ সভাপতি</h3>
+                      <p className="text-xs text-slate-500">কর্তৃপক্ষের ছবি, নাম, পদবী ও বিস্তারিত বার্তা</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* PRINCIPAL PROFILE CARD */}
+                    <div className="p-4 sm:p-5 rounded-2xl border border-emerald-200 bg-emerald-50/30 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-16 h-16 rounded-full border-2 border-emerald-700 shadow overflow-hidden shrink-0 bg-white">
+                          {settingsForm.principalImage ? (
+                            <Image
+                              src={settingsForm.principalImage}
+                              alt={settingsForm.principalName}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-emerald-100 text-emerald-800 text-xs font-bold">
+                              ছবি নেই
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] bg-emerald-800 text-white font-bold px-2 py-0.5 rounded">প্রতিষ্ঠান প্রধান</span>
+                          <h4 className="font-black text-sm text-slate-900 truncate mt-0.5">{settingsForm.principalName || 'সুপারিনটেনডেন্ট'}</h4>
+                          <p className="text-xs text-emerald-800 font-semibold truncate">{settingsForm.principalTitle}</p>
+                        </div>
+                      </div>
+
+                      {/* Principal Image Upload Controls */}
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold text-slate-700">সুপারিনটেনডেন্টের ছবি পরিবর্তন</label>
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor="principal-image-file"
+                            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>ছবি আপলোড</span>
+                          </label>
+                          <input
+                            id="principal-image-file"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleSettingsImageUpload(e, 'principalImage')}
+                            className="hidden"
+                          />
+                          <input
+                            type="text"
+                            value={settingsForm.principalImage || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, principalImage: e.target.value })}
+                            placeholder="ছবির ওয়েব লিঙ্ক (URL)..."
+                            className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">সুপারিনটেনডেন্টের নাম</label>
+                          <input
+                            type="text"
+                            value={settingsForm.principalName}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, principalName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">পদবী ও শিক্ষাগত যোগ্যতা</label>
+                          <input
+                            type="text"
+                            value={settingsForm.principalTitle}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, principalTitle: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">সুপারিনটেনডেন্টের অফিশিয়াল বাণী</label>
+                        <textarea
+                          rows={4}
+                          value={settingsForm.principalMessage}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, principalMessage: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs leading-relaxed"
+                          placeholder="মাদ্রাসার লক্ষ্য ও উদ্দেশ্য নিয়ে সুপারের বাণী..."
+                        />
+                      </div>
+                    </div>
+
+                    {/* PRESIDENT PROFILE CARD */}
+                    <div className="p-4 sm:p-5 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative w-16 h-16 rounded-full border-2 border-slate-800 shadow overflow-hidden shrink-0 bg-white">
+                          {settingsForm.presidentImage ? (
+                            <Image
+                              src={settingsForm.presidentImage}
+                              alt={settingsForm.presidentName}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-slate-100 text-slate-700 text-xs font-bold">
+                              ছবি নেই
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-[10px] bg-slate-800 text-white font-bold px-2 py-0.5 rounded">সভাপতি</span>
+                          <h4 className="font-black text-sm text-slate-900 truncate mt-0.5">{settingsForm.presidentName || 'ম্যানেজিং কমিটি সভাপতি'}</h4>
+                          <p className="text-xs text-slate-600 font-semibold truncate">{settingsForm.presidentTitle}</p>
+                        </div>
+                      </div>
+
+                      {/* President Image Upload Controls */}
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-bold text-slate-700">সভাপতির ছবি পরিবর্তন</label>
+                        <div className="flex items-center gap-2">
+                          <label
+                            htmlFor="president-image-file"
+                            className="bg-slate-800 hover:bg-slate-900 text-white font-bold py-1.5 px-3 rounded-lg text-xs flex items-center gap-1.5 cursor-pointer transition"
+                          >
+                            <Camera className="w-3.5 h-3.5" />
+                            <span>ছবি আপলোড</span>
+                          </label>
+                          <input
+                            id="president-image-file"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleSettingsImageUpload(e, 'presidentImage')}
+                            className="hidden"
+                          />
+                          <input
+                            type="text"
+                            value={settingsForm.presidentImage || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, presidentImage: e.target.value })}
+                            placeholder="ছবির ওয়েব লিঙ্ক (URL)..."
+                            className="flex-1 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-mono"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">সভাপতির পূর্ণ নাম</label>
+                          <input
+                            type="text"
+                            value={settingsForm.presidentName || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, presidentName: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-slate-700 mb-1">পদবী</label>
+                          <input
+                            type="text"
+                            value={settingsForm.presidentTitle || ''}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, presidentTitle: e.target.value })}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 mb-1">সভাপতি মহোদয়ের বাণী</label>
+                        <textarea
+                          rows={4}
+                          value={settingsForm.presidentMessage || ''}
+                          onChange={(e) => setSettingsForm({ ...settingsForm, presidentMessage: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs leading-relaxed"
+                          placeholder="মাদ্রাসার পরিচালনা পর্ষদের সভাপতির বার্তা..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* SECTION 5: SOCIAL MEDIA & PORTAL LINKS */}
+                {/* ======================================================== */}
+                <div className="bg-white p-5 sm:p-7 rounded-2xl border border-slate-200 shadow-sm space-y-5">
+                  <div className="flex items-center gap-2.5 border-b border-slate-200 pb-3">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                      <Globe className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-slate-900 text-base">৫. সামাজিক যোগাযোগ মাধ্যম ও পোর্টাল লিংক</h3>
+                      <p className="text-xs text-slate-500">মাদ্রাসার সোশ্যাল পেজ ও চ্যানেল</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">ফেসবুক পেজ লিংক (Facebook URL)</label>
+                      <input
+                        type="url"
+                        value={settingsForm.facebookUrl || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, facebookUrl: e.target.value })}
+                        placeholder="https://facebook.com/poschimalohali"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">ইউটিউব চ্যানেল লিংক (YouTube URL)</label>
+                      <input
+                        type="url"
+                        value={settingsForm.youtubeUrl || ''}
+                        onChange={(e) => setSettingsForm({ ...settingsForm, youtubeUrl: e.target.value })}
+                        placeholder="https://youtube.com/@poschimalohali"
+                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-mono focus:ring-2 focus:ring-emerald-600 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* ======================================================== */}
+                {/* SAVE BUTTON BOTTOM BAR */}
+                {/* ======================================================== */}
+                <div className="sticky bottom-4 z-20 bg-white/95 backdrop-blur-md p-4 rounded-2xl border-2 border-emerald-300 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-700 to-[#006837] text-white flex items-center justify-center shrink-0 shadow-sm">
+                      <Save className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-900 text-sm">সকল সেটিংস সংরক্ষণ করতে চান?</h4>
+                      <p className="text-xs text-slate-500">সেভ বাটনে চাপলে লোগো, ব্যানার ও সকল তথ্য তাৎক্ষণিক লাইভ ওয়েবসাইটে কার্যকর হবে।</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto relative overflow-hidden group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs sm:text-sm font-bold px-8 py-3 rounded-xl shadow-lg hover:shadow-xl hover:shadow-emerald-900/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 cursor-pointer btn-pulse-glow"
+                    >
+                      <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
+                      <Save className="w-4 h-4 transition-transform group-hover:scale-125" />
+                      <span>সকল সেটিংস ও মিডিয়া সংরক্ষণ করুন</span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -5885,11 +6586,12 @@ export default function AdminDashboardPage() {
               <div className="flex justify-center items-center gap-3 mb-2">
                 <div className="relative w-14 h-14 shrink-0 drop-shadow-md">
                   <Image
-                    src="/logo.png"
+                    src={info.logo || "/logo.png"}
                     alt={info.name}
                     width={56}
                     height={56}
                     className="w-full h-full object-contain"
+                    unoptimized
                   />
                 </div>
                 <div className="text-left">

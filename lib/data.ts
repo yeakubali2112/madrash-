@@ -13,6 +13,11 @@ export interface MadrasahInfo {
   slogan: string;
   officeHours: string;
   logo: string;
+  bannerImage?: string;
+  officialSeal?: string;
+  principalSignature?: string;
+  facebookUrl?: string;
+  youtubeUrl?: string;
   principalName: string;
   principalTitle: string;
   principalMessage: string;
@@ -249,6 +254,11 @@ export const defaultMadrasahInfo: MadrasahInfo = {
   slogan: "দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়",
   officeHours: "শনিবার - বৃহস্পতিবার: সকাল ৯:০০ - বিকাল ৪:৩০",
   logo: "/logo.png",
+  bannerImage: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=1200",
+  officialSeal: "",
+  principalSignature: "",
+  facebookUrl: "https://facebook.com",
+  youtubeUrl: "https://youtube.com",
   principalName: "মাওলানা মোহাম্মদ রফিকুল ইসলাম",
   principalTitle: "সুপারিনটেনডেন্ট (কামিল, এম.এ)",
   principalMessage: "বিসমিল্লাহির রাহমানির রাহিম। পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসা দুপচাঁচিয়া, বগুড়ার একটি ঐতিহ্যবাহী দ্বীনি ও যুগোপযোগী শিক্ষাপ্রতিষ্ঠান। ১৯৯৫ সালে প্রতিষ্ঠিত হওয়ার পর থেকে প্রতিষ্ঠানটি অত্র অঞ্চলের শিক্ষার্থীদের মাঝে পবিত্র কুরআন ও সুন্নাহর সঠিক জ্ঞান বিতরণের পাশাপাশি আধুনিক সাধারণ শিক্ষার আলো ছড়িয়ে আসছে। আমাদের লক্ষ্য এমন এক আদর্শ নাগরিক গড়ে তোলা যারা আল্লাহভীরু, চরিত্রবান, দেশপ্রেমিক এবং আধুনিক বিশ্বের চ্যালেঞ্জ মোকাবেলায় সক্ষম। আমরা অভিভাবক ও শুভাকাঙ্ক্ষীদের দোয়া ও সহযোগিতা কামনা করছি।",

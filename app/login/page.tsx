@@ -352,12 +352,13 @@ export default function LoginPage() {
             <div className="bg-gradient-to-r from-[#00341c] via-[#006837] to-[#004d28] text-white p-7 text-center relative border-b-2 border-[#DDAA00]/40">
               <Link href="/" className="inline-block relative w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 drop-shadow-lg bg-white rounded-2xl p-1.5 border-2 border-[#DDAA00] hover:scale-105 transition-transform">
                 <Image
-                  src="/logo.png"
+                  src={info.logo || "/logo.png"}
                   alt={info.name}
                   width={80}
                   height={80}
                   className="w-full h-full object-contain"
                   priority
+                  unoptimized
                 />
               </Link>
               <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
@@ -586,11 +587,12 @@ export default function LoginPage() {
                   <div className="flex items-center gap-3 border-b border-[#DDAA00]/40 pb-3 mb-4 relative z-10">
                     <div className="w-12 h-12 bg-white rounded-xl p-1 shrink-0 drop-shadow">
                       <Image
-                        src="/logo.png"
+                        src={info.logo || "/logo.png"}
                         alt={info.name}
                         width={48}
                         height={48}
                         className="w-full h-full object-contain"
+                        unoptimized
                       />
                     </div>
                     <div>

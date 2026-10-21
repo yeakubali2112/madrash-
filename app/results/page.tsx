@@ -162,11 +162,12 @@ export default function ResultsPage() {
               <div className="flex justify-center items-center gap-4 mb-2">
                 <div className="relative w-16 h-16 md:w-20 md:h-20 shrink-0 drop-shadow-md">
                   <Image
-                    src="/logo.png"
+                    src={info.logo || "/logo.png"}
                     alt={info.name}
                     width={80}
                     height={80}
                     className="w-full h-full object-contain"
+                    unoptimized
                   />
                 </div>
                 <div className="text-left">

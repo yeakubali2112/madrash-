@@ -44,6 +44,32 @@ export default function AboutPage() {
           </p>
         </div>
 
+        {/* Madrasah Cover Banner */}
+        {info.bannerImage && (
+          <div className="relative w-full h-56 md:h-80 rounded-3xl overflow-hidden shadow-lg border-2 border-emerald-100 group">
+            <Image
+              src={info.bannerImage}
+              alt={info.name}
+              fill
+              className="object-cover group-hover:scale-105 transition-transform duration-700"
+              unoptimized
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent flex items-end p-6 md:p-8">
+              <div>
+                <span className="inline-block px-3 py-1 bg-[#DDAA00] text-slate-950 text-xs font-black rounded-lg mb-2 shadow">
+                  ক্যাম্পাস ও প্রতিষ্ঠান
+                </span>
+                <h2 className="text-xl md:text-3xl font-black text-white drop-shadow">
+                  {info.name}
+                </h2>
+                <p className="text-emerald-200 text-xs md:text-sm font-semibold mt-1">
+                  {info.slogan || "দ্বীনি ও আধুনিক শিক্ষার এক অনন্য সমন্বয়"} • স্থাপিত: {info.established} ইং
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* History & Establishment */}
         <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-10 shadow-sm space-y-6">
           <div className="flex items-center gap-3 border-b border-slate-200 pb-3">
@@ -68,11 +94,12 @@ export default function AboutPage() {
               <div className="flex items-center gap-3 border-b border-[#DDAA00]/40 pb-3">
                 <div className="relative w-14 h-14 shrink-0 drop-shadow-md">
                   <Image
-                    src="/logo.png"
+                    src={info.logo || "/logo.png"}
                     alt={info.name}
                     width={56}
                     height={56}
                     className="w-full h-full object-contain"
+                    unoptimized
                   />
                 </div>
                 <div>

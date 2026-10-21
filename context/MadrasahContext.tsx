@@ -231,13 +231,23 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
+    const handleInfoSync = (e: any) => {
+      if (e?.detail) {
+        setInfo(e.detail);
+      } else {
+        setInfo(getStoredInfo());
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('padm_hero_sync', handleHeroSync);
+    window.addEventListener('padm_info_sync', handleInfoSync);
     window.addEventListener('padm_student_sync', handleStudentSync);
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('padm_hero_sync', handleHeroSync);
+      window.removeEventListener('padm_info_sync', handleInfoSync);
       window.removeEventListener('padm_student_sync', handleStudentSync);
     };
   }, []);
@@ -245,6 +255,9 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateInfo = (newInfo: MadrasahInfo) => {
     setInfo(newInfo);
     saveStoredInfo(newInfo);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('padm_info_sync', { detail: newInfo }));
+    }
   };
 
   const updatePrayerConfig = (newConfig: PrayerTimeConfig) => {
