@@ -6756,7 +6756,6 @@ export default function AdminDashboardPage() {
                           <th className="p-3.5 min-w-[160px]">পাসের ব্যাচ ও পরীক্ষা</th>
                           <th className="p-3.5 min-w-[140px]">বিভাগ ও ফলাফল (GPA)</th>
                           <th className="p-3.5 min-w-[190px]">বর্তমান অবস্থান / পেশা</th>
-                          <th className="p-3.5 min-w-[140px]">যোগাযোগ</th>
                           <th className="p-3.5 text-center min-w-[120px]">অ্যাকশন</th>
                         </tr>
                       </thead>
@@ -6816,23 +6815,6 @@ export default function AdminDashboardPage() {
                               {student.presentInstitute && (
                                 <div className="text-[11px] text-slate-500 font-medium mt-0.5 truncate max-w-[200px]" title={student.presentInstitute}>
                                   {student.presentInstitute}
-                                </div>
-                              )}
-                            </td>
-                            <td className="p-3.5">
-                              {student.phone ? (
-                                <div className="text-[11px] font-mono text-slate-700 flex items-center gap-1">
-                                  <Phone className="w-3 h-3 text-slate-400" />
-                                  <span>{student.phone}</span>
-                                </div>
-                              ) : (
-                                <span className="text-slate-400 text-[11px]">—</span>
-                              )}
-                              {student.bloodGroup && (
-                                <div className="mt-1">
-                                  <span className="inline-block px-1.5 py-0.2 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
-                                    রক্ত: {student.bloodGroup}
-                                  </span>
                                 </div>
                               )}
                             </td>
@@ -6937,12 +6919,6 @@ export default function AdminDashboardPage() {
                             <div className="flex items-start justify-between text-[11px] gap-2">
                               <span className="text-slate-500 shrink-0">প্রতিষ্ঠান:</span>
                               <span className="text-slate-700 text-right truncate font-medium">{student.presentInstitute}</span>
-                            </div>
-                          )}
-                          {student.phone && (
-                            <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60">
-                              <span className="text-slate-500">মোবাইল:</span>
-                              <span className="font-mono text-slate-700">{student.phone}</span>
                             </div>
                           )}
                           {student.bloodGroup && (
