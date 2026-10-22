@@ -543,6 +543,7 @@ export default function AdminDashboardPage() {
   // Gallery Form State
   const [showGalleryModal, setShowGalleryModal] = useState(false);
   const [editingGalleryItem, setEditingGalleryItem] = useState<GalleryItem | null>(null);
+  const [gallerySaving, setGallerySaving] = useState(false);
   const [galleryCategoryFilter, setGalleryCategoryFilter] = useState<string>('সকল');
   const [galleryForm, setGalleryForm] = useState({
     title: '',
@@ -8032,9 +8033,12 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                   return;
                 }
                 if (!galleryForm.imageUrl.trim()) {
-                  alert('অনুগ্রহ করে ছবির লিঙ্ক (Image URL) প্রদান করুন!');
+                  alert('অনুগ্রহ করে ছবির লিঙ্ক (Image URL) অথবা ডিভাইস থেকে ছবি নির্বাচন করুন!');
                   return;
                 }
+                if (gallerySaving) return;
+
+                setGallerySaving(true);
 
                 if (editingGalleryItem) {
                   updateGalleryItem(editingGalleryItem.id, galleryForm);
@@ -8042,14 +8046,17 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                   addGalleryItem(galleryForm);
                 }
 
-                setShowGalleryModal(false);
-                setEditingGalleryItem(null);
-                setGalleryForm({
-                  title: '',
-                  category: 'ক্যাম্পাস',
-                  imageUrl: '',
-                  date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long' })
-                });
+                setTimeout(() => {
+                  setGallerySaving(false);
+                  setShowGalleryModal(false);
+                  setEditingGalleryItem(null);
+                  setGalleryForm({
+                    title: '',
+                    category: 'ক্যাম্পাস',
+                    imageUrl: '',
+                    date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long' })
+                  });
+                }, 350);
               }}
               className="space-y-4 text-xs"
             >
@@ -8282,11 +8289,25 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                   </button>
                   <button
                     type="submit"
-                    className="relative overflow-hidden group px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 text-white text-xs font-bold shadow-md shadow-emerald-900/20 hover:shadow-xl hover:shadow-emerald-800/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 flex items-center gap-2 cursor-pointer btn-pulse-glow"
+                    disabled={gallerySaving}
+                    className={`relative overflow-hidden group px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                      gallerySaving
+                        ? 'bg-emerald-600 opacity-90 cursor-wait'
+                        : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 shadow-emerald-900/20 hover:shadow-xl hover:shadow-emerald-800/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 btn-pulse-glow'
+                    }`}
                   >
                     <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/30 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
-                    <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
-                    <span>{editingGalleryItem ? 'সংরক্ষণ করুন' : 'গ্যালারিতে যুক্ত করুন'}</span>
+                    {gallerySaving ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                        <span>সংরক্ষণ ও ক্লাউড সিঙ্ক হচ্ছে...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
+                        <span>{editingGalleryItem ? 'সংরক্ষণ করুন' : 'গ্যালারিতে যুক্ত করুন'}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               </div>

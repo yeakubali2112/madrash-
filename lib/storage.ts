@@ -74,7 +74,11 @@ export const getStoredInfo = (): MadrasahInfo => {
 
 export const saveStoredInfo = (info: MadrasahInfo) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(info));
+  try {
+    localStorage.setItem(STORAGE_KEYS.INFO, JSON.stringify(info));
+  } catch (err) {
+    console.error('Error saving info to storage:', err);
+  }
 };
 
 export const getStoredNotices = (): Notice[] => {
@@ -89,7 +93,11 @@ export const getStoredNotices = (): Notice[] => {
 
 export const saveStoredNotices = (notices: Notice[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(notices));
+  try {
+    localStorage.setItem(STORAGE_KEYS.NOTICES, JSON.stringify(notices));
+  } catch (err) {
+    console.error('Error saving notices to storage:', err);
+  }
 };
 
 export const getStoredTeachers = (): Teacher[] => {
@@ -104,7 +112,11 @@ export const getStoredTeachers = (): Teacher[] => {
 
 export const saveStoredTeachers = (teachers: Teacher[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+  try {
+    localStorage.setItem(STORAGE_KEYS.TEACHERS, JSON.stringify(teachers));
+  } catch (err) {
+    console.error('Error saving teachers to storage:', err);
+  }
 };
 
 export const getStoredApplications = (): AdmissionApplication[] => {
@@ -119,7 +131,11 @@ export const getStoredApplications = (): AdmissionApplication[] => {
 
 export const saveStoredApplications = (apps: AdmissionApplication[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(apps));
+  try {
+    localStorage.setItem(STORAGE_KEYS.APPLICATIONS, JSON.stringify(apps));
+  } catch (err) {
+    console.error('Error saving applications to storage:', err);
+  }
 };
 
 export const addAdmissionApplication = (app: AdmissionApplication) => {
@@ -141,7 +157,11 @@ export const getStoredResults = (): ResultRecord[] => {
 
 export const saveStoredResults = (results: ResultRecord[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+  try {
+    localStorage.setItem(STORAGE_KEYS.RESULTS, JSON.stringify(results));
+  } catch (err) {
+    console.error('Error saving results to storage:', err);
+  }
 };
 
 export const getStoredMessages = (): ContactMessage[] => {
@@ -156,7 +176,11 @@ export const getStoredMessages = (): ContactMessage[] => {
 
 export const saveStoredMessages = (messages: ContactMessage[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+  try {
+    localStorage.setItem(STORAGE_KEYS.MESSAGES, JSON.stringify(messages));
+  } catch (err) {
+    console.error('Error saving messages to storage:', err);
+  }
 };
 
 export const addContactMessage = (msg: ContactMessage) => {
@@ -178,7 +202,11 @@ export const getStoredTickerSettings = (): TickerSettings => {
 
 export const saveStoredTickerSettings = (settings: TickerSettings) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.TICKER_SETTINGS, JSON.stringify(settings));
+  try {
+    localStorage.setItem(STORAGE_KEYS.TICKER_SETTINGS, JSON.stringify(settings));
+  } catch (err) {
+    console.error('Error saving ticker settings to storage:', err);
+  }
 };
 
 export const getStoredUrgentNotices = (): UrgentNoticeItem[] => {
@@ -193,7 +221,11 @@ export const getStoredUrgentNotices = (): UrgentNoticeItem[] => {
 
 export const saveStoredUrgentNotices = (notices: UrgentNoticeItem[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.URGENT_NOTICES, JSON.stringify(notices));
+  try {
+    localStorage.setItem(STORAGE_KEYS.URGENT_NOTICES, JSON.stringify(notices));
+  } catch (err) {
+    console.error('Error saving urgent notices to storage:', err);
+  }
 };
 
 export const getStoredFacilities = (): FacilityItem[] => {
@@ -208,7 +240,11 @@ export const getStoredFacilities = (): FacilityItem[] => {
 
 export const saveStoredFacilities = (facilities: FacilityItem[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(facilities));
+  try {
+    localStorage.setItem(STORAGE_KEYS.FACILITIES, JSON.stringify(facilities));
+  } catch (err) {
+    console.error('Error saving facilities to storage:', err);
+  }
 };
 
 export const getStoredGallery = (): GalleryItem[] => {
@@ -223,7 +259,11 @@ export const getStoredGallery = (): GalleryItem[] => {
 
 export const saveStoredGallery = (gallery: GalleryItem[]) => {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
+  try {
+    localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
+  } catch (err) {
+    console.error('Error saving gallery to storage:', err);
+  }
 };
 
 export const getStoredHeroSettings = (): HeroSettings => {

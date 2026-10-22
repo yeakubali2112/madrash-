@@ -325,6 +325,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updatePrayerConfig = (newConfig: PrayerTimeConfig) => {
     setPrayerConfig(newConfig);
     saveStoredPrayerConfig(newConfig);
+    saveCloudKey('prayerConfig', newConfig);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('padm_prayer_sync', { detail: newConfig }));
     }
@@ -371,12 +372,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = { ...tickerSettings, ...newSettings };
     setTickerSettings(updated);
     saveStoredTickerSettings(updated);
+    saveCloudKey('tickerSettings', updated);
   };
 
   const updateHeroSettings = (newSettings: Partial<HeroSettings>) => {
     const updated = { ...heroSettings, ...newSettings };
     setHeroSettings(updated);
     saveStoredHeroSettings(updated);
+    saveCloudKey('heroSettings', updated);
   };
 
   const addUrgentNotice = (noticeData: Omit<UrgentNoticeItem, 'id'>) => {
@@ -387,24 +390,28 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newNotice, ...urgentNotices];
     setUrgentNotices(updated);
     saveStoredUrgentNotices(updated);
+    saveCloudKey('urgentNotices', updated);
   };
 
   const updateUrgentNotice = (id: string, updatedFields: Partial<UrgentNoticeItem>) => {
     const updated = urgentNotices.map(n => n.id === id ? { ...n, ...updatedFields } : n);
     setUrgentNotices(updated);
     saveStoredUrgentNotices(updated);
+    saveCloudKey('urgentNotices', updated);
   };
 
   const deleteUrgentNotice = (id: string) => {
     const updated = urgentNotices.filter(n => n.id !== id);
     setUrgentNotices(updated);
     saveStoredUrgentNotices(updated);
+    saveCloudKey('urgentNotices', updated);
   };
 
   const toggleUrgentNoticeStatus = (id: string) => {
     const updated = urgentNotices.map(n => n.id === id ? { ...n, isActive: !n.isActive } : n);
     setUrgentNotices(updated);
     saveStoredUrgentNotices(updated);
+    saveCloudKey('urgentNotices', updated);
   };
 
   const addFacility = (facilityData: Omit<FacilityItem, 'id'>) => {
@@ -415,24 +422,28 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [...facilities, newFacility];
     setFacilities(updated);
     saveStoredFacilities(updated);
+    saveCloudKey('facilities', updated);
   };
 
   const updateFacility = (id: string, updatedFields: Partial<FacilityItem>) => {
     const updated = facilities.map(f => f.id === id ? { ...f, ...updatedFields } : f);
     setFacilities(updated);
     saveStoredFacilities(updated);
+    saveCloudKey('facilities', updated);
   };
 
   const deleteFacility = (id: string) => {
     const updated = facilities.filter(f => f.id !== id);
     setFacilities(updated);
     saveStoredFacilities(updated);
+    saveCloudKey('facilities', updated);
   };
 
   const toggleFacilityStatus = (id: string) => {
     const updated = facilities.map(f => f.id === id ? { ...f, isActive: !f.isActive } : f);
     setFacilities(updated);
     saveStoredFacilities(updated);
+    saveCloudKey('facilities', updated);
   };
 
   const addGalleryItem = (itemData: Omit<GalleryItem, 'id'>) => {
@@ -443,18 +454,21 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newItem, ...gallery];
     setGallery(updated);
     saveStoredGallery(updated);
+    saveCloudKey('gallery', updated);
   };
 
   const updateGalleryItem = (id: string, updatedFields: Partial<GalleryItem>) => {
     const updated = gallery.map(g => g.id === id ? { ...g, ...updatedFields } : g);
     setGallery(updated);
     saveStoredGallery(updated);
+    saveCloudKey('gallery', updated);
   };
 
   const deleteGalleryItem = (id: string) => {
     const updated = gallery.filter(g => g.id !== id);
     setGallery(updated);
     saveStoredGallery(updated);
+    saveCloudKey('gallery', updated);
   };
 
   const addTeacher = (teacherData: Omit<Teacher, 'id' | 'order'>) => {
@@ -466,18 +480,21 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [...teachers, newTeacher];
     setTeachers(updated);
     saveStoredTeachers(updated);
+    saveCloudKey('teachers', updated);
   };
 
   const updateTeacher = (id: string, updatedFields: Partial<Teacher>) => {
     const updated = teachers.map(t => t.id === id ? { ...t, ...updatedFields } : t);
     setTeachers(updated);
     saveStoredTeachers(updated);
+    saveCloudKey('teachers', updated);
   };
 
   const deleteTeacher = (id: string) => {
     const updated = teachers.filter(t => t.id !== id);
     setTeachers(updated);
     saveStoredTeachers(updated);
+    saveCloudKey('teachers', updated);
   };
 
   const submitApplication = (appData: Omit<AdmissionApplication, 'id' | 'appliedDate' | 'status'>) => {
@@ -530,6 +547,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newResult, ...results];
     setResults(updated);
     saveStoredResults(updated);
+    saveCloudKey('results', updated);
   };
 
   const submitContactMessage = (msgData: Omit<ContactMessage, 'id' | 'date' | 'isRead'>) => {
@@ -542,18 +560,21 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newMsg, ...messages];
     setMessages(updated);
     saveStoredMessages(updated);
+    saveCloudKey('messages', updated);
   };
 
   const markMessageRead = (id: string) => {
     const updated = messages.map(m => m.id === id ? { ...m, isRead: true } : m);
     setMessages(updated);
     saveStoredMessages(updated);
+    saveCloudKey('messages', updated);
   };
 
   const deleteMessage = (id: string) => {
     const updated = messages.filter(m => m.id !== id);
     setMessages(updated);
     saveStoredMessages(updated);
+    saveCloudKey('messages', updated);
   };
 
   const addAdminUser = (userData: Omit<AdminUser, 'id' | 'createdAt'>) => {
@@ -569,6 +590,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newUser, ...adminUsers];
     setAdminUsers(updated);
     saveStoredAdminUsers(updated);
+    saveCloudKey('adminUsers', updated);
   };
 
   const updateAdminUser = (id: string, updatedFields: Partial<AdminUser>) => {
@@ -585,6 +607,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     setAdminUsers(updated);
     saveStoredAdminUsers(updated);
+    saveCloudKey('adminUsers', updated);
   };
 
   const deleteAdminUser = (id: string): boolean => {
@@ -595,6 +618,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = adminUsers.filter(u => u.id !== id);
     setAdminUsers(updated);
     saveStoredAdminUsers(updated);
+    saveCloudKey('adminUsers', updated);
     return true;
   };
 
@@ -608,6 +632,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     setAdminUsers(updated);
     saveStoredAdminUsers(updated);
+    saveCloudKey('adminUsers', updated);
   };
 
   const switchAdminUser = (userIdOrUsername: string) => {
@@ -678,6 +703,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateRoutines = (newRoutines: ClassRoutine[]) => {
     setRoutines(newRoutines);
     saveStoredRoutines(newRoutines);
+    saveCloudKey('routines', newRoutines);
   };
 
   const addClassRoutine = (routineData: Omit<ClassRoutine, 'id'>) => {
