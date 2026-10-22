@@ -95,10 +95,15 @@ import {
   Mail,
   Briefcase,
   Filter,
-  FileSpreadsheet,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Database
 } from 'lucide-react';
+import {
+  getSupabaseConfig,
+  saveSupabaseConfig,
+  isSupabaseConfigured
+} from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -164,7 +169,10 @@ export default function AdminDashboardPage() {
     addAlumniStudent,
     updateAlumniStudent,
     deleteAlumniStudent,
-    resetAlumniToDefault
+    resetAlumniToDefault,
+    isCloudConnected,
+    uploadAllDataToCloud,
+    refreshFromCloud
   } = useMadrasah();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users'>('overview');
@@ -571,6 +579,57 @@ export default function AdminDashboardPage() {
   const [alumniToast, setAlumniToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
   const [alumniPage, setAlumniPage] = useState(1);
   const ALUMNI_PER_PAGE = 15;
+
+  // Supabase Cloud Sync State
+  const [supabaseUrlInput, setSupabaseUrlInput] = useState('');
+  const [supabaseKeyInput, setSupabaseKeyInput] = useState('');
+  const [cloudSyncing, setCloudSyncing] = useState(false);
+  const [cloudSqlCopied, setCloudSqlCopied] = useState(false);
+  const [cloudToast, setCloudToast] = useState<{ show: boolean; message: string; type?: 'success' | 'error' }>({ show: false, message: '' });
+
+  useEffect(() => {
+    const cfg = getSupabaseConfig();
+    setSupabaseUrlInput(cfg.url);
+    setSupabaseKeyInput(cfg.anonKey);
+  }, []);
+
+  const handleSaveCloudConfig = async () => {
+    saveSupabaseConfig(supabaseUrlInput, supabaseKeyInput);
+    setCloudSyncing(true);
+    await refreshFromCloud();
+    setCloudSyncing(false);
+    setCloudToast({
+      show: true,
+      message: 'ক্লাউড ডাটাবেজ কনফিগারেশন সফলভাবে সংরক্ষিত হয়েছে!',
+      type: 'success'
+    });
+    setTimeout(() => setCloudToast({ show: false, message: '' }), 4000);
+  };
+
+  const handleUploadAllToCloud = async () => {
+    if (!supabaseUrlInput.trim() || !supabaseKeyInput.trim()) {
+      alert('দয়া করে প্রথমে Supabase Project URL এবং API Key প্রদান করুন');
+      return;
+    }
+    saveSupabaseConfig(supabaseUrlInput, supabaseKeyInput);
+    setCloudSyncing(true);
+    const success = await uploadAllDataToCloud();
+    setCloudSyncing(false);
+    if (success) {
+      setCloudToast({
+        show: true,
+        message: 'সকল লোকাল ডাটা সফলভাবে সুপাবেজ ক্লাউডে আপলোড করা হয়েছে!',
+        type: 'success'
+      });
+    } else {
+      setCloudToast({
+        show: true,
+        message: 'ক্লাউড আপলোড ব্যর্থ হয়েছে। দয়া করে আপনার Supabase URL ও Key এবং madrasah_store টেবিল যাচাই করুন।',
+        type: 'error'
+      });
+    }
+    setTimeout(() => setCloudToast({ show: false, message: '' }), 5000);
+  };
 
   const initialAlumniForm: Omit<AlumniStudent, 'id' | 'createdAt'> = {
     name: '',
@@ -4765,6 +4824,18 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {/* Cloud Toast Feedback */}
+              {cloudToast.show && (
+                <div className={`p-4 text-white rounded-2xl shadow-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300 ${
+                  cloudToast.type === 'error' ? 'bg-gradient-to-r from-rose-600 to-red-700' : 'bg-gradient-to-r from-emerald-600 to-teal-700'
+                }`}>
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                    <span className="font-bold text-xs">{cloudToast.message}</span>
+                  </div>
+                </div>
+              )}
+
               {/* Toast Feedback */}
               {settingsSaved && (
                 <div className="p-4 bg-gradient-to-r from-emerald-500 to-[#006837] text-white rounded-2xl shadow-lg flex items-center justify-between gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -4780,6 +4851,148 @@ export default function AdminDashboardPage() {
                   <span className="text-[11px] bg-white/20 px-2.5 py-1 rounded-full font-mono">লাইভ সিঙ্ক সম্পন্ন</span>
                 </div>
               )}
+
+              {/* ======================================================== */}
+              {/* SECTION 0: SUPABASE CLOUD DATABASE REAL-TIME SYNC */}
+              {/* ======================================================== */}
+              <div className="bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 text-white p-5 sm:p-7 rounded-3xl border border-emerald-500/30 shadow-xl space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4 relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-emerald-500/20">
+                      <Database className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-lg font-black tracking-tight text-white">সুপাবেজ ক্লাউড ডাটাবেজ সংযোগ (Supabase Cloud Sync)</h3>
+                        {isCloudConnected ? (
+                          <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            সক্রিয় সিঙ্ক (Live)
+                          </span>
+                        ) : (
+                          <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-bold px-2.5 py-0.5 rounded-full">
+                            লোকাল মোড (অফলাইন)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        সকল ডিভাইস, কম্পিউটার ও মোবাইলে একই ডাটা দেখতে এবং তাৎক্ষণিক লাইভ ভর্তি আবেদন পাওয়ার জন্য ডাটাবেজ সংযুক্ত করুন।
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleUploadAllToCloud}
+                      disabled={cloudSyncing}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md active:scale-95 disabled:opacity-50 cursor-pointer"
+                      title="বর্তমান সকল নোটিশ, শিক্ষক ও শিক্ষার্থী ডাটা ক্লাউডে আপলোড করুন"
+                    >
+                      {cloudSyncing ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                          <span>আপলোড হচ্ছে...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5" />
+                          <span>সব ডাটা ক্লাউডে পাঠান</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Supabase Inputs */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 relative z-10">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                      ১. Supabase Project URL
+                    </label>
+                    <input
+                      type="url"
+                      value={supabaseUrlInput}
+                      onChange={(e) => setSupabaseUrlInput(e.target.value)}
+                      placeholder="https://your-project.supabase.co"
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-slate-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-200 mb-1.5">
+                      ২. Supabase Anon / Public API Key
+                    </label>
+                    <input
+                      type="text"
+                      value={supabaseKeyInput}
+                      onChange={(e) => setSupabaseKeyInput(e.target.value)}
+                      placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/20 text-white placeholder:text-slate-400 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 relative z-10">
+                  <p className="text-[11px] text-slate-400">
+                    💡 তথ্য দুটি সেভ করার পর সকল ডিভাইসে একই ডাটা দেখাবে এবং যে কেউ ভর্তি আবেদন করলে সরাসরি অ্যাডমিন প্যানেলে জমা হবে।
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSaveCloudConfig}
+                    disabled={cloudSyncing}
+                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 text-slate-950 text-xs font-black shadow-lg transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>কানেকশন সংরক্ষণ ও সিঙ্ক করুন</span>
+                  </button>
+                </div>
+
+                {/* SQL Setup Helper Drawer */}
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-2.5 relative z-10 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-emerald-300 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>সুপাবেজ টেবিল তৈরির SQL কোড (১-ক্লিকে রান করুন):</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const sql = `CREATE TABLE IF NOT EXISTS madrasah_store (
+  key TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE madrasah_store ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access" ON madrasah_store FOR SELECT USING (true);
+CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true);`;
+                        navigator.clipboard.writeText(sql);
+                        setCloudSqlCopied(true);
+                        setTimeout(() => setCloudSqlCopied(false), 3000);
+                      }}
+                      className="text-[11px] font-bold text-teal-300 hover:text-teal-100 hover:underline cursor-pointer flex items-center gap-1"
+                    >
+                      {cloudSqlCopied ? 'কপি হয়েছে ✓' : '📋 SQL কোড কপি করুন'}
+                    </button>
+                  </div>
+                  <pre className="p-3 bg-black/40 rounded-xl font-mono text-[11px] text-slate-300 overflow-x-auto border border-white/5">
+                    {`CREATE TABLE IF NOT EXISTS madrasah_store (
+  key TEXT PRIMARY KEY,
+  data JSONB NOT NULL,
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+ALTER TABLE madrasah_store ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Allow public read access" ON madrasah_store FOR SELECT USING (true);
+CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true);`}
+                  </pre>
+                </div>
+              </div>
 
               <form onSubmit={handleSaveSettings} className="space-y-8">
                 {/* ======================================================== */}

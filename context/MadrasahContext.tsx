@@ -72,6 +72,12 @@ import {
   setAdminLoggedIn,
   resetAllData
 } from '@/lib/storage';
+import {
+  fetchCloudStore,
+  saveCloudKey,
+  syncAllToCloud,
+  isSupabaseConfigured
+} from '@/lib/supabase';
 
 interface MadrasahContextType {
   info: MadrasahInfo;
@@ -143,6 +149,9 @@ interface MadrasahContextType {
   loginAdmin: (pass: string, username?: string) => boolean;
   logoutAdmin: () => void;
   resetToDefaults: () => void;
+  isCloudConnected: boolean;
+  uploadAllDataToCloud: () => Promise<boolean>;
+  refreshFromCloud: () => Promise<void>;
 }
 
 const MadrasahContext = createContext<MadrasahContextType | undefined>(undefined);
@@ -167,6 +176,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>(defaultAdminUsers);
   const [currentAdminUser, setCurrentAdminUserState] = useState<AdminUser | null>(null);
+  const [isCloudConnected, setIsCloudConnected] = useState<boolean>(false);
 
   useEffect(() => {
     setInfo(getStoredInfo());
@@ -255,7 +265,47 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     window.addEventListener('padm_info_sync', handleInfoSync);
     window.addEventListener('padm_student_sync', handleStudentSync);
 
+    // Initial sync from Supabase cloud store
+    const syncFromCloud = async () => {
+      if (!isSupabaseConfigured()) {
+        setIsCloudConnected(false);
+        return;
+      }
+      try {
+        const cloud = await fetchCloudStore();
+        if (!cloud) {
+          setIsCloudConnected(false);
+          return;
+        }
+        setIsCloudConnected(true);
+        if (cloud.info) { setInfo(cloud.info); saveStoredInfo(cloud.info); }
+        if (cloud.notices) { setNotices(cloud.notices); saveStoredNotices(cloud.notices); }
+        if (cloud.teachers) { setTeachers(cloud.teachers); saveStoredTeachers(cloud.teachers); }
+        if (cloud.applications) { setApplications(cloud.applications); saveStoredApplications(cloud.applications); }
+        if (cloud.results) { setResults(cloud.results); saveStoredResults(cloud.results); }
+        if (cloud.messages) { setMessages(cloud.messages); saveStoredMessages(cloud.messages); }
+        if (cloud.urgentNotices) { setUrgentNotices(cloud.urgentNotices); saveStoredUrgentNotices(cloud.urgentNotices); }
+        if (cloud.tickerSettings) { setTickerSettings(cloud.tickerSettings); saveStoredTickerSettings(cloud.tickerSettings); }
+        if (cloud.heroSettings) { setHeroSettings(cloud.heroSettings); saveStoredHeroSettings(cloud.heroSettings); }
+        if (cloud.facilities) { setFacilities(cloud.facilities); saveStoredFacilities(cloud.facilities); }
+        if (cloud.gallery) { setGallery(cloud.gallery); saveStoredGallery(cloud.gallery); }
+        if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
+        if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
+        if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
+        if (cloud.adminUsers) { setAdminUsers(cloud.adminUsers); saveStoredAdminUsers(cloud.adminUsers); }
+      } catch (err) {
+        console.warn('Supabase sync skipped/failed:', err);
+        setIsCloudConnected(false);
+      }
+    };
+
+    syncFromCloud();
+    const cloudPollInterval = setInterval(syncFromCloud, 15000);
+    window.addEventListener('focus', syncFromCloud);
+
     return () => {
+      clearInterval(cloudPollInterval);
+      window.removeEventListener('focus', syncFromCloud);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('padm_hero_sync', handleHeroSync);
       window.removeEventListener('padm_info_sync', handleInfoSync);
@@ -266,6 +316,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const updateInfo = (newInfo: MadrasahInfo) => {
     setInfo(newInfo);
     saveStoredInfo(newInfo);
+    saveCloudKey('info', newInfo);
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('padm_info_sync', { detail: newInfo }));
     }
@@ -299,18 +350,21 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newNotice, ...notices];
     setNotices(updated);
     saveStoredNotices(updated);
+    saveCloudKey('notices', updated);
   };
 
   const updateNotice = (id: string, updatedFields: Partial<Notice>) => {
     const updated = notices.map(n => n.id === id ? { ...n, ...updatedFields } : n);
     setNotices(updated);
     saveStoredNotices(updated);
+    saveCloudKey('notices', updated);
   };
 
   const deleteNotice = (id: string) => {
     const updated = notices.filter(n => n.id !== id);
     setNotices(updated);
     saveStoredNotices(updated);
+    saveCloudKey('notices', updated);
   };
 
   const updateTickerSettings = (newSettings: Partial<TickerSettings>) => {
@@ -441,6 +495,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newApp, ...applications];
     setApplications(updated);
     saveStoredApplications(updated);
+    saveCloudKey('applications', updated);
     return newApp;
   };
 
@@ -457,12 +512,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
     setApplications(updated);
     saveStoredApplications(updated);
+    saveCloudKey('applications', updated);
   };
 
   const deleteApplication = (id: string) => {
     const updated = applications.filter(a => a.id !== id);
     setApplications(updated);
     saveStoredApplications(updated);
+    saveCloudKey('applications', updated);
   };
 
   const addResult = (resultData: Omit<ResultRecord, 'id'>) => {
@@ -698,23 +755,78 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newStudent, ...alumniStudents];
     setAlumniStudents(updated);
     saveStoredAlumni(updated);
+    saveCloudKey('alumniStudents', updated);
   };
 
   const updateAlumniStudent = (id: string, studentData: Partial<AlumniStudent>) => {
     const updated = alumniStudents.map(s => s.id === id ? { ...s, ...studentData } : s);
     setAlumniStudents(updated);
     saveStoredAlumni(updated);
+    saveCloudKey('alumniStudents', updated);
   };
 
   const deleteAlumniStudent = (id: string) => {
     const updated = alumniStudents.filter(s => s.id !== id);
     setAlumniStudents(updated);
     saveStoredAlumni(updated);
+    saveCloudKey('alumniStudents', updated);
   };
 
   const resetAlumniToDefault = () => {
     setAlumniStudents(defaultAlumniStudents);
     saveStoredAlumni(defaultAlumniStudents);
+    saveCloudKey('alumniStudents', defaultAlumniStudents);
+  };
+
+  const uploadAllDataToCloud = async (): Promise<boolean> => {
+    const all = {
+      info,
+      notices,
+      teachers,
+      applications,
+      results,
+      messages,
+      urgentNotices,
+      tickerSettings,
+      heroSettings,
+      facilities,
+      gallery,
+      prayerConfig,
+      routines,
+      alumniStudents,
+      adminUsers
+    };
+    const success = await syncAllToCloud(all);
+    if (success) {
+      setIsCloudConnected(true);
+    }
+    return success;
+  };
+
+  const refreshFromCloud = async (): Promise<void> => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const cloud = await fetchCloudStore();
+      if (!cloud) return;
+      setIsCloudConnected(true);
+      if (cloud.info) { setInfo(cloud.info); saveStoredInfo(cloud.info); }
+      if (cloud.notices) { setNotices(cloud.notices); saveStoredNotices(cloud.notices); }
+      if (cloud.teachers) { setTeachers(cloud.teachers); saveStoredTeachers(cloud.teachers); }
+      if (cloud.applications) { setApplications(cloud.applications); saveStoredApplications(cloud.applications); }
+      if (cloud.results) { setResults(cloud.results); saveStoredResults(cloud.results); }
+      if (cloud.messages) { setMessages(cloud.messages); saveStoredMessages(cloud.messages); }
+      if (cloud.urgentNotices) { setUrgentNotices(cloud.urgentNotices); saveStoredUrgentNotices(cloud.urgentNotices); }
+      if (cloud.tickerSettings) { setTickerSettings(cloud.tickerSettings); saveStoredTickerSettings(cloud.tickerSettings); }
+      if (cloud.heroSettings) { setHeroSettings(cloud.heroSettings); saveStoredHeroSettings(cloud.heroSettings); }
+      if (cloud.facilities) { setFacilities(cloud.facilities); saveStoredFacilities(cloud.facilities); }
+      if (cloud.gallery) { setGallery(cloud.gallery); saveStoredGallery(cloud.gallery); }
+      if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
+      if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
+      if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
+      if (cloud.adminUsers) { setAdminUsers(cloud.adminUsers); saveStoredAdminUsers(cloud.adminUsers); }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const resetToDefaults = () => {
@@ -808,7 +920,10 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         resetAlumniToDefault,
         loginAdmin,
         logoutAdmin,
-        resetToDefaults
+        resetToDefaults,
+        isCloudConnected,
+        uploadAllDataToCloud,
+        refreshFromCloud
       }}
     >
       {children}
