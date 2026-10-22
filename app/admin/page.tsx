@@ -95,7 +95,9 @@ import {
   Mail,
   Briefcase,
   Filter,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function AdminDashboardPage() {
@@ -567,6 +569,8 @@ export default function AdminDashboardPage() {
   const [alumniViewMode, setAlumniViewMode] = useState<'table' | 'cards'>('table');
   const [alumniSaving, setAlumniSaving] = useState(false);
   const [alumniToast, setAlumniToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [alumniPage, setAlumniPage] = useState(1);
+  const ALUMNI_PER_PAGE = 15;
 
   const initialAlumniForm: Omit<AlumniStudent, 'id' | 'createdAt'> = {
     name: '',
@@ -698,6 +702,18 @@ export default function AdminDashboardPage() {
       return searchMatch && yearMatch && examMatch && groupMatch && bloodMatch;
     });
   }, [alumniStudents, alumniSearch, alumniYearFilter, alumniExamFilter, alumniGroupFilter, alumniBloodFilter]);
+
+  // Reset pagination when search or filters change
+  React.useEffect(() => {
+    setAlumniPage(1);
+  }, [alumniSearch, alumniYearFilter, alumniExamFilter, alumniGroupFilter, alumniBloodFilter]);
+
+  const totalAlumniPages = Math.max(1, Math.ceil(filteredAlumni.length / ALUMNI_PER_PAGE));
+  const safeAlumniPage = Math.min(Math.max(1, alumniPage), totalAlumniPages);
+  const paginatedAlumni = React.useMemo(() => {
+    const startIndex = (safeAlumniPage - 1) * ALUMNI_PER_PAGE;
+    return filteredAlumni.slice(startIndex, startIndex + ALUMNI_PER_PAGE);
+  }, [filteredAlumni, safeAlumniPage]);
 
   // Unique Passing Years for Filter Dropdown
   const availablePassingYears = React.useMemo(() => {
@@ -6474,29 +6490,6 @@ export default function AdminDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      openConfirmModal({
-                        title: 'ডিফল্ট তথ্য রিস্টোর',
-                        message: 'আপনি কি নিশ্চিত যে সকল প্রাক্তন শিক্ষার্থীর তথ্য মাদ্রাসার আদর্শ ডিফল্ট তালিকায় রিস্টোর করতে চান?',
-                        confirmLabel: 'হ্যাঁ, রিস্টোর করুন',
-                        cancelLabel: 'বাতিল',
-                        type: 'warning',
-                        onConfirm: () => {
-                          resetAlumniToDefault();
-                          closeConfirmModal();
-                          setAlumniToast({ show: true, message: 'ডিফল্ট প্রাক্তন শিক্ষার্থী তালিকা সফলভাবে রিস্টোর হয়েছে!' });
-                          setTimeout(() => setAlumniToast({ show: false, message: '' }), 3000);
-                        }
-                      });
-                    }}
-                    className="px-3 py-2 rounded-xl border border-amber-200 text-amber-800 hover:bg-amber-50 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                    title="নমুনা তথ্য পুনরায় লোড করুন"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5 text-amber-600" />
-                    <span>ডিফল্ট রিস্টোর</span>
-                  </button>
-                  <button
-                    type="button"
                     onClick={handleOpenAddAlumni}
                     className="px-4 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-all cursor-pointer"
                   >
@@ -6760,10 +6753,10 @@ export default function AdminDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {filteredAlumni.map((student, idx) => (
+                        {paginatedAlumni.map((student, idx) => (
                           <tr key={student.id} className="hover:bg-emerald-50/30 transition-colors">
                             <td className="p-3.5 text-center font-bold text-slate-400">
-                              {idx + 1}
+                              {(safeAlumniPage - 1) * ALUMNI_PER_PAGE + idx + 1}
                             </td>
                             <td className="p-3.5">
                               <div className="flex items-center gap-3">
@@ -6855,7 +6848,7 @@ export default function AdminDashboardPage() {
               ) : (
                 /* CARDS GRID VIEW */
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                  {filteredAlumni.map((student) => (
+                  {paginatedAlumni.map((student) => (
                     <div
                       key={student.id}
                       className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between group"
@@ -6963,6 +6956,82 @@ export default function AdminDashboardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* Alumni Pagination Toolbar (15 Students Per Page with Next Option) */}
+              {filteredAlumni.length > 0 && (
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-xs text-slate-600 font-medium text-center sm:text-left">
+                    মোট <strong className="text-slate-900 font-bold">{filteredAlumni.length}</strong> জনের মধ্যে{' '}
+                    <strong className="text-slate-900 font-bold">
+                      {(safeAlumniPage - 1) * ALUMNI_PER_PAGE + 1}
+                    </strong>{' '}
+                    -{' '}
+                    <strong className="text-slate-900 font-bold">
+                      {Math.min(safeAlumniPage * ALUMNI_PER_PAGE, filteredAlumni.length)}
+                    </strong>{' '}
+                    জন প্রদর্শিত (প্রতি পৃষ্ঠায় ১৫ জন)
+                  </div>
+
+                  <div className="flex items-center gap-1.5 flex-wrap justify-center">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAlumniPage(p => Math.max(1, p - 1));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      disabled={safeAlumniPage === 1}
+                      className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                      title="পূর্ববর্তী পৃষ্ঠা"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                      <span>পূর্ববর্তী</span>
+                    </button>
+
+                    {Array.from({ length: totalAlumniPages }, (_, i) => i + 1)
+                      .filter(pageNumber =>
+                        totalAlumniPages <= 7 ||
+                        pageNumber === 1 ||
+                        pageNumber === totalAlumniPages ||
+                        Math.abs(pageNumber - safeAlumniPage) <= 1
+                      )
+                      .map((pageNumber, i, arr) => (
+                        <React.Fragment key={pageNumber}>
+                          {i > 0 && arr[i - 1] !== pageNumber - 1 && (
+                            <span className="px-1 text-slate-400 text-xs font-bold">...</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setAlumniPage(pageNumber);
+                              window.scrollTo({ top: 400, behavior: 'smooth' });
+                            }}
+                            className={`min-w-8 h-8 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center ${
+                              pageNumber === safeAlumniPage
+                                ? 'bg-emerald-800 text-white shadow-xs'
+                                : 'border border-slate-200 text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            {pageNumber}
+                          </button>
+                        </React.Fragment>
+                      ))}
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAlumniPage(p => Math.min(totalAlumniPages, p + 1));
+                        window.scrollTo({ top: 400, behavior: 'smooth' });
+                      }}
+                      disabled={safeAlumniPage === totalAlumniPages}
+                      className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent flex items-center gap-1 transition-colors cursor-pointer shadow-xs"
+                      title="পরবর্তী পৃষ্ঠা (Next)"
+                    >
+                      <span>পরবর্তী (Next)</span>
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
