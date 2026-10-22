@@ -9215,26 +9215,88 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-start">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">স্থায়ী বা বর্তমান ঠিকানা</label>
-                    <input
-                      type="text"
+                    <textarea
+                      rows={3}
                       value={alumniForm.address}
                       onChange={(e) => setAlumniForm({ ...alumniForm, address: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
-                      placeholder="গ্রাম/মহল্লা, উপজেলা, জেলা"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white resize-none text-xs"
+                      placeholder="গ্রাম/মহল্লা, ডাকঘর, উপজেলা, জেলা"
                     />
                   </div>
 
                   <div>
-                    <label className="block font-bold text-slate-700 mb-1">ছবির URL (ঐচ্ছিক)</label>
+                    <label className="block font-bold text-slate-700 mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Camera className="w-3.5 h-3.5 text-emerald-700" />
+                        <span>শিক্ষার্থীর ছবি (ঐচ্ছিক)</span>
+                      </span>
+                      {alumniForm.photo && (
+                        <button
+                          type="button"
+                          onClick={() => setAlumniForm({ ...alumniForm, photo: '' })}
+                          className="text-[10px] text-rose-600 hover:text-rose-800 font-bold hover:underline flex items-center gap-0.5 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>ছবি মুছুন</span>
+                        </button>
+                      )}
+                    </label>
+
+                    {alumniForm.photo ? (
+                      <div className="flex items-center gap-3 p-2 rounded-xl border border-emerald-300 bg-emerald-50/60">
+                        <div className="w-12 h-12 rounded-xl overflow-hidden border-2 border-emerald-600 shrink-0 relative shadow-xs">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={alumniForm.photo}
+                            alt="Preview"
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[11px] font-bold text-emerald-900 flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5 text-emerald-700" />
+                            <span>ছবি যুক্ত করা হয়েছে</span>
+                          </div>
+                          <label
+                            htmlFor="alumni-photo-upload"
+                            className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 hover:underline cursor-pointer inline-flex items-center gap-1 mt-0.5"
+                          >
+                            <Upload className="w-3 h-3" />
+                            <span>অন্য ছবি পরিবর্তন করুন</span>
+                          </label>
+                        </div>
+                      </div>
+                    ) : (
+                      <label
+                        htmlFor="alumni-photo-upload"
+                        className="group relative overflow-hidden flex flex-col items-center justify-center p-3 rounded-xl border-2 border-dashed border-emerald-500 bg-emerald-50/40 hover:bg-emerald-100/70 hover:border-emerald-700 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm"
+                      >
+                        <div className="flex items-center gap-2 text-emerald-900 font-bold text-xs group-hover:scale-105 transition-transform">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-700 text-white flex items-center justify-center shadow-xs">
+                            <Camera className="w-4 h-4" />
+                          </div>
+                          <span>+ ছবি যুক্ত করুন (Add Photo)</span>
+                        </div>
+                        <span className="text-[10px] text-slate-500 mt-1">মোবাইল বা কম্পিউটার থেকে ছবি সিলেক্ট করুন</span>
+                      </label>
+                    )}
+
                     <input
-                      type="url"
-                      value={alumniForm.photo}
-                      onChange={(e) => setAlumniForm({ ...alumniForm, photo: e.target.value })}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
-                      placeholder="https://images.unsplash.com/..."
+                      id="alumni-photo-upload"
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleImageUpload(file, (dataUrl) => {
+                            setAlumniForm(prev => ({ ...prev, photo: dataUrl }));
+                          });
+                        }
+                      }}
                     />
                   </div>
                 </div>
@@ -9251,28 +9313,34 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Form Buttons */}
-              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+              {/* Form Buttons with Dynamic Pulse & Shimmer Animations */}
+              <div className="flex justify-end items-center gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAlumniModal(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-100 cursor-pointer"
+                  className="px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-600 hover:text-rose-600 hover:bg-rose-50/80 hover:border-rose-300 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-200 shadow-xs hover:shadow-sm cursor-pointer flex items-center gap-1.5"
                 >
-                  বাতিল
+                  <X className="w-4 h-4 transition-transform duration-200 hover:rotate-90" />
+                  <span>বাতিল</span>
                 </button>
                 <button
                   type="submit"
                   disabled={alumniSaving}
-                  className="px-6 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold shadow-sm transition-all flex items-center gap-1.5 cursor-pointer disabled:opacity-60"
+                  className={`relative overflow-hidden group px-6 py-2.5 rounded-xl text-white text-xs font-bold shadow-md transition-all duration-200 flex items-center gap-2 cursor-pointer ${
+                    alumniSaving
+                      ? 'bg-emerald-600 opacity-90 cursor-wait'
+                      : 'bg-gradient-to-r from-emerald-700 via-[#006837] to-emerald-800 hover:from-emerald-600 hover:via-emerald-700 hover:to-emerald-800 shadow-emerald-900/20 hover:shadow-xl hover:shadow-emerald-800/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 btn-pulse-glow'
+                  }`}
                 >
+                  <span className="absolute inset-0 w-1/2 h-full bg-gradient-to-r from-transparent via-white/35 to-transparent skew-x-[-25deg] -translate-x-full group-hover:translate-x-[350%] transition-transform duration-700 ease-in-out pointer-events-none" />
                   {alumniSaving ? (
                     <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>সংরক্ষণ হচ্ছে...</span>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>{editingAlumni ? 'আপডেট হচ্ছে...' : 'সংরক্ষণ হচ্ছে...'}</span>
                     </>
                   ) : (
                     <>
-                      <Check className="w-3.5 h-3.5" />
+                      <Check className="w-4 h-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12" />
                       <span>{editingAlumni ? 'তথ্য আপডেট করুন' : 'নিবন্ধন সম্পন্ন করুন'}</span>
                     </>
                   )}
