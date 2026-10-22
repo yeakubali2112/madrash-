@@ -18,8 +18,8 @@ export const getSupabaseConfig = (): SupabaseConfig => {
     }
   }
 
-  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const envUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://roctmcrkhthljjbbfnal.supabase.co';
+  const envKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_-9XWdKyGtuHP12L2WAh9Qw_lFQ1NH-_';
   return {
     url: envUrl.trim().replace(/\/$/, ''),
     anonKey: envKey.trim()
