@@ -11,11 +11,8 @@ export const VideoSection: React.FC = () => {
   const { videos } = useMadrasah();
   const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
 
-  const displayVideos = (videos && videos.length > 0 ? videos : []).slice(0, 3);
-
-  if (!videos || videos.length === 0) {
-    return null;
-  }
+  const videoList = videos && videos.length > 0 ? videos : defaultVideos;
+  const displayVideos = videoList.slice(0, 3);
 
   const getEmbedSource = (video: VideoItem) => {
     if (video.videoType === 'youtube' || video.videoUrl.includes('youtu')) {
