@@ -5,6 +5,7 @@ import { NoticeSection } from '@/components/NoticeSection';
 import { PrincipalMessage } from '@/components/PrincipalMessage';
 import { Departments } from '@/components/Departments';
 import { Facilities } from '@/components/Facilities';
+import { VideoSection } from '@/components/VideoSection';
 import { GalleryPreview } from '@/components/GalleryPreview';
 import { QuickAdmissionCta } from '@/components/QuickAdmissionCta';
 import { ParentAttendanceCta } from '@/components/ParentAttendanceCta';
@@ -21,9 +22,9 @@ export default function HomePage() {
       <PrincipalMessage />
       <Departments />
       <Facilities />
+      <VideoSection />
       <QuickAdmissionCta />
       <GalleryPreview />
     </div>
   );
 }
-

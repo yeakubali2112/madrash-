@@ -258,6 +258,38 @@ export interface GalleryItem {
   date: string;
 }
 
+export interface VideoItem {
+  id: string;
+  title: string;
+  category: 'ওয়াজ মাহফিল' | 'কুরআন তিলাওয়াত' | 'বার্ষিক অনুষ্ঠান' | 'বিজ্ঞান মেলা' | 'ক্যাম্পাস' | 'সাধারণ';
+  videoType: 'youtube' | 'upload' | 'url';
+  videoUrl: string;
+  thumbnailUrl?: string;
+  description?: string;
+  duration?: string;
+  date: string;
+}
+
+export function getYouTubeEmbedUrl(url: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://www.youtube-nocookie.com/embed/${match[2]}?autoplay=1&rel=0`;
+  }
+  return null;
+}
+
+export function getYouTubeThumbnail(url: string): string | null {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  const match = url.match(regExp);
+  if (match && match[2] && match[2].length === 11) {
+    return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+  }
+  return null;
+}
+
 export interface ContactMessage {
   id: string;
   name: string;
@@ -885,6 +917,42 @@ export const defaultGallery: GalleryItem[] = [
   }
 ];
 
+export const defaultVideos: VideoItem[] = [
+  {
+    id: "vid-1",
+    title: "বার্ষিক ওয়াজ মাহফিল ও দোআ অনুষ্ঠান ২০২৬",
+    category: "ওয়াজ মাহফিল",
+    videoType: "youtube",
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    thumbnailUrl: "https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80",
+    description: "পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসার বার্ষিক ইসলামী সম্মেলন ও কৃতী শিক্ষার্থীদের দোআ মাহফিল।",
+    duration: "১৫:২০",
+    date: "২০২৬-১০-১৫"
+  },
+  {
+    id: "vid-2",
+    title: "আন্তর্জাতিক ক্বিরাত সম্মেলন ও পবিত্র কুরআন তিলাওয়াত প্রতিযোগিতা",
+    category: "কুরআন তিলাওয়াত",
+    videoType: "youtube",
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    thumbnailUrl: "https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=800&auto=format&fit=crop&q=80",
+    description: "হিফজুল কুরআন বিভাগের শিক্ষার্থীদের হৃদয়স্পর্শী কুরআন তিলাওয়াত।",
+    duration: "১০:৪৫",
+    date: "২০২৬-০৯-২০"
+  },
+  {
+    id: "vid-3",
+    title: "বার্ষিক ক্রীড়া ও বিজ্ঞান মেলা সমাপনী ও পুরস্কার বিতরণ",
+    category: "বিজ্ঞান মেলা",
+    videoType: "youtube",
+    videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+    thumbnailUrl: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80",
+    description: "মাদ্রাসার শিক্ষার্থীদের বিজ্ঞান প্রজেক্ট প্রদর্শনী ও বার্ষিক ক্রীড়ার আকর্ষণীয় মুহূর্ত।",
+    duration: "১২:১০",
+    date: "২০২৬-০৮-১২"
+  }
+];
+
 export const defaultMessages: ContactMessage[] = [
   {
     id: "msg-1",
@@ -1408,7 +1476,9 @@ export const availablePermissions: AdminPermission[] = [
   { id: 'urgent-notices', name: 'জরুরি নোটিশ (স্ক্রল)', title: 'জরুরি নোটিশ (স্ক্রল)', description: 'হোমপেজের জরুরি স্ক্রলিং টিকার নোটিশ নিয়ন্ত্রণ', category: 'core' },
   { id: 'hero', name: 'হিরো ব্যানার স্লাইডশো', title: 'হিরো ব্যানার স্লাইডশো', description: 'হোমপেজের মূল ব্যানার, ছবি ও স্লাইডশো পরিবর্তন', category: 'media' },
   { id: 'facilities', name: 'সুযোগ-সুবিধাসমূহ', title: 'সুযোগ-সুবিধাসমূহ', description: 'মাদ্রাসার ল্যাব, লাইব্রেরি ও ক্যাম্পাসের সুবিধা এডিট', category: 'media' },
-  { id: 'gallery', name: 'ফটো গ্যালারি', title: 'ফটো গ্যালারি', description: 'ক্যাম্পাস, অনুষ্ঠান ও পুরস্কারের ছবি আপলোড', category: 'media' },
+  { id: 'gallery',
+      'videos', name: 'ফটো গ্যালারি', title: 'ফটো গ্যালারি', description: 'ক্যাম্পাস, অনুষ্ঠান ও পুরস্কারের ছবি আপলোড', category: 'media' },
+  { id: 'videos', name: 'ভিডিও গ্যালারি', title: 'ভিডিও গ্যালারি', description: 'ইউটিউব ও আপলোড করা ভিডিও ব্যবস্থাপনা', category: 'media' },
   { id: 'authorities', name: 'কর্তৃপক্ষের বাণী', title: 'কর্তৃপক্ষের বাণী', description: 'সভাপতি ও অধ্যক্ষ মহোদয়ের বাণী ও ছবি পরিবর্তন', category: 'media' },
   { id: 'messages', name: 'প্রাপ্ত বার্তা (ইনবক্স)', title: 'প্রাপ্ত বার্তা (ইনবক্স)', description: 'ওয়েবসাইটের যোগাযোগ ফরম থেকে আসা মেসেজ দেখা', category: 'core' },
   { id: 'prayer', name: 'সালাতের সময়সূচি', title: 'সালাতের সময়সূচি', description: 'পাঁচ ওয়াক্ত সালাতের আযান ও জামাতের সময়সূচি পরিবর্তন', category: 'core' },

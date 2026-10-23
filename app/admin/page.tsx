@@ -15,6 +15,10 @@ import {
   UrgentNoticeItem,
   FacilityItem,
   GalleryItem,
+  VideoItem,
+  defaultVideos,
+  getYouTubeEmbedUrl,
+  getYouTubeThumbnail,
   HeroSettings,
   defaultHeroSettings,
   HeroBannerSlide,
@@ -74,6 +78,7 @@ import {
   Trophy,
   Building,
   Camera,
+  Film,
   Quote,
   UserCheck,
   Sliders,
@@ -151,6 +156,10 @@ export default function AdminDashboardPage() {
     addGalleryItem,
     updateGalleryItem,
     deleteGalleryItem,
+    videos,
+    addVideoItem,
+    updateVideoItem,
+    deleteVideoItem,
     teachers,
     addTeacher,
     updateTeacher,
@@ -190,7 +199,7 @@ export default function AdminDashboardPage() {
     refreshFromCloud
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'students' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'students' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users' | 'videos'>('overview');
   const [mounted, setMounted] = useState(false);
 
   // User Permission verification
@@ -566,6 +575,104 @@ export default function AdminDashboardPage() {
     imageUrl: 'https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=800',
     date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long' })
   });
+
+  // Video Gallery Form State
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<VideoItem | null>(null);
+  const [editingVideoItem, setEditingVideoItem] = useState<VideoItem | null>(null);
+  const [videoSaving, setVideoSaving] = useState(false);
+  const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>('সকল');
+  const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const [videoForm, setVideoForm] = useState<{
+    title: string;
+    category: VideoItem['category'];
+    videoType: 'youtube' | 'upload' | 'url';
+    videoUrl: string;
+    thumbnailUrl: string;
+    description: string;
+    duration: string;
+    date: string;
+  }>({
+    title: '',
+    category: 'ওয়াজ মাহফিল',
+    videoType: 'youtube',
+    videoUrl: '',
+    thumbnailUrl: '',
+    description: '',
+    duration: '',
+    date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })
+  });
+
+  const handleSaveVideo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoForm.title.trim()) {
+      alert('অনুগ্রহ করে ভিডিওর শিরোনাম প্রদান করুন');
+      return;
+    }
+    if (!videoForm.videoUrl.trim()) {
+      alert('অনুগ্রহ করে ভিডিওর লিঙ্ক বা ফাইল প্রদান করুন');
+      return;
+    }
+
+    let finalThumb = videoForm.thumbnailUrl;
+    if (!finalThumb && (videoForm.videoType === 'youtube' || videoForm.videoUrl.includes('youtu'))) {
+      finalThumb = getYouTubeThumbnail(videoForm.videoUrl) || '';
+    }
+
+    setVideoSaving(true);
+    try {
+      if (editingVideoItem) {
+        updateVideoItem(editingVideoItem.id, {
+          ...videoForm,
+          thumbnailUrl: finalThumb
+        });
+      } else {
+        addVideoItem({
+          ...videoForm,
+          thumbnailUrl: finalThumb
+        });
+      }
+      setShowVideoModal(false);
+      setEditingVideoItem(null);
+    } finally {
+      setVideoSaving(false);
+    }
+  };
+
+  const handleVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) {
+      alert('ভিডিও ফাইলটি ৫০MB-এর বেশি। দ্রুত ব্রাউজিংয়ের জন্য ইউটিউব (YouTube) এ আপলোড করে লিঙ্ক দেওয়ার অনুরোধ করা হচ্ছে।');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setVideoForm(prev => ({
+          ...prev,
+          videoType: 'upload',
+          videoUrl: reader.result as string
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setVideoForm(prev => ({
+          ...prev,
+          thumbnailUrl: reader.result as string
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Teacher Form State
   const [showTeacherModal, setShowTeacherModal] = useState(false);
@@ -2514,6 +2621,26 @@ export default function AdminDashboardPage() {
                   <Camera className="w-4 h-4 text-amber-500" />
                   <span>ফটো গ্যালারি</span>
                 </div>
+              </button>
+            )}
+
+            {canAccessTab('videos') && (
+              <button
+                type="button"
+                onClick={() => setActiveTab('videos')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors cursor-pointer ${
+                  activeTab === 'videos'
+                    ? 'bg-emerald-800 text-white shadow-sm font-black'
+                    : 'text-slate-700 hover:bg-slate-100 hover:text-emerald-900'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <Film className="w-4 h-4 text-red-500" />
+                  <span>ভিডিও গ্যালারি</span>
+                </div>
+                <span className="text-[10px] bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded">
+                  {videos?.length || 0}টি
+                </span>
               </button>
             )}
 
@@ -9997,6 +10124,241 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
       )}
 
       {/* Gallery Add/Edit Modal */}
+      {/* Video Modal (Add / Edit) */}
+      {showVideoModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3 mb-5">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-bold">
+                  <Film className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-black text-slate-900 text-lg">
+                    {editingVideoItem ? 'ভিডিও তথ্য সম্পাদনা' : 'নতুন ভিডিও যুক্ত করুন'}
+                  </h3>
+                  <p className="text-xs text-slate-500">ইউটিউব লিঙ্ক বা সরাসরি ভিডিও আপলোড করে গ্যালারিতে প্রকাশ করুন</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowVideoModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveVideo} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  ভিডিওর শিরোনাম <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="যেমন: বার্ষিক ওয়াজ মাহফিল ও দোআ অনুষ্ঠান ২০২৬"
+                  value={videoForm.title}
+                  onChange={(e) => setVideoForm({ ...videoForm, title: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-medium"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">ক্যাটাগরি</label>
+                  <select
+                    value={videoForm.category}
+                    onChange={(e) => setVideoForm({ ...videoForm, category: e.target.value as any })}
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
+                  >
+                    <option value="ওয়াজ মাহফিল">ওয়াজ মাহফিল</option>
+                    <option value="কুরআন তিলাওয়াত">কুরআন তিলাওয়াত</option>
+                    <option value="বার্ষিক অনুষ্ঠান">বার্ষিক অনুষ্ঠান</option>
+                    <option value="বিজ্ঞান মেলা">বিজ্ঞান মেলা</option>
+                    <option value="ক্যাম্পাস">ক্যাম্পাস</option>
+                    <option value="সাধারণ">সাধারণ</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">ভিডিওর দৈর্ঘ্য (Duration)</label>
+                  <input
+                    type="text"
+                    placeholder="যেমন: ১২:৩০ মিনিট"
+                    value={videoForm.duration}
+                    onChange={(e) => setVideoForm({ ...videoForm, duration: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Source Type Selector */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-2">ভিডিওর মাধ্যম নির্বাচন করুন</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setVideoForm({ ...videoForm, videoType: 'youtube' })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      videoForm.videoType === 'youtube'
+                        ? 'bg-red-50 text-red-700 border-red-400 shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Film className="w-3.5 h-3.5 text-red-600" />
+                    <span>ইউটিউব লিঙ্ক (YouTube)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setVideoForm({ ...videoForm, videoType: 'upload' })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                      videoForm.videoType === 'upload'
+                        ? 'bg-red-50 text-red-700 border-red-400 shadow-xs'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5 text-blue-600" />
+                    <span>সরাসরি ভিডিও ফাইল</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* URL or File Input based on selection */}
+              {videoForm.videoType === 'youtube' ? (
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ইউটিউব ভিডিও লিঙ্ক <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    placeholder="https://www.youtube.com/watch?v=... অথবা https://youtu.be/..."
+                    value={videoForm.videoUrl}
+                    onChange={(e) => setVideoForm({ ...videoForm, videoUrl: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-mono"
+                  />
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    ইউটিউব লিঙ্ক বসালে থাম্বনেইল স্বয়ংক্রিয়ভাবে তৈরি হবে।
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    ভিডিও ফাইল আপলোড করুন (MP4 / WebM)
+                  </label>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/webm"
+                    onChange={handleVideoFileUpload}
+                    className="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-red-50 file:text-red-700 hover:file:bg-red-100"
+                  />
+                  <input
+                    type="text"
+                    placeholder="অথবা সরাসরি ভিডিও লিংক পেস্ট করুন (যেমন: https://.../video.mp4)"
+                    value={videoForm.videoUrl.startsWith('data:') ? 'ফাইল নির্বাচন করা হয়েছে (ভিডিও ফাইল সংযুক্ত)' : videoForm.videoUrl}
+                    onChange={(e) => setVideoForm({ ...videoForm, videoUrl: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-mono"
+                  />
+                </div>
+              )}
+
+              {/* Optional Custom Thumbnail */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  কাস্টম থাম্বনেইল ছবি (ঐচ্ছিক)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="থাম্বনেইল ইমেজ লিঙ্ক (ফাঁকা রাখলে স্বয়ংক্রিয় থাম্বনেইল ব্যবহৃত হবে)"
+                    value={videoForm.thumbnailUrl.startsWith('data:') ? 'কাস্টম ইমেজ ফাইল আপলোড করা হয়েছে' : videoForm.thumbnailUrl}
+                    onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
+                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-mono"
+                  />
+                  <label className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer border border-slate-300 shrink-0">
+                    <span>ছবি আপলোড</span>
+                    <input type="file" accept="image/*" onChange={handleVideoThumbnailUpload} className="hidden" />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">বিবরণ (Description)</label>
+                <textarea
+                  rows={2}
+                  placeholder="ভিডিও সম্পর্কে সংক্ষিপ্ত বিবরণ লিখুন..."
+                  value={videoForm.description}
+                  onChange={(e) => setVideoForm({ ...videoForm, description: e.target.value })}
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowVideoModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  disabled={videoSaving}
+                  className="px-5 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow transition-all cursor-pointer disabled:opacity-50"
+                >
+                  {videoSaving ? 'সংরক্ষণ হচ্ছে...' : editingVideoItem ? 'আপডেট করুন' : 'ভিডিও প্রকাশ করুন'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Video Preview Modal */}
+      {previewVideo && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setPreviewVideo(null)}
+        >
+          <div
+            className="relative max-w-4xl w-full bg-slate-950 rounded-3xl overflow-hidden shadow-2xl border border-slate-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 text-white">
+              <h3 className="font-bold text-sm truncate pr-4">{previewVideo.title}</h3>
+              <button
+                type="button"
+                onClick={() => setPreviewVideo(null)}
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-red-600 text-white flex items-center justify-center cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="relative aspect-video w-full bg-black">
+              {getYouTubeEmbedUrl(previewVideo.videoUrl) ? (
+                <iframe
+                  src={getYouTubeEmbedUrl(previewVideo.videoUrl)!}
+                  title={previewVideo.title}
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              ) : (
+                <video
+                  controls
+                  autoPlay
+                  className="w-full h-full bg-black"
+                  src={previewVideo.videoUrl}
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       {showGalleryModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">

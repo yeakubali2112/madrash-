@@ -10,6 +10,8 @@ import {
   HeroSettings,
   FacilityItem,
   GalleryItem,
+  VideoItem,
+  defaultVideos,
   defaultMadrasahInfo,
   defaultNotices,
   defaultTeachers,
@@ -48,6 +50,7 @@ const STORAGE_KEYS = {
   HERO_SETTINGS: 'padm_hero_settings',
   FACILITIES: 'padm_facilities',
   GALLERY: 'padm_gallery',
+  VIDEOS: 'padm_videos',
   PRAYER_CONFIG: 'padm_prayer_config',
   ADMIN_USERS: 'padm_admin_users',
   CURRENT_ADMIN_USER: 'padm_current_admin_user',
@@ -266,6 +269,25 @@ export const saveStoredGallery = (gallery: GalleryItem[]) => {
     localStorage.setItem(STORAGE_KEYS.GALLERY, JSON.stringify(gallery));
   } catch (err) {
     console.error('Error saving gallery to storage:', err);
+  }
+};
+
+export const getStoredVideos = (): VideoItem[] => {
+  if (typeof window === 'undefined') return defaultVideos;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.VIDEOS);
+    return data ? JSON.parse(data) : defaultVideos;
+  } catch {
+    return defaultVideos;
+  }
+};
+
+export const saveStoredVideos = (videos: VideoItem[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.VIDEOS, JSON.stringify(videos));
+  } catch (err) {
+    console.error('Error saving videos to storage:', err);
   }
 };
 

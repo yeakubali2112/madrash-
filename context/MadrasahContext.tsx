@@ -13,6 +13,8 @@ import {
   HeroSettings,
   FacilityItem,
   GalleryItem,
+  VideoItem,
+  defaultVideos,
   defaultMadrasahInfo,
   defaultNotices,
   defaultTeachers,
@@ -59,6 +61,8 @@ import {
   saveStoredFacilities,
   getStoredGallery,
   saveStoredGallery,
+  getStoredVideos,
+  saveStoredVideos,
   getStoredPrayerConfig,
   saveStoredPrayerConfig,
   getStoredAdminUsers,
@@ -94,6 +98,10 @@ interface MadrasahContextType {
   heroSettings: HeroSettings;
   facilities: FacilityItem[];
   gallery: GalleryItem[];
+  videos: VideoItem[];
+  addVideoItem: (item: Omit<VideoItem, 'id'>) => void;
+  updateVideoItem: (id: string, item: Partial<VideoItem>) => void;
+  deleteVideoItem: (id: string) => void;
   prayerConfig: PrayerTimeConfig;
   loggedStudent: StudentProfile | null;
   isAdmin: boolean;
@@ -178,6 +186,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [heroSettings, setHeroSettings] = useState<HeroSettings>(defaultHeroSettings);
   const [facilities, setFacilities] = useState<FacilityItem[]>(defaultFacilities);
   const [gallery, setGallery] = useState<GalleryItem[]>(defaultGallery);
+  const [videos, setVideos] = useState<VideoItem[]>(defaultVideos);
   const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
   const [routines, setRoutines] = useState<ClassRoutine[]>(defaultClassRoutines);
   const [alumniStudents, setAlumniStudents] = useState<AlumniStudent[]>(defaultAlumniStudents);
@@ -201,6 +210,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setHeroSettings(getStoredHeroSettings());
     setFacilities(getStoredFacilities());
     setGallery(getStoredGallery());
+    setVideos(getStoredVideos());
     setPrayerConfig(getStoredPrayerConfig());
     setRoutines(getStoredRoutines());
     setAlumniStudents(getStoredAlumni());
@@ -240,6 +250,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (e.key === 'padm_ticker_settings') setTickerSettings(getStoredTickerSettings());
       if (e.key === 'padm_urgent_notices') setUrgentNotices(getStoredUrgentNotices());
       if (e.key === 'padm_prayer_config') setPrayerConfig(getStoredPrayerConfig());
+      if (e.key === 'padm_videos') setVideos(getStoredVideos());
       if (e.key === 'padm_routines') setRoutines(getStoredRoutines());
       if (e.key === 'padm_admin_users') setAdminUsers(getStoredAdminUsers());
       if (e.key === 'padm_current_admin_user') setCurrentAdminUserState(getCurrentAdminUser());
@@ -301,6 +312,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (cloud.heroSettings) { setHeroSettings(cloud.heroSettings); saveStoredHeroSettings(cloud.heroSettings); }
         if (cloud.facilities) { setFacilities(cloud.facilities); saveStoredFacilities(cloud.facilities); }
         if (cloud.gallery) { setGallery(cloud.gallery); saveStoredGallery(cloud.gallery); }
+        if (cloud.videos) { setVideos(cloud.videos); saveStoredVideos(cloud.videos); }
         if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
         if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
         if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
@@ -468,6 +480,31 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setGallery(updated);
     saveStoredGallery(updated);
     saveCloudKey('gallery', updated);
+  };
+
+  const addVideoItem = (itemData: Omit<VideoItem, 'id'>) => {
+    const newItem: VideoItem = {
+      ...itemData,
+      id: `vid-${Date.now()}`
+    };
+    const updated = [newItem, ...videos];
+    setVideos(updated);
+    saveStoredVideos(updated);
+    saveCloudKey('videos', updated);
+  };
+
+  const updateVideoItem = (id: string, updatedFields: Partial<VideoItem>) => {
+    const updated = videos.map(v => v.id === id ? { ...v, ...updatedFields } : v);
+    setVideos(updated);
+    saveStoredVideos(updated);
+    saveCloudKey('videos', updated);
+  };
+
+  const deleteVideoItem = (id: string) => {
+    const updated = videos.filter(v => v.id !== id);
+    setVideos(updated);
+    saveStoredVideos(updated);
+    saveCloudKey('videos', updated);
   };
 
   const updateGalleryItem = (id: string, updatedFields: Partial<GalleryItem>) => {
@@ -876,6 +913,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       heroSettings,
       facilities,
       gallery,
+      videos,
       prayerConfig,
       routines,
       alumniStudents,
@@ -929,6 +967,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setHeroSettings(defaultHeroSettings);
     setFacilities(defaultFacilities);
     setGallery(defaultGallery);
+    setVideos(defaultVideos);
     setPrayerConfig(defaultPrayerConfig);
     setAdminUsers(defaultAdminUsers);
     setRoutines(defaultClassRoutines);
@@ -985,6 +1024,10 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addGalleryItem,
         updateGalleryItem,
         deleteGalleryItem,
+        videos,
+        addVideoItem,
+        updateVideoItem,
+        deleteVideoItem,
         addTeacher,
         updateTeacher,
         deleteTeacher,
