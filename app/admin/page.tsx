@@ -10523,9 +10523,29 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                 <button
                   type="submit"
                   disabled={videoSaving}
-                  className="px-5 py-2.5 rounded-xl bg-red-700 hover:bg-red-800 text-white text-xs font-bold shadow transition-all cursor-pointer disabled:opacity-50"
+                  className="relative group/btn inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl text-white text-xs font-black shadow-lg shadow-red-700/30 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-700 hover:via-rose-700 hover:to-red-800 hover:shadow-xl hover:shadow-red-600/50 hover:scale-[1.04] active:scale-95 transition-all duration-300 cursor-pointer disabled:opacity-60 disabled:scale-100 overflow-hidden"
                 >
-                  {videoSaving ? 'সংরক্ষণ হচ্ছে...' : editingVideoItem ? 'আপডেট করুন' : 'ভিডিও প্রকাশ করুন'}
+                  {/* Shimmer light sweep animation across button on hover */}
+                  <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 ease-in-out pointer-events-none" />
+
+                  {videoSaving ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                      <span>সংরক্ষণ হচ্ছে...</span>
+                    </>
+                  ) : editingVideoItem ? (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-bounce" />
+                      <span className="tracking-wide">আপডেট করুন</span>
+                      <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1 font-bold">✓</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+                      <span className="tracking-wide">ভিডিও প্রকাশ করুন</span>
+                      <span className="inline-block transition-transform duration-300 group-hover/btn:translate-x-1 font-bold">→</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
