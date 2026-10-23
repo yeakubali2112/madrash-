@@ -618,6 +618,9 @@ export default function AdminDashboardPage() {
     if (!finalThumb && (videoForm.videoType === 'youtube' || videoForm.videoUrl.includes('youtu'))) {
       finalThumb = getYouTubeThumbnail(videoForm.videoUrl) || '';
     }
+    if (!finalThumb) {
+      finalThumb = 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+    }
 
     setVideoSaving(true);
     try {
@@ -642,10 +645,6 @@ export default function AdminDashboardPage() {
   const handleVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 50 * 1024 * 1024) {
-      alert('ভিডিও ফাইলটি ৫০MB-এর বেশি। দ্রুত ব্রাউজিংয়ের জন্য ইউটিউব (YouTube) এ আপলোড করে লিঙ্ক দেওয়ার অনুরোধ করা হচ্ছে।');
-      return;
-    }
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === 'string') {
@@ -10501,25 +10500,6 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                 </div>
               )}
 
-              {/* Optional Custom Thumbnail */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  কাস্টম থাম্বনেইল ছবি (ঐচ্ছিক)
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="থাম্বনেইল ইমেজ লিঙ্ক (ফাঁকা রাখলে স্বয়ংক্রিয় থাম্বনেইল ব্যবহৃত হবে)"
-                    value={videoForm.thumbnailUrl.startsWith('data:') ? 'কাস্টম ইমেজ ফাইল আপলোড করা হয়েছে' : videoForm.thumbnailUrl}
-                    onChange={(e) => setVideoForm({ ...videoForm, thumbnailUrl: e.target.value })}
-                    className="flex-1 px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-mono"
-                  />
-                  <label className="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer border border-slate-300 shrink-0">
-                    <span>ছবি আপলোড</span>
-                    <input type="file" accept="image/*" onChange={handleVideoThumbnailUpload} className="hidden" />
-                  </label>
-                </div>
-              </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">বিবরণ (Description)</label>
