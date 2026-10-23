@@ -1468,6 +1468,47 @@ export default function AdminDashboardPage() {
   // Pending and unread counts
   const pendingAppsCount = applications.filter(a => a.status === 'অপেক্ষমান').length;
   const unreadMessagesCount = messages.filter(m => !m.isRead).length;
+  const approvedAppsCount = applications.filter(a => a.status === 'অনুমোদিত').length;
+  const rejectedAppsCount = applications.filter(a => a.status === 'বাতিল').length;
+  const [isSyncingOverview, setIsSyncingOverview] = useState(false);
+  const [overviewAppFilter, setOverviewAppFilter] = useState<'সকল' | 'অপেক্ষমান' | 'অনুমোদিত'>('সকল');
+
+  // Real class distribution of enrolled students
+  const classDistribution = React.useMemo(() => {
+    const map: Record<string, number> = {};
+    students.forEach(s => {
+      const cls = (s.classYear || 'অনির্ধারিত').trim();
+      map[cls] = (map[cls] || 0) + 1;
+    });
+    return Object.entries(map).sort((a, b) => b[1] - a[1]);
+  }, [students]);
+
+  const handleOverviewCloudSync = async () => {
+    setIsSyncingOverview(true);
+    try {
+      await refreshFromCloud();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setTimeout(() => setIsSyncingOverview(false), 600);
+    }
+  };
+
+  const handleClearDemoApplications = () => {
+    openConfirmModal({
+      title: 'ডেমো ভর্তি আবেদন মুছে ফেলার নিশ্চিতকরণ',
+      message: 'আপনি কি ৩টি ডেমো ভর্তি আবেদন (PADM-2026-1001, 1002, 1003) মুছে ফেলতে চান? এতে আপনার ড্যাশবোর্ড সম্পূর্ণ ক্লিন হয়ে শুধু নতুন বাস্তব আবেদনের জন্য প্রস্তুত হবে।',
+      confirmLabel: 'হ্যাঁ, ডেমো আবেদন মুছুন',
+      cancelLabel: 'বাতিল',
+      type: 'warning',
+      onConfirm: () => {
+        const demoApps = applications.filter(a => a.id.startsWith('PADM-2026-100'));
+        demoApps.forEach(demo => deleteApplication(demo.id));
+        closeConfirmModal();
+      }
+    });
+  };
+
 
   // ==========================================
   // ADMIN USERS & PERMISSIONS MANAGEMENT STATE
@@ -2681,130 +2722,721 @@ export default function AdminDashboardPage() {
           {/* TAB 1: OVERVIEW */}
           {activeTab === 'overview' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+              {/* Overview Header & Controls */}
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 border-b border-slate-200 pb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">ড্যাশবোর্ড ওভারভিউ</h2>
-                  <p className="text-xs text-slate-500">মাদ্রাসার সার্বিক পরিসংখ্যান ও কার্যক্রমের সারসংক্ষেপ</p>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="bg-emerald-100 text-emerald-800 text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-emerald-300">
+                      <LayoutDashboard className="w-3.5 h-3.5 text-emerald-700" /> লাইভ ওভারভিউ
+                    </span>
+                    {isCloudConnected ? (
+                      <span className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        Supabase ডাটাবেজ লাইভ সংযুক্ত
+                      </span>
+                    ) : (
+                      <span className="bg-amber-50 text-amber-700 border border-amber-200 text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-amber-500"></span>
+                        লোকাল স্টোরেজ মোড
+                      </span>
+                    )}
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">ড্যাশবোর্ড ওভারভিউ</h2>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    মাদ্রাসার সকল মডিউলের লাইভ ডাটা, বাস্তব শিক্ষার্থী পরিসংখ্যান ও সাম্প্রতিক কার্যক্রমের সারসংক্ষেপ
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={handleOverviewCloudSync}
+                    disabled={isSyncingOverview}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer disabled:opacity-50"
+                    title="ক্লাউড ডাটাবেজ রিফ্রেশ করুন"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 text-emerald-700 ${isSyncingOverview ? 'animate-spin' : ''}`} />
+                    <span>{isSyncingOverview ? 'সিঙ্ক হচ্ছে...' : 'ডাটাবেজ রিফ্রেশ'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('students')}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-white bg-emerald-800 hover:bg-emerald-900 shadow-sm transition-all cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>নতুন শিক্ষার্থী যোগ</span>
+                  </button>
                 </div>
               </div>
 
-              {/* KPI Cards */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-                <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5">
-                  <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] font-bold text-emerald-800">মোট শিক্ষার্থী</span>
-                    <Users className="w-4 h-4 text-emerald-600" />
-                  </div>
-                  <div className="text-2xl font-black text-emerald-950">{info.stats.students}</div>
-                  <div className="text-[10px] text-emerald-700 mt-1">সক্রিয় অধ্যয়নরত</div>
-                </div>
+              {/* Quick Actions Shortcuts */}
+              <div className="flex flex-wrap items-center gap-2 p-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl">
+                <span className="text-[11px] font-bold text-slate-500 px-2 flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" /> দ্রুত এক্সেস:
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('admissions')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <GraduationCap className="w-3.5 h-3.5 text-amber-600" />
+                  <span>ভর্তি আবেদন ({applications.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('notices')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Bell className="w-3.5 h-3.5 text-purple-600" />
+                  <span>নোটিশ বোর্ড ({notices.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('attendance')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>দৈনিক হাজিরা</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('teachers')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Users className="w-3.5 h-3.5 text-blue-600" />
+                  <span>শিক্ষক ও স্টাফ ({teachers.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('messages')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <MessageSquare className="w-3.5 h-3.5 text-teal-600" />
+                  <span>প্রাপ্ত বার্তা ({messages.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('routine')}
+                  className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white text-slate-700 border border-slate-200 hover:border-emerald-500 hover:text-emerald-800 transition-all flex items-center gap-1 cursor-pointer"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>ক্লাস রুটিন ({routines.length})</span>
+                </button>
+              </div>
 
-                <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5">
+              {/* Real Data KPI Cards Grid (8 Cards) */}
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+                {/* 1. Real Registered Students */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('students')}
+                  className="bg-emerald-50/90 border border-emerald-200 rounded-2xl p-4 text-left hover:bg-emerald-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] font-bold text-amber-800">ভর্তি আবেদন</span>
-                    <GraduationCap className="w-4 h-4 text-amber-600" />
+                    <span className="text-[11px] font-bold text-emerald-800 group-hover:text-emerald-950">
+                      মোট শিক্ষার্থী (নিবন্ধিত)
+                    </span>
+                    <Users className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="text-2xl font-black text-amber-950">{applications.length}</div>
-                  <div className="text-[10px] text-amber-700 mt-1">{pendingAppsCount}টি অপেক্ষমান</div>
-                </div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl lg:text-3xl font-black text-emerald-950">
+                      {students.length} জন
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-200/80 px-1.5 py-0.5 rounded">
+                      রিয়েল ডাটা
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-emerald-700 mt-1.5 font-medium flex items-center gap-1.5">
+                    <span>ছাত্র: {students.filter(s => s.gender === 'ছাত্র').length} জন</span>
+                    <span>•</span>
+                    <span>ছাত্রী: {students.filter(s => s.gender === 'ছাত্রী').length} জন</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 mt-1 font-mono">
+                    (ধারণক্ষমতা লক্ষ্যমাত্রা: {info.stats.students})
+                  </div>
+                </button>
 
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3.5">
+                {/* 2. Admission Applications */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('admissions')}
+                  className="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 text-left hover:bg-amber-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] font-bold text-blue-800">শিক্ষক ও স্টাফ</span>
-                    <Users className="w-4 h-4 text-blue-600" />
+                    <span className="text-[11px] font-bold text-amber-800 group-hover:text-amber-950">
+                      ভর্তি আবেদন (অনলাইন)
+                    </span>
+                    <GraduationCap className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="text-2xl font-black text-blue-950">{teachers.length} জন</div>
-                  <div className="text-[10px] text-blue-700 mt-1">পূর্ণকালীন দায়িত্বপ্রাপ্ত</div>
-                </div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl lg:text-3xl font-black text-amber-950">
+                      {applications.length}টি
+                    </div>
+                    {pendingAppsCount > 0 && (
+                      <span className="text-[10px] text-amber-800 font-bold bg-amber-200/80 px-1.5 py-0.5 rounded animate-pulse">
+                        {pendingAppsCount} নতুন
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-amber-800 mt-1.5 font-medium flex items-center gap-1.5">
+                    <span>{pendingAppsCount}টি অপেক্ষমান</span>
+                    <span>•</span>
+                    <span>{approvedAppsCount}টি অনুমোদিত</span>
+                  </div>
+                  <div className="text-[10px] text-amber-600 mt-1">
+                    অনলাইন আবেদন যাচাই করুন →
+                  </div>
+                </button>
 
-                <div className="bg-purple-50 border border-purple-200 rounded-xl p-3.5">
+                {/* 3. Teachers & Staff */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('teachers')}
+                  className="bg-blue-50/90 border border-blue-200 rounded-2xl p-4 text-left hover:bg-blue-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] font-bold text-purple-800">প্রকাশিত নোটিশ</span>
-                    <Bell className="w-4 h-4 text-purple-600" />
+                    <span className="text-[11px] font-bold text-blue-800 group-hover:text-blue-950">
+                      শিক্ষক ও কর্মকর্তা
+                    </span>
+                    <Users className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="text-2xl font-black text-purple-950">{notices.length}টি</div>
-                  <div className="text-[10px] text-purple-700 mt-1">সক্রিয় নোটিশ বোর্ডে</div>
-                </div>
+                  <div className="text-2xl lg:text-3xl font-black text-blue-950">
+                    {teachers.length} জন
+                  </div>
+                  <div className="text-[11px] text-blue-700 mt-1.5 font-medium flex items-center gap-1.5">
+                    <span>শিক্ষক: {teachers.filter(t => !t.designation?.includes('কর্মচারী') && !t.designation?.includes('দপ্তরি') && !t.designation?.includes('পিয়ন')).length} জন</span>
+                    <span>•</span>
+                    <span>স্টাফ: {teachers.filter(t => t.designation?.includes('কর্মচারী') || t.designation?.includes('দপ্তরি') || t.designation?.includes('পিয়ন')).length} জন</span>
+                  </div>
+                  <div className="text-[10px] text-blue-600 mt-1">
+                    ওয়েবসাইটে প্রদর্শিত তালিকা →
+                  </div>
+                </button>
 
+                {/* 4. Notices */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('notices')}
+                  className="bg-purple-50/90 border border-purple-200 rounded-2xl p-4 text-left hover:bg-purple-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[11px] font-bold text-purple-800 group-hover:text-purple-950">
+                      প্রকাশিত নোটিশ
+                    </span>
+                    <Bell className="w-4 h-4 text-purple-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl lg:text-3xl font-black text-purple-950">
+                    {notices.length}টি
+                  </div>
+                  <div className="text-[11px] text-purple-700 mt-1.5 font-medium">
+                    সক্রিয় নোটিশ বোর্ডে {notices.length}টি ও স্ক্রল {urgentNotices.length}টি
+                  </div>
+                  <div className="text-[10px] text-purple-600 mt-1">
+                    নোটিশ ব্যবস্থাপনা ও প্রিন্ট →
+                  </div>
+                </button>
+
+                {/* 5. Messages / Inquiries */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('messages')}
+                  className="bg-rose-50/90 border border-rose-200 rounded-2xl p-4 text-left hover:bg-rose-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[11px] font-bold text-rose-800 group-hover:text-rose-950">
+                      প্রাপ্ত বার্তা ও ইনকোয়ারি
+                    </span>
+                    <MessageSquare className="w-4 h-4 text-rose-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="flex items-baseline gap-2">
+                    <div className="text-2xl lg:text-3xl font-black text-rose-950">
+                      {messages.length}টি
+                    </div>
+                    {unreadMessagesCount > 0 && (
+                      <span className="text-[10px] text-rose-700 font-bold bg-rose-200/80 px-1.5 py-0.5 rounded animate-pulse">
+                        {unreadMessagesCount} অপঠিত
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-rose-700 mt-1.5 font-medium">
+                    {unreadMessagesCount > 0 ? `${unreadMessagesCount}টি নতুন অপঠিত বার্তা জমা আছে` : 'সকল বার্তা পর্যালোচনা সম্পন্ন'}
+                  </div>
+                  <div className="text-[10px] text-rose-600 mt-1">
+                    অভিভাবকদের মেসেজ পড়ুন →
+                  </div>
+                </button>
+
+                {/* 6. Alumni Students */}
                 <button
                   type="button"
                   onClick={() => setActiveTab('alumni')}
-                  className="bg-teal-50 border border-teal-200 rounded-xl p-3.5 text-left hover:bg-teal-100/70 transition-all cursor-pointer group"
+                  className="bg-teal-50/90 border border-teal-200 rounded-2xl p-4 text-left hover:bg-teal-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
                 >
                   <div className="flex justify-between items-center mb-1.5">
-                    <span className="text-[11px] font-bold text-teal-800 group-hover:text-teal-900">পুরাতন শিক্ষার্থী</span>
+                    <span className="text-[11px] font-bold text-teal-800 group-hover:text-teal-900">
+                      পুরাতন শিক্ষার্থী (Alumni)
+                    </span>
                     <GraduationCap className="w-4 h-4 text-teal-600 group-hover:scale-110 transition-transform" />
                   </div>
-                  <div className="text-2xl font-black text-teal-950">{alumniStudents?.length || 0} জন</div>
-                  <div className="text-[10px] text-teal-700 mt-1 flex items-center justify-between">
-                    <span>প্রাক্তন তালিকা</span>
-                    <span className="text-teal-800 font-bold group-hover:translate-x-0.5 transition-transform">→</span>
+                  <div className="text-2xl lg:text-3xl font-black text-teal-950">
+                    {alumniStudents?.length || 0} জন
+                  </div>
+                  <div className="text-[11px] text-teal-700 mt-1.5 font-medium">
+                    প্রাক্তন দাখিল ও শিক্ষার্থী রেজিস্ট্রি
+                  </div>
+                  <div className="text-[10px] text-teal-600 mt-1">
+                    প্রাক্তন শিক্ষার্থী তালিকা →
+                  </div>
+                </button>
+
+                {/* 7. Class Routines */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('routine')}
+                  className="bg-indigo-50/90 border border-indigo-200 rounded-2xl p-4 text-left hover:bg-indigo-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[11px] font-bold text-indigo-800 group-hover:text-indigo-950">
+                      ক্লাস রুটিন
+                    </span>
+                    <Calendar className="w-4 h-4 text-indigo-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl lg:text-3xl font-black text-indigo-950">
+                    {routines.length}টি
+                  </div>
+                  <div className="text-[11px] text-indigo-700 mt-1.5 font-medium">
+                    শ্রেণিভিত্তিক সাপ্তাহিক শিডিউল
+                  </div>
+                  <div className="text-[10px] text-indigo-600 mt-1">
+                    রুটিন সম্পাদনা ও ডাউনলোড →
+                  </div>
+                </button>
+
+                {/* 8. Results Records */}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('results')}
+                  className="bg-cyan-50/90 border border-cyan-200 rounded-2xl p-4 text-left hover:bg-cyan-100/70 transition-all cursor-pointer group shadow-sm hover:shadow"
+                >
+                  <div className="flex justify-between items-center mb-1.5">
+                    <span className="text-[11px] font-bold text-cyan-800 group-hover:text-cyan-950">
+                      ফলাফল ও মার্কস
+                    </span>
+                    <Award className="w-4 h-4 text-cyan-600 group-hover:scale-110 transition-transform" />
+                  </div>
+                  <div className="text-2xl lg:text-3xl font-black text-cyan-950">
+                    {results.length}টি
+                  </div>
+                  <div className="text-[11px] text-cyan-700 mt-1.5 font-medium">
+                    দাখিল ও অভ্যন্তরীণ পরীক্ষার ফলাফল
+                  </div>
+                  <div className="text-[10px] text-cyan-600 mt-1">
+                    ফলাফল প্রকাশ ও মার্কশিট →
                   </div>
                 </button>
               </div>
 
-              {/* Recent Applications Section */}
-              <div className="space-y-3 pt-4 border-t border-slate-200">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-bold text-slate-900 text-sm">সর্বশেষ ভর্তি আবেদনসমূহ</h3>
-                  <button
-                    onClick={() => setActiveTab('admissions')}
-                    className="text-xs font-bold text-emerald-700 hover:underline"
-                  >
-                    সকল আবেদন দেখুন →
-                  </button>
+              {/* Real Distribution & Analytics Section */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Real Class Distribution of Students */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-emerald-700" />
+                      <h3 className="font-bold text-slate-900 text-sm">শ্রেণিভিত্তিক নিবন্ধিত শিক্ষার্থী</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('students')}
+                      className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      সকল প্রোফাইল ({students.length}) →
+                    </button>
+                  </div>
+
+                  {classDistribution.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400 text-xs">
+                      বর্তমানে কোনো শিক্ষার্থী প্রোফাইল ডাটাবেজে নেই।
+                      <br />
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('students')}
+                        className="mt-2 text-emerald-700 font-bold hover:underline cursor-pointer"
+                      >
+                        + প্রথম শিক্ষার্থী যোগ করুন
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {classDistribution.slice(0, 5).map(([cls, count]) => {
+                        const pct = students.length > 0 ? Math.round((count / students.length) * 100) : 0;
+                        return (
+                          <div key={cls} className="space-y-1">
+                            <div className="flex justify-between text-xs font-semibold text-slate-700">
+                              <span>{cls}</span>
+                              <span className="font-mono text-emerald-800">{count} জন ({pct}%)</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                              <div
+                                className="bg-emerald-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${Math.max(pct, 8)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {classDistribution.length > 5 && (
+                        <p className="text-[11px] text-slate-500 text-right pt-1 font-medium">
+                          + আরও {classDistribution.length - 5}টি শ্রেণির শিক্ষার্থী রয়েছে
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
-                <div className="border border-slate-200 rounded-xl overflow-hidden">
-                  <table className="w-full text-xs text-left">
-                    <thead className="bg-slate-50 font-bold text-slate-700">
-                      <tr>
-                        <th className="p-3">ট্র্যাকিং আইডি</th>
-                        <th className="p-3">শিক্ষার্থীর নাম</th>
-                        <th className="p-3">আবেদনকৃত শ্রেণি</th>
-                        <th className="p-3">মোবাইল</th>
-                        <th className="p-3">তারিখ</th>
-                        <th className="p-3">অবস্থা</th>
-                        <th className="p-3 text-right">অ্যাকশন</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {applications.slice(0, 4).map((app) => (
-                        <tr key={app.id} className="hover:bg-slate-50">
-                          <td className="p-3 font-mono font-bold text-emerald-800">{app.id}</td>
-                          <td className="p-3 font-bold text-slate-900">{app.studentNameBn}</td>
-                          <td className="p-3 text-slate-700">{app.applyingClass}</td>
-                          <td className="p-3 font-mono text-slate-600">{app.fatherPhone}</td>
-                          <td className="p-3 text-slate-500">{app.appliedDate}</td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                                app.status === 'অনুমোদিত'
-                                  ? 'bg-emerald-100 text-emerald-800'
-                                  : app.status === 'বাতিল'
-                                  ? 'bg-rose-100 text-rose-800'
-                                  : 'bg-amber-100 text-amber-800'
-                              }`}
-                            >
-                              {app.status}
-                            </span>
-                          </td>
-                          <td className="p-3 text-right">
-                            <button
-                              onClick={() => {
-                                setSelectedApp(app);
-                                setActiveTab('admissions');
-                              }}
-                              className="text-emerald-700 font-bold hover:underline"
-                            >
-                              বিস্তারিত
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                {/* Admission Applications Status Breakdown */}
+                <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 sm:p-5">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="flex items-center gap-2">
+                      <GraduationCap className="w-4 h-4 text-amber-600" />
+                      <h3 className="font-bold text-slate-900 text-sm">ভর্তি আবেদনের বর্তমান অবস্থা</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('admissions')}
+                      className="text-xs font-bold text-amber-700 hover:underline cursor-pointer"
+                    >
+                      আবেদন পরিচালনা ({applications.length}) →
+                    </button>
+                  </div>
+
+                  {applications.length === 0 ? (
+                    <div className="text-center py-6 text-slate-400 text-xs">
+                      বর্তমানে কোনো ভর্তি আবেদন জমা নেই।
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Segmented Progress Bar */}
+                      <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden flex">
+                        <div
+                          className="bg-amber-500 h-3 transition-all duration-500"
+                          style={{ width: `${applications.length ? (pendingAppsCount / applications.length) * 100 : 0}%` }}
+                          title={`অপেক্ষমান: ${pendingAppsCount}`}
+                        ></div>
+                        <div
+                          className="bg-emerald-600 h-3 transition-all duration-500"
+                          style={{ width: `${applications.length ? (approvedAppsCount / applications.length) * 100 : 0}%` }}
+                          title={`অনুমোদিত: ${approvedAppsCount}`}
+                        ></div>
+                        <div
+                          className="bg-rose-500 h-3 transition-all duration-500"
+                          style={{ width: `${applications.length ? (rejectedAppsCount / applications.length) * 100 : 0}%` }}
+                          title={`বাতিল: ${rejectedAppsCount}`}
+                        ></div>
+                      </div>
+
+                      {/* Pill Stats */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="bg-amber-100/70 border border-amber-200 rounded-xl p-2.5">
+                          <div className="text-lg font-black text-amber-900">{pendingAppsCount}</div>
+                          <div className="text-[11px] font-bold text-amber-800">অপেক্ষমান</div>
+                        </div>
+                        <div className="bg-emerald-100/70 border border-emerald-200 rounded-xl p-2.5">
+                          <div className="text-lg font-black text-emerald-900">{approvedAppsCount}</div>
+                          <div className="text-[11px] font-bold text-emerald-800">অনুমোদিত</div>
+                        </div>
+                        <div className="bg-rose-100/70 border border-rose-200 rounded-xl p-2.5">
+                          <div className="text-lg font-black text-rose-900">{rejectedAppsCount}</div>
+                          <div className="text-[11px] font-bold text-rose-800">বাতিল</div>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-500 bg-white p-2.5 rounded-xl border border-slate-200 flex items-center justify-between">
+                        <span>মোট অনলাইন আবেদন: <strong className="text-slate-800">{applications.length}টি</strong></span>
+                        <span className="text-emerald-700 font-bold">অনুমোদনের হার: {applications.length ? Math.round((approvedAppsCount / applications.length) * 100) : 0}%</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              {/* Recent Applications Section */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200 pb-3">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-slate-900 text-sm">সর্বশেষ ভর্তি আবেদনসমূহ (অনলাইন পোর্টাল)</h3>
+                    <span className="text-xs bg-slate-100 text-slate-700 font-bold px-2 py-0.5 rounded-full">
+                      {applications.length}টি মোট
+                    </span>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Clear demo apps button if any exist */}
+                    {applications.some(a => a.id.startsWith('PADM-2026-100')) && (
+                      <button
+                        type="button"
+                        onClick={handleClearDemoApplications}
+                        className="text-xs font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 rounded-lg transition-colors cursor-pointer"
+                        title="ডেমো ৩টি আবেদন মুছে সম্পূর্ণ ফ্রেশ রিয়েল ডেটা শুরু করুন"
+                      >
+                        🧹 ডেমো আবেদন মুছুন
+                      </button>
+                    )}
+
+                    <div className="flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
+                      {(['সকল', 'অপেক্ষমান', 'অনুমোদিত'] as const).map(tab => (
+                        <button
+                          key={tab}
+                          type="button"
+                          onClick={() => setOverviewAppFilter(tab)}
+                          className={`px-2 py-0.5 rounded-md font-bold transition-all cursor-pointer ${
+                            overviewAppFilter === tab
+                              ? 'bg-white text-emerald-800 shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900'
+                          }`}
+                        >
+                          {tab}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('admissions')}
+                      className="text-xs font-bold text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      সকল আবেদন দেখুন →
+                    </button>
+                  </div>
+                </div>
+
+                <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-xs">
+                  {applications.length === 0 ? (
+                    <div className="text-center py-10 bg-slate-50/50">
+                      <GraduationCap className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-slate-700">বর্তমানে কোনো ভর্তি আবেদন জমা নেই</p>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        ওয়েবসাইটে নতুন শিক্ষার্থীরা অনলাইনে আবেদন করলে তা স্বয়ংক্রিয়ভাবে এখানে তালিকাভুক্ত হবে।
+                      </p>
+                    </div>
+                  ) : (
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-slate-50 font-bold text-slate-700">
+                        <tr>
+                          <th className="p-3">ট্র্যাকিং আইডি</th>
+                          <th className="p-3">শিক্ষার্থীর নাম</th>
+                          <th className="p-3">আবেদনকৃত শ্রেণি</th>
+                          <th className="p-3">মোবাইল</th>
+                          <th className="p-3">তারিখ</th>
+                          <th className="p-3">অবস্থা</th>
+                          <th className="p-3 text-right">অ্যাকশন</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 bg-white">
+                        {applications
+                          .filter(app => overviewAppFilter === 'সকল' || app.status === overviewAppFilter)
+                          .slice(0, 5)
+                          .map((app) => (
+                            <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="p-3 font-mono font-bold text-emerald-800">{app.id}</td>
+                              <td className="p-3 font-bold text-slate-900">{app.studentNameBn}</td>
+                              <td className="p-3 text-slate-700">{app.applyingClass}</td>
+                              <td className="p-3 font-mono text-slate-600">{app.fatherPhone}</td>
+                              <td className="p-3 text-slate-500">{app.appliedDate}</td>
+                              <td className="p-3">
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold inline-flex items-center gap-1 ${
+                                    app.status === 'অনুমোদিত'
+                                      ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                                      : app.status === 'বাতিল'
+                                      ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                                      : 'bg-amber-100 text-amber-800 border border-amber-200'
+                                  }`}
+                                >
+                                  {app.status === 'অনুমোদিত' && <CheckCircle className="w-3 h-3" />}
+                                  {app.status === 'অপেক্ষমান' && <Clock className="w-3 h-3" />}
+                                  {app.status === 'বাতিল' && <XCircle className="w-3 h-3" />}
+                                  <span>{app.status}</span>
+                                </span>
+                              </td>
+                              <td className="p-3 text-right space-x-1.5 whitespace-nowrap">
+                                {app.status === 'অপেক্ষমান' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => updateApplicationStatus(app.id, 'অনুমোদিত')}
+                                    className="px-2 py-1 rounded bg-emerald-100 hover:bg-emerald-200 text-emerald-800 text-[11px] font-bold cursor-pointer transition-colors"
+                                    title="অনুমোদন করুন"
+                                  >
+                                    অনুমোদন
+                                  </button>
+                                )}
+                                {app.status === 'অনুমোদিত' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCreateStudentFromApplication(app)}
+                                    className="px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 text-blue-800 text-[11px] font-bold cursor-pointer transition-colors"
+                                    title="শিক্ষার্থী প্রোফাইল তৈরি করুন"
+                                  >
+                                    প্রোফাইল তৈরি
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedApp(app);
+                                    setActiveTab('admissions');
+                                  }}
+                                  className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[11px] font-bold cursor-pointer transition-colors"
+                                  title="বিস্তারিত স্লিপ দেখুন"
+                                >
+                                  বিস্তারিত
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    openConfirmModal({
+                                      title: 'আবেদন মুছে ফেলার নিশ্চিতকরণ',
+                                      message: `আপনি কি "${app.studentNameBn}"-এর ভর্তি আবেদনটি মুছে ফেলতে চান?`,
+                                      confirmLabel: 'হ্যাঁ, মুছে ফেলুন',
+                                      cancelLabel: 'বাতিল',
+                                      type: 'danger',
+                                      onConfirm: () => {
+                                        deleteApplication(app.id);
+                                        closeConfirmModal();
+                                      }
+                                    });
+                                  }}
+                                  className="p-1 rounded text-rose-600 hover:bg-rose-50 cursor-pointer transition-colors inline-block align-middle"
+                                  title="মুছে ফেলুন"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </div>
+
+              {/* Two Column Feeds: Recent Messages & Recent Notices */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-2">
+                {/* Recent Messages Feed */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+                  <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-rose-600" />
+                      <h3 className="font-bold text-slate-900 text-sm">সর্বশেষ প্রাপ্ত বার্তা (ওয়েবসাইট অনুসন্ধান)</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('messages')}
+                      className="text-xs font-bold text-rose-700 hover:underline cursor-pointer"
+                    >
+                      সকল বার্তা ({messages.length}) →
+                    </button>
+                  </div>
+
+                  {messages.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 text-xs">
+                      বর্তমানে কোনো যোগাযোগ বার্তা জমা নেই।
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {messages.slice(0, 4).map((msg) => (
+                        <div
+                          key={msg.id}
+                          onClick={() => setActiveTab('messages')}
+                          className="p-2.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-all cursor-pointer flex justify-between items-start gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-xs truncate">{msg.name}</span>
+                              {!msg.isRead && (
+                                <span className="bg-rose-100 text-rose-800 text-[9px] font-black px-1.5 py-0.5 rounded-full">
+                                  নতুন
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-500 font-mono mt-0.5">{msg.phone}</p>
+                            <p className="text-xs text-slate-700 truncate mt-1">{msg.subject || msg.message}</p>
+                          </div>
+                          <span className="text-[10px] text-slate-400 font-mono shrink-0">{msg.date}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Recent Notices Feed */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs">
+                  <div className="flex justify-between items-center mb-3 border-b border-slate-100 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <Bell className="w-4 h-4 text-purple-600" />
+                      <h3 className="font-bold text-slate-900 text-sm">সর্বশেষ প্রকাশিত নোটিশ</h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab('notices')}
+                      className="text-xs font-bold text-purple-700 hover:underline cursor-pointer"
+                    >
+                      সকল নোটিশ ({notices.length}) →
+                    </button>
+                  </div>
+
+                  {notices.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400 text-xs">
+                      বর্তমানে কোনো নোটিশ প্রকাশিত নেই।
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {notices.slice(0, 4).map((notice) => (
+                        <div
+                          key={notice.id}
+                          onClick={() => setActiveTab('notices')}
+                          className="p-2.5 rounded-xl border border-slate-100 hover:border-slate-300 hover:bg-slate-50 transition-all cursor-pointer flex justify-between items-center gap-2"
+                        >
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="bg-purple-100 text-purple-800 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                                {notice.category || 'সাধারণ'}
+                              </span>
+                              <span className="font-bold text-slate-900 text-xs truncate">{notice.title}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-400 font-mono mt-0.5">{notice.date}</p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Institutional Settings & Marketing Note */}
+              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/80 rounded-2xl p-4 text-xs text-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div className="space-y-1">
+                  <div className="font-bold text-slate-900 flex items-center gap-2">
+                    <School className="w-4 h-4 text-emerald-700" />
+                    <span>{info.nameBn}</span>
+                    <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-mono">
+                      EIIN: {info.eiin} • কোড: {info.code}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-600">
+                    💡 <strong>ডাটা ব্যাখ্যা:</strong> এই ড্যাশবোর্ড ওভারভিউতে প্রদর্শিত সকল পরিসংখ্যান আপনার ডাটাবেজের বাস্তব সংরক্ষিত ডাটা। তবে সাধারণ দর্শনার্থীদের জন্য ওয়েবসাইটের মূল হোমপেজে একটি প্রচারণামূলক লক্ষ্যমাত্রা পরিসংখ্যান ({info.stats.students} শিক্ষার্থী, {info.stats.teachers} শিক্ষক) প্রদর্শিত হয়, যা আপনি সেটিংস থেকে পরিবর্তন করতে পারবেন।
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('settings')}
+                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 font-bold text-xs shrink-0 transition-colors shadow-2xs cursor-pointer"
+                >
+                  মাদ্রাসা সেটিংস →
+                </button>
               </div>
             </div>
           )}
