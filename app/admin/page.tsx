@@ -4762,6 +4762,243 @@ export default function AdminDashboardPage() {
             </div>
           )}
 
+          {/* TAB: VIDEO GALLERY */}
+          {activeTab === 'videos' && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-200 pb-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl font-bold text-slate-900">ভিডিও গ্যালারি ব্যবস্থাপনা</h2>
+                    <span className="bg-red-100 text-red-800 text-xs font-black px-2.5 py-0.5 rounded-full border border-red-300">
+                      ভিডিও কর্নার
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    মাদ্রাসার ওয়াজ মাহফিল, কুরআন তিলাওয়াত, বার্ষিক অনুষ্ঠান ও ক্যাম্পাসের ভিডিও যুক্ত ও নিয়ন্ত্রণ করুন।
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <a
+                    href="/gallery?tab=videos"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl border border-slate-300 transition-colors"
+                  >
+                    <span>লাইভ ভিডিও পেজ</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingVideoItem(null);
+                      setVideoForm({
+                        title: '',
+                        category: 'ওয়াজ মাহফিল',
+                        videoType: 'youtube',
+                        videoUrl: '',
+                        thumbnailUrl: '',
+                        description: '',
+                        duration: '',
+                        date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })
+                      });
+                      setShowVideoModal(true);
+                    }}
+                    className="inline-flex items-center gap-1.5 bg-red-700 hover:bg-red-800 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition-all hover:scale-105 cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4 text-white" />
+                    <span>নতুন ভিডিও যোগ করুন</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Filter Pills & Counter & Search */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-xs font-bold text-slate-500 mr-1">ফিল্টার:</span>
+                  {['সকল', 'ওয়াজ মাহফিল', 'কুরআন তিলাওয়াত', 'বার্ষিক অনুষ্ঠান', 'বিজ্ঞান মেলা', 'ক্যাম্পাস', 'সাধারণ'].map((cat) => (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => setVideoCategoryFilter(cat)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        videoCategoryFilter === cat
+                          ? 'bg-red-700 text-white shadow-sm'
+                          : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative w-full md:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    placeholder="ভিডিও খুঁজুন..."
+                    value={videoSearchQuery}
+                    onChange={(e) => setVideoSearchQuery(e.target.value)}
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
+                  />
+                </div>
+              </div>
+
+              {/* Video Cards Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {(videos || [])
+                  .filter(v => videoCategoryFilter === 'সকল' || v.category === videoCategoryFilter)
+                  .filter(v => !videoSearchQuery.trim() || v.title.toLowerCase().includes(videoSearchQuery.toLowerCase()))
+                  .length === 0 ? (
+                  <div className="col-span-full py-16 text-center bg-white rounded-2xl border border-slate-200">
+                    <div className="w-14 h-14 mx-auto mb-3 rounded-full bg-red-50 text-red-600 flex items-center justify-center">
+                      <Film className="w-7 h-7" />
+                    </div>
+                    <p className="text-sm font-bold text-slate-700">কোনো ভিডিও পাওয়া যায়নি</p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      উপরে &quot;নতুন ভিডিও যোগ করুন&quot; বাটনে ক্লিক করে প্রথম ভিডিওটি আপলোড বা লিংক যুক্ত করুন
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVideoItem(null);
+                        setVideoForm({
+                          title: '',
+                          category: 'ওয়াজ মাহফিল',
+                          videoType: 'youtube',
+                          videoUrl: '',
+                          thumbnailUrl: '',
+                          description: '',
+                          duration: '',
+                          date: new Date().toLocaleDateString('bn-BD', { year: 'numeric', month: 'long', day: 'numeric' })
+                        });
+                        setShowVideoModal(true);
+                      }}
+                      className="mt-4 inline-flex items-center gap-1.5 bg-red-700 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-red-800 transition-colors"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> নতুন ভিডিও যোগ করুন
+                    </button>
+                  </div>
+                ) : (
+                  (videos || [])
+                    .filter(v => videoCategoryFilter === 'সকল' || v.category === videoCategoryFilter)
+                    .filter(v => !videoSearchQuery.trim() || v.title.toLowerCase().includes(videoSearchQuery.toLowerCase()))
+                    .map((video) => {
+                      const thumb = video.thumbnailUrl || getYouTubeThumbnail(video.videoUrl) || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+                      return (
+                        <div
+                          key={video.id}
+                          className="group bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-xs hover:shadow-lg transition-all flex flex-col justify-between"
+                        >
+                          <div>
+                            {/* Video Thumbnail with Play Button */}
+                            <div
+                              onClick={() => setPreviewVideo(video)}
+                              className="relative aspect-video w-full bg-slate-900 cursor-pointer overflow-hidden"
+                            >
+                              <img
+                                src={thumb}
+                                alt={video.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                              <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <div className="w-12 h-12 rounded-full bg-red-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+                                  <Play className="w-5 h-5 fill-white ml-0.5" />
+                                </div>
+                              </div>
+                              <div className="absolute top-2.5 left-2.5">
+                                <span className="bg-red-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow">
+                                  {video.category}
+                                </span>
+                              </div>
+                              {video.duration && (
+                                <div className="absolute bottom-2.5 right-2.5 bg-black/80 text-white text-[10px] font-mono px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-amber-400" />
+                                  <span>{video.duration}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="p-4">
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mb-1.5">
+                                <Calendar className="w-3 h-3 text-emerald-600" />
+                                <span>{video.date}</span>
+                              </div>
+                              <h3
+                                onClick={() => setPreviewVideo(video)}
+                                className="font-bold text-slate-900 text-sm hover:text-red-700 transition-colors cursor-pointer line-clamp-2 leading-snug"
+                              >
+                                {video.title}
+                              </h3>
+                              {video.description && (
+                                <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
+                                  {video.description}
+                                </p>
+                              )}
+                              <div className="mt-2 text-[10px] font-mono text-slate-400 truncate">
+                                🔗 {video.videoUrl}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons */}
+                          <div className="p-3 bg-slate-50 border-t border-slate-100 flex items-center justify-between">
+                            <button
+                              type="button"
+                              onClick={() => setPreviewVideo(video)}
+                              className="inline-flex items-center gap-1 text-xs font-bold text-emerald-800 hover:text-emerald-950 cursor-pointer"
+                            >
+                              <Play className="w-3.5 h-3.5 fill-emerald-800" />
+                              <span>চালিয়ে দেখুন</span>
+                            </button>
+
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingVideoItem(video);
+                                  setVideoForm({
+                                    title: video.title,
+                                    category: video.category,
+                                    videoType: video.videoType || 'youtube',
+                                    videoUrl: video.videoUrl,
+                                    thumbnailUrl: video.thumbnailUrl || '',
+                                    description: video.description || '',
+                                    duration: video.duration || '',
+                                    date: video.date
+                                  });
+                                  setShowVideoModal(true);
+                                }}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors cursor-pointer"
+                                title="সম্পাদনা করুন"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (confirm(`"${video.title}" ভিডিওটি গ্যালারি থেকে মুছে ফেলতে চান?`)) {
+                                    deleteVideoItem(video.id);
+                                  }
+                                }}
+                                className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                title="মুছে ফেলুন"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                )}
+              </div>
+            </div>
+          )}
+
           {/* TAB 4: TEACHERS MANAGEMENT */}
           {activeTab === 'teachers' && (
             <div className="space-y-6">
