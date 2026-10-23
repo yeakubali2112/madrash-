@@ -61,6 +61,10 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          "'Sutonny'",
+          "'SutonnyOMJ'",
+          "'SutonnyMJ'",
+          "'SutonnyBanglaOMJ'",
           "'Kalpurush'",
           "'Google Sans'",
           "'Product Sans'",

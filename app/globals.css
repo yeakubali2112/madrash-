@@ -6,6 +6,72 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Sutonny Font-Face definitions (SutonnyOMJ Unicode / SutonnyMJ / Sutonny) */
+@font-face {
+  font-family: 'Sutonny';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('SutonnyOMJ'),
+       local('Sutonny'),
+       local('SutonnyMJ'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype'),
+       url('/fonts/Sutonny-Regular.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'Sutonny';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('SutonnyOMJ Bold'),
+       local('Sutonny Bold'),
+       url('/fonts/Sutonny-Bold.ttf') format('truetype'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'SutonnyOMJ';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('SutonnyOMJ'),
+       local('Sutonny'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'SutonnyOMJ';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('SutonnyOMJ Bold'),
+       local('Sutonny Bold'),
+       url('/fonts/Sutonny-Bold.ttf') format('truetype'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'SutonnyMJ';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: local('SutonnyOMJ'),
+       local('Sutonny'),
+       local('SutonnyMJ'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype');
+}
+
+@font-face {
+  font-family: 'SutonnyMJ';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: local('Sutonny-Bold'),
+       url('/fonts/Sutonny-Bold.ttf') format('truetype'),
+       url('/fonts/SutonnyOMJ.ttf') format('truetype');
+}
+
 /* Kalpurush Font-Face definitions (Local /fonts/kalpurush.woff2 and .ttf) */
 @font-face {
   font-family: 'Kalpurush';
@@ -85,7 +151,7 @@
   --brand-green: #006837;
   --brand-gold: #DDAA00;
   --brand-blue: #003580;
-  --font-family-base: 'Kalpurush', 'Google Sans', 'Product Sans', 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-family-base: 'Sutonny', 'SutonnyOMJ', 'SutonnyMJ', 'SutonnyBanglaOMJ', 'Kalpurush', 'Google Sans', 'Product Sans', 'Plus Jakarta Sans', 'Noto Sans Bengali', 'Hind Siliguri', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 html, body, button, input, select, textarea, div, p, span, h1, h2, h3, h4, h5, h6, a, table, th, td {
@@ -138,7 +204,7 @@ body {
   body {
     background: white !important;
     color: black !important;
-    font-family: 'Kalpurush', sans-serif !important;
+    font-family: 'Sutonny', 'SutonnyOMJ', 'SutonnyMJ', sans-serif !important;
   }
   
   .no-print, header, footer, nav, .print-hide {

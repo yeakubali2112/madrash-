@@ -33,6 +33,7 @@ export default function RootLayout({
     <html lang="bn">
       <head>
         <link rel="icon" href="/logo.png" type="image/png" />
+        <link rel="preload" href="/fonts/SutonnyOMJ.ttf" as="font" type="font/ttf" crossOrigin="anonymous" />
         <link rel="preload" href="/fonts/kalpurush.woff2" as="font" type="font/woff2" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
