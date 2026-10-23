@@ -3215,30 +3215,7 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
-              {/* Institutional Settings & Marketing Note */}
-              <div className="bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 border border-emerald-200/80 rounded-2xl p-4 text-xs text-slate-700 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                <div className="space-y-1">
-                  <div className="font-bold text-slate-900 flex items-center gap-2">
-                    <School className="w-4 h-4 text-emerald-700" />
-                    <span>{info.nameBn}</span>
-                    <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded font-mono">
-                      EIIN: {info.eiin} • কোড: {info.code}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-600">
-                    💡 <strong>ডাটা ব্যাখ্যা:</strong> এই ড্যাশবোর্ড ওভারভিউতে প্রদর্শিত সকল পরিসংখ্যান আপনার ডাটাবেজের বাস্তব সংরক্ষিত ডাটা। তবে সাধারণ দর্শনার্থীদের জন্য ওয়েবসাইটের মূল হোমপেজে একটি প্রচারণামূলক লক্ষ্যমাত্রা পরিসংখ্যান ({info.stats.students} শিক্ষার্থী, {info.stats.teachers} শিক্ষক) প্রদর্শিত হয়, যা আপনি সেটিংস থেকে পরিবর্তন করতে পারবেন।
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setActiveTab('settings')}
-                  className="px-3 py-1.5 rounded-xl bg-white border border-slate-300 hover:border-emerald-600 text-slate-800 font-bold text-xs shrink-0 transition-colors shadow-2xs cursor-pointer"
-                >
-                  মাদ্রাসা সেটিংস →
-                </button>
               </div>
-            </div>
           )}
 
           {/* TAB: HERO SECTION MANAGEMENT */}
