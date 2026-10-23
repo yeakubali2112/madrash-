@@ -125,7 +125,9 @@ export interface PrayerTimeConfig {
 }
 
 export interface StudentProfile {
+  id?: string;
   name: string;
+  nameEn?: string;
   phone: string;
   photo?: string;
   address?: string;
@@ -136,8 +138,13 @@ export interface StudentProfile {
   regNo: string;
   session: string;
   bloodGroup: string;
+  gender?: string;
+  birthDate?: string;
+  guardianPhone?: string;
   attendanceRate: string;
   feeStatus: string;
+  status?: string;
+  createdAt?: string;
   result?: ResultRecord;
   application?: AdmissionApplication;
 }
@@ -1286,6 +1293,85 @@ export const defaultAlumniStudents: AlumniStudent[] = [
   }
 ];
 
+export const defaultStudents: StudentProfile[] = [
+  {
+    id: 'std-2026-01',
+    name: 'মোঃ ওমর ফারুক',
+    nameEn: 'Md. Omar Faruk',
+    phone: '01711000101',
+    classYear: '১০ম শ্রেণি (দাখিল)',
+    rollNo: '১০১',
+    regNo: '২০২৬১০১০১',
+    session: '২০২৫-২০২৬',
+    bloodGroup: 'A+',
+    gender: 'ছাত্র',
+    fatherName: 'মোঃ আব্দুর রহমান',
+    motherName: 'মোছাঃ ফাতেমা বেগম',
+    address: 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+    attendanceRate: '৯৮%',
+    feeStatus: 'পরিশোধিত',
+    status: 'নিয়মিত',
+    createdAt: '২০২৬-০১-১০'
+  },
+  {
+    id: 'std-2026-02',
+    name: 'আয়েশা সিদ্দিকা',
+    nameEn: 'Ayesha Siddika',
+    phone: '01711000102',
+    classYear: '১০ম শ্রেণি (দাখিল)',
+    rollNo: '১০২',
+    regNo: '২০২৬১০১০২',
+    session: '২০২৫-২০২৬',
+    bloodGroup: 'B+',
+    gender: 'ছাত্রী',
+    fatherName: 'মোঃ আব্দুল জলিল',
+    motherName: 'মোছাঃ রাবেয়া খাতুন',
+    address: 'পূর্ব আলোহালী, দুপচাঁচিয়া, বগুড়া',
+    attendanceRate: '৯৬%',
+    feeStatus: 'পরিশোধিত',
+    status: 'নিয়মিত',
+    createdAt: '২০২৬-০১-১০'
+  },
+  {
+    id: 'std-2026-03',
+    name: 'মোঃ হাসান মাহমুদ',
+    nameEn: 'Md. Hasan Mahmud',
+    phone: '01711000103',
+    classYear: '১০ম শ্রেণি (দাখিল)',
+    rollNo: '১০৩',
+    regNo: '২০২৬১০১০৩',
+    session: '২০২৫-২০২৬',
+    bloodGroup: 'O+',
+    gender: 'ছাত্র',
+    fatherName: 'মোঃ আব্দুল করিম',
+    motherName: 'মোছাঃ শাহিদা পারভীন',
+    address: 'দুপচাঁচিয়া সদর, বগুড়া',
+    attendanceRate: '৯৪%',
+    feeStatus: 'পরিশোধিত',
+    status: 'নিয়মিত',
+    createdAt: '২০২৬-০১-১১'
+  },
+  {
+    id: 'std-2026-04',
+    name: 'সুমাইয়া আক্তার',
+    nameEn: 'Sumaiya Akhter',
+    phone: '01711000104',
+    classYear: '৯ম শ্রেণি (দাখিল)',
+    rollNo: '১০১',
+    regNo: '২০২৬০৯১০১',
+    session: '২০২৫-২০২৬',
+    bloodGroup: 'AB+',
+    gender: 'ছাত্রী',
+    fatherName: 'মোঃ হাবিবুর রহমান',
+    motherName: 'মোছাঃ শিরিন আক্তার',
+    address: 'গোবিন্দপুর, দুপচাঁচিয়া, বগুড়া',
+    attendanceRate: '৯৭%',
+    feeStatus: 'পরিশোধিত',
+    status: 'নিয়মিত',
+    createdAt: '২০২৬-০১-১২'
+  }
+];
+
 export interface AdminPermission {
   id: string;
   name: string;
@@ -1312,6 +1398,7 @@ export interface AdminUser {
 export const availablePermissions: AdminPermission[] = [
   { id: 'overview', name: 'ড্যাশবোর্ড ওভারভিউ', title: 'ড্যাশবোর্ড ওভারভিউ', description: 'মাদ্রাসার সার্বিক পরিসংখ্যান ও সারসংক্ষেপ দেখা', category: 'core' },
   { id: 'attendance', name: 'দৈনিক হাজিরা ও উপস্থিতি', title: 'দৈনিক হাজিরা ও উপস্থিতি', description: 'শিক্ষক ও শিক্ষার্থীদের ডিজিটাল হাজিরা গ্রহণ ও রিপোর্ট', category: 'academic' },
+  { id: 'students', name: 'শিক্ষার্থী প্রোফাইল', title: 'শিক্ষার্থী প্রোফাইল ও ডাটাবেজ', description: 'মাদ্রাসার নিয়মিত শিক্ষার্থীদের পূর্ণাঙ্গ ডাটাবেজ, প্রোফাইল তৈরি ও আইডি কার্ড জেনারেশন', category: 'academic' },
   { id: 'routine', name: 'ক্লাস রুটিন ব্যবস্থাপনা', title: 'ক্লাস রুটিন ব্যবস্থাপনা', description: 'সকল শ্রেণির নিয়মিত ক্লাস রুটিন, পিরিয়ড ও শিক্ষক নির্ধারণ', category: 'academic' },
   { id: 'alumni', name: 'পুরাতন শিক্ষার্থী তালিকা', title: 'পুরাতন শিক্ষার্থী তালিকা', description: 'মাদ্রাসার প্রাক্তন ও উত্তীর্ণ শিক্ষার্থীদের তথ্য, ব্যাচ ও ডাটাবেজ ব্যবস্থাপনা', category: 'academic' },
   { id: 'results', name: 'ফলাফল ও মার্কস', title: 'ফলাফল ও মার্কস', description: 'পরীক্ষার ফলাফল প্রকাশ, এডিট ও নম্বরপত্র তৈরি', category: 'academic' },

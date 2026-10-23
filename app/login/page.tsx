@@ -29,7 +29,7 @@ import {
 } from 'lucide-react';
 
 export default function LoginPage() {
-  const { info, results, applications, loggedStudent, updateLoggedStudent } = useMadrasah();
+  const { info, results, applications, students, loggedStudent, updateLoggedStudent } = useMadrasah();
 
   // Student Login Form State
   const [studentName, setStudentName] = useState('');
@@ -192,6 +192,27 @@ export default function LoginPage() {
 
     const normPhone = normalizeDigits(phoneTrim);
     const normName = nameTrim.toLowerCase();
+
+    // 0. Search in admin registered students database
+    const foundDirectStudent = students?.find(s => {
+      const sName = (s.name || '').toLowerCase();
+      const sPhone = normalizeDigits(s.phone || '');
+      const matchName = sName.includes(normName) || normName.includes(sName);
+      const matchPhone = !normPhone || sPhone.includes(normPhone) || normPhone.includes(sPhone);
+      return matchName && matchPhone;
+    });
+
+    if (foundDirectStudent) {
+      const matchingRes = results.find(r => r.rollNo === foundDirectStudent.rollNo || r.studentName.toLowerCase() === foundDirectStudent.name.toLowerCase());
+      const fullProfile: StudentProfile = {
+        ...foundDirectStudent,
+        result: matchingRes || foundDirectStudent.result
+      };
+      updateLoggedStudent(fullProfile);
+      setStudentName('');
+      setStudentPhone('');
+      return;
+    }
 
     // 1. Search in results database
     const foundResult = results.find(r => {

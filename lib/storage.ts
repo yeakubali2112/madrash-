@@ -30,7 +30,9 @@ import {
   RoutinePeriod,
   defaultClassRoutines,
   AlumniStudent,
-  defaultAlumniStudents
+  defaultAlumniStudents,
+  StudentProfile,
+  defaultStudents
 } from './data';
 
 const STORAGE_KEYS = {
@@ -50,7 +52,8 @@ const STORAGE_KEYS = {
   ADMIN_USERS: 'padm_admin_users',
   CURRENT_ADMIN_USER: 'padm_current_admin_user',
   ROUTINES: 'padm_routines',
-  ALUMNI: 'padm_alumni_students'
+  ALUMNI: 'padm_alumni_students',
+  STUDENTS: 'padm_students'
 };
 
 export const getStoredInfo = (): MadrasahInfo => {
@@ -309,6 +312,7 @@ export const resetAllData = () => {
   localStorage.setItem(STORAGE_KEYS.ADMIN_USERS, JSON.stringify(defaultAdminUsers));
   localStorage.setItem(STORAGE_KEYS.ROUTINES, JSON.stringify(defaultClassRoutines));
   localStorage.setItem(STORAGE_KEYS.ALUMNI, JSON.stringify(defaultAlumniStudents));
+  localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(defaultStudents));
   localStorage.removeItem(STORAGE_KEYS.CURRENT_ADMIN_USER);
 };
 
@@ -337,6 +341,34 @@ export const saveStoredAlumni = (alumni: AlumniStudent[]) => {
     localStorage.setItem(STORAGE_KEYS.ALUMNI, JSON.stringify(alumni));
   } catch (err) {
     console.error('Error saving alumni to storage:', err);
+  }
+};
+
+export const getStoredStudents = (): StudentProfile[] => {
+  if (typeof window === 'undefined') return defaultStudents;
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.STUDENTS);
+    if (!data) {
+      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(defaultStudents));
+      return defaultStudents;
+    }
+    const parsed = JSON.parse(data);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(defaultStudents));
+      return defaultStudents;
+    }
+    return parsed;
+  } catch {
+    return defaultStudents;
+  }
+};
+
+export const saveStoredStudents = (students: StudentProfile[]) => {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEYS.STUDENTS, JSON.stringify(students));
+  } catch (err) {
+    console.error('Error saving students to storage:', err);
   }
 };
 

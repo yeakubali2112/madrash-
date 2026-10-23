@@ -28,7 +28,9 @@ import {
   defaultClassRoutines,
   AlumniStudent,
   defaultAlumniStudents,
-  SubjectResult
+  SubjectResult,
+  StudentProfile,
+  defaultStudents
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -178,12 +180,17 @@ export default function AdminDashboardPage() {
     updateAlumniStudent,
     deleteAlumniStudent,
     resetAlumniToDefault,
+    students,
+    addStudent,
+    updateStudent,
+    deleteStudent,
+    resetStudentsToDefault,
     isCloudConnected,
     uploadAllDataToCloud,
     refreshFromCloud
   } = useMadrasah();
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'students' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users'>('overview');
   const [mounted, setMounted] = useState(false);
 
   // User Permission verification
@@ -1057,6 +1064,228 @@ export default function AdminDashboardPage() {
     setExpandedResultIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
     );
+  };
+
+  // Student Profile Management State
+  const [studentSearchQuery, setStudentSearchQuery] = useState('');
+  const [studentClassFilter, setStudentClassFilter] = useState('all');
+  const [studentBloodFilter, setStudentBloodFilter] = useState('all');
+  const [showStudentModal, setShowStudentModal] = useState(false);
+  const [editingStudentId, setEditingStudentId] = useState<string | null>(null);
+  const [viewingStudentProfile, setViewingStudentProfile] = useState<StudentProfile | null>(null);
+  const [studentToast, setStudentToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+  const [isCompressingStudentPhoto, setIsCompressingStudentPhoto] = useState(false);
+
+  const initialStudentForm: {
+    name: string;
+    nameEn: string;
+    phone: string;
+    photo: string;
+    address: string;
+    fatherName: string;
+    motherName: string;
+    classYear: string;
+    rollNo: string;
+    regNo: string;
+    session: string;
+    bloodGroup: string;
+    gender: string;
+    birthDate: string;
+    guardianPhone: string;
+    attendanceRate: string;
+    feeStatus: string;
+    status: string;
+  } = {
+    name: '',
+    nameEn: '',
+    phone: '',
+    photo: '',
+    address: 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+    fatherName: '',
+    motherName: '',
+    classYear: '১০ম শ্রেণি (দাখিল)',
+    rollNo: '',
+    regNo: '',
+    session: '২০২৫-২০২৬',
+    bloodGroup: 'B+',
+    gender: 'ছাত্র',
+    birthDate: '',
+    guardianPhone: '',
+    attendanceRate: '৯৫%',
+    feeStatus: 'পরিশোধিত',
+    status: 'নিয়মিত'
+  };
+
+  const [studentForm, setStudentForm] = useState(initialStudentForm);
+
+  const showStudentNotification = (msg: string) => {
+    setStudentToast({ show: true, message: msg });
+    setTimeout(() => {
+      setStudentToast({ show: false, message: '' });
+    }, 3500);
+  };
+
+  const handleOpenAddStudent = () => {
+    setEditingStudentId(null);
+    setStudentForm({ ...initialStudentForm });
+    setShowStudentModal(true);
+  };
+
+  const handleOpenEditStudent = (std: StudentProfile) => {
+    setEditingStudentId(std.id || null);
+    setStudentForm({
+      name: std.name || '',
+      nameEn: std.nameEn || '',
+      phone: std.phone || '',
+      photo: std.photo || '',
+      address: std.address || 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া',
+      fatherName: std.fatherName || '',
+      motherName: std.motherName || '',
+      classYear: std.classYear || '১০ম শ্রেণি (দাখিল)',
+      rollNo: std.rollNo || '',
+      regNo: std.regNo || '',
+      session: std.session || '২০২৫-২০২৬',
+      bloodGroup: std.bloodGroup || 'B+',
+      gender: std.gender || 'ছাত্র',
+      birthDate: std.birthDate || '',
+      guardianPhone: std.guardianPhone || '',
+      attendanceRate: std.attendanceRate || '৯৫%',
+      feeStatus: std.feeStatus || 'পরিশোধিত',
+      status: std.status || 'নিয়মিত'
+    });
+    setShowStudentModal(true);
+  };
+
+  const handleCreateStudentFromApplication = (app: AdmissionApplication) => {
+    const addr = app.presentVillage
+      ? `${app.presentVillage}, ${app.presentPost || ''}, ${app.presentUpazila || 'দুপচাঁচিয়া'}, ${app.presentDistrict || 'বগুড়া'}`
+      : 'পশ্চিম আলোহালী, দুপচাঁচিয়া, বগুড়া';
+    setEditingStudentId(null);
+    setStudentForm({
+      ...initialStudentForm,
+      name: app.studentNameBn || '',
+      nameEn: app.studentNameEn || '',
+      phone: app.fatherPhone || '',
+      fatherName: app.fatherNameBn || '',
+      motherName: app.motherNameBn || '',
+      classYear: app.applyingClass || '৬ষ্ঠ শ্রেণি',
+      gender: app.gender === 'ছাত্রী' ? 'ছাত্রী' : 'ছাত্র',
+      birthDate: app.birthDate || '',
+      bloodGroup: app.bloodGroup || 'B+',
+      guardianPhone: app.emergencyContact || app.fatherPhone || '',
+      address: addr,
+      photo: app.studentPhoto || ''
+    });
+    setShowStudentModal(true);
+  };
+
+  const handleDeleteStudent = (id: string | undefined, name: string) => {
+    if (!id) return;
+    if (confirm(`আপনি কি নিশ্চিত যে "${name}"-এর প্রোফাইল মুছে ফেলতে চান?`)) {
+      deleteStudent(id);
+      showStudentNotification('শিক্ষার্থীর প্রোফাইল সফলভাবে মুছে ফেলা হয়েছে!');
+    }
+  };
+
+  const handleStudentPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsCompressingStudentPhoto(true);
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new window.Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const maxDim = 360;
+          let width = img.width;
+          let height = img.height;
+          if (width > height) {
+            if (width > maxDim) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            }
+          } else {
+            if (height > maxDim) {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.drawImage(img, 0, 0, width, height);
+            const base64 = canvas.toDataURL('image/jpeg', 0.82);
+            setStudentForm(prev => ({ ...prev, photo: base64 }));
+          }
+          setIsCompressingStudentPhoto(false);
+        };
+      };
+    } catch (err) {
+      console.error('Photo compress error:', err);
+      setIsCompressingStudentPhoto(false);
+    }
+  };
+
+  const handleSaveStudent = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!studentForm.name.trim() || !studentForm.rollNo.trim()) {
+      alert('শিক্ষার্থীর নাম ও রোল নম্বর অবশ্যই পূরণ করতে হবে!');
+      return;
+    }
+
+    if (editingStudentId) {
+      updateStudent(editingStudentId, {
+        name: studentForm.name.trim(),
+        nameEn: studentForm.nameEn.trim(),
+        phone: studentForm.phone.trim(),
+        photo: studentForm.photo,
+        address: studentForm.address.trim(),
+        fatherName: studentForm.fatherName.trim(),
+        motherName: studentForm.motherName.trim(),
+        classYear: studentForm.classYear.trim(),
+        rollNo: studentForm.rollNo.trim(),
+        regNo: studentForm.regNo.trim(),
+        session: studentForm.session.trim(),
+        bloodGroup: studentForm.bloodGroup,
+        gender: studentForm.gender,
+        birthDate: studentForm.birthDate.trim(),
+        guardianPhone: studentForm.guardianPhone.trim(),
+        attendanceRate: studentForm.attendanceRate.trim() || '৯৫%',
+        feeStatus: studentForm.feeStatus,
+        status: studentForm.status
+      });
+      showStudentNotification(`"${studentForm.name}"-এর প্রোফাইল সফলভাবে আপডেট হয়েছে!`);
+    } else {
+      addStudent({
+        name: studentForm.name.trim(),
+        nameEn: studentForm.nameEn.trim(),
+        phone: studentForm.phone.trim(),
+        photo: studentForm.photo,
+        address: studentForm.address.trim(),
+        fatherName: studentForm.fatherName.trim(),
+        motherName: studentForm.motherName.trim(),
+        classYear: studentForm.classYear.trim(),
+        rollNo: studentForm.rollNo.trim(),
+        regNo: studentForm.regNo.trim(),
+        session: studentForm.session.trim(),
+        bloodGroup: studentForm.bloodGroup,
+        gender: studentForm.gender,
+        birthDate: studentForm.birthDate.trim(),
+        guardianPhone: studentForm.guardianPhone.trim(),
+        attendanceRate: studentForm.attendanceRate.trim() || '৯৫%',
+        feeStatus: studentForm.feeStatus,
+        status: studentForm.status
+      });
+      showStudentNotification(`"${studentForm.name}"-এর নতুন শিক্ষার্থী প্রোফাইল সফলভাবে তৈরি হয়েছে!`);
+    }
+
+    setShowStudentModal(false);
+    setEditingStudentId(null);
   };
 
   // Settings Form State
@@ -2183,6 +2412,25 @@ export default function AdminDashboardPage() {
               </button>
             )}
 
+            {canAccessTab('students') && (
+              <button
+                onClick={() => setActiveTab('students')}
+                className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition-colors cursor-pointer ${
+                  activeTab === 'students'
+                    ? 'bg-emerald-800 text-white shadow-sm font-black'
+                    : 'text-slate-700 hover:bg-slate-100'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <UserCheck className="w-4 h-4 text-emerald-600" />
+                  <span>শিক্ষার্থী প্রোফাইল</span>
+                </div>
+                <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
+                  {students?.length || 0} জন
+                </span>
+              </button>
+            )}
+
             {canAccessTab('alumni') && (
               <button
                 onClick={() => setActiveTab('alumni')}
@@ -3065,9 +3313,18 @@ export default function AdminDashboardPage() {
                             </select>
                           </td>
                           <td className="p-3 text-right space-x-1.5">
+                            {app.status === 'অনুমোদিত' && (
+                              <button
+                                onClick={() => handleCreateStudentFromApplication(app)}
+                                className="text-xs bg-blue-50 text-blue-800 hover:bg-blue-100 p-1.5 rounded cursor-pointer"
+                                title="শিক্ষার্থী প্রোফাইল তৈরি করুন"
+                              >
+                                <UserCheck className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                             <button
                               onClick={() => setSelectedApp(app)}
-                              className="text-xs bg-emerald-50 text-emerald-800 hover:bg-emerald-100 p-1.5 rounded"
+                              className="text-xs bg-emerald-50 text-emerald-800 hover:bg-emerald-100 p-1.5 rounded cursor-pointer"
                               title="বিস্তারিত স্লিপ দেখুন"
                             >
                               <Eye className="w-3.5 h-3.5" />
@@ -7782,6 +8039,266 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
               )}
             </div>
           )}
+
+          {/* TAB: STUDENT PROFILES (শিক্ষার্থী প্রোফাইল তৈরি ও ব্যবস্থাপনা) */}
+          {activeTab === 'students' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
+                      <UserCheck className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">শিক্ষার্থী প্রোফাইল ও আইডি কার্ড ব্যবস্থাপনা</h2>
+                      <p className="text-xs text-slate-500">মাদ্রাসার নিয়মিত শিক্ষার্থীদের পূর্ণাঙ্গ প্রোফাইল ডাটাবেজ, ডিজিটাল আইডি কার্ড ও তথ্য নিয়ন্ত্রণ</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenAddStudent}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন শিক্ষার্থী প্রোফাইল তৈরি করুন</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                  <div className="text-xs font-semibold text-slate-500">মোট শিক্ষার্থী প্রোফাইল</div>
+                  <div className="text-2xl font-black text-slate-900 mt-1">{students?.length || 0} জন</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">ডাটাবেজে নিবন্ধিত শিক্ষার্থী</div>
+                </div>
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-blue-800">ছাত্র সংখ্যা</div>
+                  <div className="text-2xl font-black text-blue-900 mt-1">
+                    {students?.filter(s => s.gender === 'ছাত্র' || !s.gender).length || 0} জন
+                  </div>
+                  <div className="text-[11px] text-blue-700 mt-0.5">মোট ছাত্রদের সংখ্যা</div>
+                </div>
+                <div className="p-4 rounded-xl border border-rose-200 bg-rose-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-rose-800">ছাত্রী সংখ্যা</div>
+                  <div className="text-2xl font-black text-rose-950 mt-1">
+                    {students?.filter(s => s.gender === 'ছাত্রী').length || 0} জন
+                  </div>
+                  <div className="text-[11px] text-rose-700 mt-0.5">মোট ছাত্রীদের সংখ্যা</div>
+                </div>
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-emerald-800">নিয়মিত ও সক্রিয়</div>
+                  <div className="text-2xl font-black text-emerald-900 mt-1">
+                    {students?.filter(s => s.status === 'নিয়মিত' || !s.status).length || 0} জন
+                  </div>
+                  <div className="text-[11px] text-emerald-700 mt-0.5">চলতি শিক্ষাবর্ষের শিক্ষার্থী</div>
+                </div>
+              </div>
+
+              {/* Filters and Search Bar */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="নাম, রোল, রেজি বা মোবাইল নম্বর খুঁজুন..."
+                      value={studentSearchQuery}
+                      onChange={(e) => setStudentSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={studentClassFilter}
+                      onChange={(e) => setStudentClassFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    >
+                      <option value="all">সকল শ্রেণি (All Classes)</option>
+                      {Array.from(new Set((students || []).map(s => s.classYear).filter(Boolean))).map((cls) => (
+                        <option key={cls} value={cls}>{cls}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      value={studentBloodFilter}
+                      onChange={(e) => setStudentBloodFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    >
+                      <option value="all">সকল রক্তের গ্রুপ</option>
+                      {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map((bg) => (
+                        <option key={bg} value={bg}>{bg}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {(studentSearchQuery || studentClassFilter !== 'all' || studentBloodFilter !== 'all') && (
+                  <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+                    <span>
+                      ফিল্টার অনুযায়ী শিক্ষার্থী দেখানো হচ্ছে
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStudentSearchQuery('');
+                        setStudentClassFilter('all');
+                        setStudentBloodFilter('all');
+                      }}
+                      className="text-emerald-700 hover:underline font-semibold cursor-pointer"
+                    >
+                      ফিল্টার রিসেট করুন
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Student Cards Grid */}
+              {(() => {
+                const filteredStudents = (students || []).filter((std) => {
+                  const q = studentSearchQuery.trim().toLowerCase();
+                  const matchesQuery = !q ||
+                    (std.name || '').toLowerCase().includes(q) ||
+                    (std.nameEn || '').toLowerCase().includes(q) ||
+                    (std.rollNo || '').toLowerCase().includes(q) ||
+                    (std.regNo || '').toLowerCase().includes(q) ||
+                    (std.phone || '').toLowerCase().includes(q) ||
+                    (std.guardianPhone || '').toLowerCase().includes(q);
+                  const matchesClass = studentClassFilter === 'all' || std.classYear === studentClassFilter;
+                  const matchesBlood = studentBloodFilter === 'all' || std.bloodGroup === studentBloodFilter;
+                  return matchesQuery && matchesClass && matchesBlood;
+                });
+
+                if (filteredStudents.length === 0) {
+                  return (
+                    <div className="p-12 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50">
+                      <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                      <h3 className="font-bold text-slate-700 text-sm">কোনো শিক্ষার্থীর প্রোফাইল পাওয়া যায়নি</h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                        আপনার অনুসন্ধানের সাথে মিল রেখে কোনো প্রোফাইল পাওয়া যায়নি অথবা এখনও কোনো শিক্ষার্থী নিবন্ধিত হয়নি।
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddStudent}
+                        className="mt-4 px-4 py-2 rounded-xl bg-emerald-800 text-white font-bold text-xs hover:bg-emerald-900 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>নতুন শিক্ষার্থী প্রোফাইল তৈরি করুন</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {filteredStudents.map((std) => (
+                      <div
+                        key={std.id || std.rollNo}
+                        className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs hover:border-emerald-300 transition-all flex flex-col justify-between"
+                      >
+                        <div className="space-y-3">
+                          {/* Student Header */}
+                          <div className="flex items-start gap-3">
+                            <div className="w-14 h-14 rounded-xl overflow-hidden bg-emerald-50 border border-emerald-200 shrink-0 flex items-center justify-center shadow-xs">
+                              {std.photo ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={std.photo}
+                                  alt={std.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <span className="text-lg font-black text-emerald-800">
+                                  {std.name?.charAt(0) || 'শ'}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                                  {std.classYear}
+                                </span>
+                                {std.bloodGroup && (
+                                  <span className="text-[10px] font-bold bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded">
+                                    {std.bloodGroup}
+                                  </span>
+                                )}
+                              </div>
+
+                              <h3 className="font-bold text-slate-900 text-sm truncate mt-1">
+                                {std.name}
+                              </h3>
+                              {std.nameEn && (
+                                <p className="text-[11px] text-slate-500 truncate -mt-0.5">{std.nameEn}</p>
+                              )}
+                              <p className="text-[11px] text-slate-600 font-mono mt-0.5">
+                                রোল: <strong className="text-slate-900">{std.rollNo}</strong> • রেজি: <strong className="text-slate-900">{std.regNo || '—'}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* Details Grid */}
+                          <div className="bg-slate-50/70 p-2.5 rounded-xl border border-slate-100 text-[11px] space-y-1 text-slate-600">
+                            {std.fatherName && (
+                              <div className="truncate">
+                                <span className="text-slate-400">পিতা:</span> <strong className="text-slate-800">{std.fatherName}</strong>
+                              </div>
+                            )}
+                            {std.phone && (
+                              <div className="font-mono">
+                                <span className="text-slate-400">মোবাইল:</span> <strong className="text-emerald-900">{std.phone}</strong>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between pt-1 border-t border-slate-200/60 text-[10px]">
+                              <span>উপস্থিতি: <strong className="text-emerald-800">{std.attendanceRate || '৯৫%'}</strong></span>
+                              <span className="px-1.5 py-0.5 bg-emerald-100 text-emerald-900 font-bold rounded">
+                                {std.feeStatus || 'পরিশোধিত'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Card Actions */}
+                        <div className="flex items-center justify-between gap-1.5 pt-3 mt-3 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setViewingStudentProfile(std)}
+                            className="px-3 py-1.5 rounded-lg bg-blue-50 text-blue-800 hover:bg-blue-100 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>আইডি কার্ড</span>
+                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditStudent(std)}
+                              className="px-2.5 py-1.5 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 text-xs font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                              <span>এডিট</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteStudent(std.id, std.name)}
+                              className="p-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer transition-colors"
+                              title="প্রোফাইল মুছুন"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+          )}
         </main>
       </div>
 
@@ -10801,6 +11318,507 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
         <div className="fixed bottom-6 right-6 z-50 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-emerald-700 animate-in fade-in slide-in-from-bottom-4">
           <CheckCircle className="w-4 h-4 text-amber-300 shrink-0" />
           <span>{resultToast.message}</span>
+        </div>
+      )}
+
+      {/* Student Profile Add/Edit Modal */}
+      {showStudentModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl my-8 max-h-[92vh] flex flex-col border border-slate-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                  <UserCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">
+                    {editingStudentId ? 'শিক্ষার্থীর প্রোফাইল সংশোধন করুন' : 'নতুন শিক্ষার্থী প্রোফাইল তৈরি করুন'}
+                  </h3>
+                  <p className="text-xs text-slate-500">মাদ্রাসার নিয়মিত শিক্ষার্থীর তথ্য, ছবি ও আইডি কার্ড তৈরি</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStudentModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveStudent} className="flex-1 overflow-y-auto py-4 space-y-5 pr-1 text-xs">
+              {/* Photo Upload Section */}
+              <div className="p-4 rounded-xl border border-emerald-100 bg-emerald-50/40 flex flex-col sm:flex-row items-center gap-4">
+                <div className="w-20 h-20 rounded-xl overflow-hidden bg-white border-2 border-emerald-600 shrink-0 flex items-center justify-center shadow-xs relative">
+                  {studentForm.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={studentForm.photo}
+                      alt="Student"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <UserCheck className="w-8 h-8 text-emerald-400" />
+                  )}
+                  {isCompressingStudentPhoto && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[10px]">
+                      প্রসেসিং...
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1 text-center sm:text-left flex-1">
+                  <div className="font-bold text-slate-800 text-xs">শিক্ষার্থীর পাসপোর্ট সাইজ ছবি</div>
+                  <p className="text-[11px] text-slate-500">মোবাইল বা পিসি থেকে পরিষ্কার ছবি আপলোড করুন</p>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-1">
+                    <label className="px-3 py-1.5 rounded-lg bg-emerald-800 text-white font-bold text-[11px] hover:bg-emerald-900 cursor-pointer inline-flex items-center gap-1.5 transition-colors">
+                      <Camera className="w-3.5 h-3.5" />
+                      <span>{studentForm.photo ? 'ছবি পরিবর্তন করুন' : 'ছবি নির্বাচন করুন'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleStudentPhotoUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {studentForm.photo && (
+                      <button
+                        type="button"
+                        onClick={() => setStudentForm(prev => ({ ...prev, photo: '' }))}
+                        className="px-2.5 py-1.5 rounded-lg border border-rose-300 text-rose-700 hover:bg-rose-50 text-[11px] font-bold cursor-pointer"
+                      >
+                        ছবি মুছুন
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 1: Basic Identity */}
+              <div className="space-y-3">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs border-b border-slate-100 pb-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <span>মৌলিক তথ্য (শিক্ষার্থী ও শ্রেণি)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      শিক্ষার্থীর পূর্ণ নাম (বাংলায়) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studentForm.name}
+                      onChange={(e) => setStudentForm({ ...studentForm, name: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: মোঃ ওমর ফারুক"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      পূর্ণ নাম (ইংরেজিতে)
+                    </label>
+                    <input
+                      type="text"
+                      value={studentForm.nameEn}
+                      onChange={(e) => setStudentForm({ ...studentForm, nameEn: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: Md. Omar Faruk"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      শ্রেণি <span className="text-rose-500">*</span>
+                    </label>
+                    <select
+                      value={studentForm.classYear}
+                      onChange={(e) => setStudentForm({ ...studentForm, classYear: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                    >
+                      <option value="১০ম শ্রেণি (দাখিল)">১০ম শ্রেণি (দাখিল)</option>
+                      <option value="৯ম শ্রেণি (দাখিল)">৯ম শ্রেণি (দাখিল)</option>
+                      <option value="৮ম শ্রেণি (জেডিসি)">৮ম শ্রেণি (জেডিসি)</option>
+                      <option value="৭ম শ্রেণি">৭ম শ্রেণি</option>
+                      <option value="৬ষ্ঠ শ্রেণি">৬ষ্ঠ শ্রেণি</option>
+                      <option value="৫ম শ্রেণি (ইবতেদায়ী)">৫ম শ্রেণি (ইবতেদায়ী)</option>
+                      <option value="৪র্থ শ্রেণি">৪র্থ শ্রেণি</option>
+                      <option value="৩য় শ্রেণি">৩য় শ্রেণি</option>
+                      <option value="২য় শ্রেণি">২য় শ্রেণি</option>
+                      <option value="১ম শ্রেণি">১ম শ্রেণি</option>
+                      <option value="শিশু শ্রেণি / নূরানী">শিশু শ্রেণি / নূরানী</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      শিক্ষাবর্ষ / সেশন
+                    </label>
+                    <input
+                      type="text"
+                      value={studentForm.session}
+                      onChange={(e) => setStudentForm({ ...studentForm, session: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: ২০২৫-২০২৬"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      শ্রেণি রোল নম্বর <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studentForm.rollNo}
+                      onChange={(e) => setStudentForm({ ...studentForm, rollNo: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="যেমন: ১০১"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">রেজিস্ট্রেশন নম্বর</label>
+                    <input
+                      type="text"
+                      value={studentForm.regNo}
+                      onChange={(e) => setStudentForm({ ...studentForm, regNo: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="যেমন: ২০২৬১০১০১"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">লিঙ্গ</label>
+                    <select
+                      value={studentForm.gender}
+                      onChange={(e) => setStudentForm({ ...studentForm, gender: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                    >
+                      <option value="ছাত্র">ছাত্র (Boy)</option>
+                      <option value="ছাত্রী">ছাত্রী (Girl)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">রক্তের গ্রুপ</label>
+                    <select
+                      value={studentForm.bloodGroup}
+                      onChange={(e) => setStudentForm({ ...studentForm, bloodGroup: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-bold"
+                    >
+                      <option value="A+">A+</option>
+                      <option value="A-">A-</option>
+                      <option value="B+">B+</option>
+                      <option value="B-">B-</option>
+                      <option value="O+">O+</option>
+                      <option value="O-">O-</option>
+                      <option value="AB+">AB+</option>
+                      <option value="AB-">AB-</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Contact & Guardian Information */}
+              <div className="space-y-3 pt-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs border-b border-slate-100 pb-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <span>যোগাযোগ ও অভিভাবকের তথ্য</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      মোবাইল নম্বর (লগইন নম্বর) <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={studentForm.phone}
+                      onChange={(e) => setStudentForm({ ...studentForm, phone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="যেমন: 01711000101"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-0.5 block">এই নম্বর দিয়ে শিক্ষার্থী লগইন করতে পারবে</span>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">জরুরি অভিভাবক ফোন</label>
+                    <input
+                      type="text"
+                      value={studentForm.guardianPhone}
+                      onChange={(e) => setStudentForm({ ...studentForm, guardianPhone: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="পিতা বা অভিভাবকের মোবাইল"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">পিতার নাম</label>
+                    <input
+                      type="text"
+                      value={studentForm.fatherName}
+                      onChange={(e) => setStudentForm({ ...studentForm, fatherName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="পিতার নাম"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">মাতার নাম</label>
+                    <input
+                      type="text"
+                      value={studentForm.motherName}
+                      onChange={(e) => setStudentForm({ ...studentForm, motherName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="মাতার নাম"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-slate-700 mb-1">স্থায়ী ও বর্তমান ঠিকানা</label>
+                    <input
+                      type="text"
+                      value={studentForm.address}
+                      onChange={(e) => setStudentForm({ ...studentForm, address: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="গ্রাম/মহল্লা, ডাকঘর, উপজেলা, জেলা"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 3: Status & Fees */}
+              <div className="space-y-3 pt-2">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs border-b border-slate-100 pb-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <span>অ্যাকাডেমিক অবস্থা ও ফি</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">উপস্থিতির হার</label>
+                    <input
+                      type="text"
+                      value={studentForm.attendanceRate}
+                      onChange={(e) => setStudentForm({ ...studentForm, attendanceRate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: ৯৫%"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">বেতন ও ফি স্ট্যাটাস</label>
+                    <select
+                      value={studentForm.feeStatus}
+                      onChange={(e) => setStudentForm({ ...studentForm, feeStatus: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                    >
+                      <option value="পরিশোধিত">পরিশোধিত (Paid)</option>
+                      <option value="আংশিক বকেয়া">আংশিক বকেয়া (Partial)</option>
+                      <option value="বকেয়া">বকেয়া (Due)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">শিক্ষার্থী অবস্থা</label>
+                    <select
+                      value={studentForm.status}
+                      onChange={(e) => setStudentForm({ ...studentForm, status: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                    >
+                      <option value="নিয়মিত">নিয়মিত (Active)</option>
+                      <option value="অনিয়মিত">অনিয়মিত (Irregular)</option>
+                      <option value="স্থগিত">স্থগিত (Suspended)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowStudentModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-xs"
+                >
+                  বাতিল করুন
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-800 text-white font-bold hover:bg-emerald-900 transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingStudentId ? 'পরিবর্তন সংরক্ষণ করুন' : 'প্রোফাইল তৈরি ও সংরক্ষণ করুন'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Viewing Student Profile & ID Card Modal */}
+      {viewingStudentProfile && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full p-6 shadow-2xl my-8 border border-slate-200 space-y-4">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-5 h-5 text-emerald-800" />
+                <h3 className="font-bold text-base text-slate-900">ডিজিটাল স্টুডেন্ট আইডি কার্ড ও প্রোফাইল</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingStudentProfile(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Printable ID Card Container */}
+            <div className="p-6 rounded-2xl border-2 border-emerald-900/20 bg-emerald-50/20 space-y-4 print:border-none print:p-0">
+              {/* Institution Header */}
+              <div className="text-center space-y-1 border-b border-emerald-900/15 pb-4">
+                <div className="flex justify-center mb-1">
+                  <Image
+                    src="/logo.png"
+                    alt="Logo"
+                    width={52}
+                    height={52}
+                    className="h-12 w-auto object-contain"
+                  />
+                </div>
+                <h2 className="text-base font-black text-emerald-950">
+                  {info.name}
+                </h2>
+                <p className="text-[10px] text-slate-600">
+                  {info.address} • কোড: {info.madrasahCode} • ইআইআইএন: {info.eiin}
+                </p>
+                <div className="inline-block mt-1 px-3 py-0.5 rounded-full bg-emerald-800 text-white font-bold text-[10px] tracking-wide">
+                  শিক্ষার্থী পরিচয়পত্র • STUDENT ID CARD
+                </div>
+              </div>
+
+              {/* Student Details Grid */}
+              <div className="flex flex-col sm:flex-row gap-4 items-center sm:items-start bg-white p-4 rounded-xl border border-emerald-900/10">
+                <div className="w-24 h-28 rounded-xl overflow-hidden bg-emerald-50 border-2 border-emerald-700 shrink-0 flex items-center justify-center shadow-xs">
+                  {viewingStudentProfile.photo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={viewingStudentProfile.photo}
+                      alt={viewingStudentProfile.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span className="text-3xl font-black text-emerald-800">
+                      {viewingStudentProfile.name?.charAt(0) || 'শ'}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1.5 text-xs text-slate-700 w-full">
+                  <div>
+                    <h3 className="font-bold text-base text-slate-900">{viewingStudentProfile.name}</h3>
+                    {viewingStudentProfile.nameEn && (
+                      <p className="text-[11px] text-slate-500 font-semibold">{viewingStudentProfile.nameEn}</p>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[11px]">
+                    <div>
+                      <span className="text-slate-400">শ্রেণি:</span> <strong className="text-slate-900">{viewingStudentProfile.classYear}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">রোল:</span> <strong className="font-mono text-slate-900">{viewingStudentProfile.rollNo}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">রেজিস্ট্রেশন:</span> <strong className="font-mono text-slate-900">{viewingStudentProfile.regNo || '—'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">সেশন:</span> <strong className="text-slate-900">{viewingStudentProfile.session}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">রক্তের গ্রুপ:</span> <strong className="text-rose-700 font-bold">{viewingStudentProfile.bloodGroup || '—'}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">মোবাইল:</span> <strong className="font-mono text-slate-900">{viewingStudentProfile.phone || '—'}</strong>
+                    </div>
+                  </div>
+
+                  {viewingStudentProfile.fatherName && (
+                    <div className="text-[11px] pt-1 border-t border-slate-100">
+                      <span className="text-slate-400">পিতার নাম:</span> <strong className="text-slate-800">{viewingStudentProfile.fatherName}</strong>
+                    </div>
+                  )}
+                  {viewingStudentProfile.address && (
+                    <div className="text-[11px]">
+                      <span className="text-slate-400">ঠিকানা:</span> <span className="text-slate-800">{viewingStudentProfile.address}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Signatures & Seal */}
+              <div className="flex justify-between items-end pt-6 border-t border-emerald-900/15 text-[10px] text-slate-600">
+                <div className="space-y-0.5">
+                  <div className="font-bold text-emerald-900">পশ্চিম আলোহালী ইসলামিয়া দাখিল মাদ্রাসা</div>
+                  <div className="text-[9px] text-slate-500">ডিজিটাল স্টুডেন্ট আইডি রেকর্ড</div>
+                </div>
+                <div className="text-center">
+                  <div className="border-t border-slate-400 pt-1 font-bold text-slate-800">
+                    অধ্যক্ষ / সুপারিনটেনডেন্ট
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-between items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-black transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>আইডি কার্ড প্রিন্ট করুন</span>
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toEdit = viewingStudentProfile;
+                    setViewingStudentProfile(null);
+                    handleOpenEditStudent(toEdit);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-emerald-700 text-emerald-800 text-xs font-bold hover:bg-emerald-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>তথ্য এডিট করুন</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingStudentProfile(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Student Toast Notification */}
+      {studentToast.show && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-emerald-700 animate-in fade-in slide-in-from-bottom-4">
+          <CheckCircle className="w-4 h-4 text-amber-300 shrink-0" />
+          <span>{studentToast.message}</span>
         </div>
       )}
 

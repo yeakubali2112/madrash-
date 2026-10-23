@@ -33,7 +33,8 @@ import {
   RoutinePeriod,
   defaultClassRoutines,
   AlumniStudent,
-  defaultAlumniStudents
+  defaultAlumniStudents,
+  defaultStudents
 } from '@/lib/data';
 import {
   getStoredInfo,
@@ -68,6 +69,8 @@ import {
   saveStoredRoutines,
   getStoredAlumni,
   saveStoredAlumni,
+  getStoredStudents,
+  saveStoredStudents,
   isAdminLoggedIn,
   setAdminLoggedIn,
   resetAllData
@@ -140,6 +143,11 @@ interface MadrasahContextType {
   updateAlumniStudent: (id: string, student: Partial<AlumniStudent>) => void;
   deleteAlumniStudent: (id: string) => void;
   resetAlumniToDefault: () => void;
+  students: StudentProfile[];
+  addStudent: (student: Omit<StudentProfile, 'id' | 'createdAt'>) => void;
+  updateStudent: (id: string, student: Partial<StudentProfile>) => void;
+  deleteStudent: (id: string) => void;
+  resetStudentsToDefault: () => void;
   adminUsers: AdminUser[];
   currentAdminUser: AdminUser | null;
   addAdminUser: (user: Omit<AdminUser, 'id' | 'createdAt'>) => void;
@@ -173,6 +181,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [prayerConfig, setPrayerConfig] = useState<PrayerTimeConfig>(defaultPrayerConfig);
   const [routines, setRoutines] = useState<ClassRoutine[]>(defaultClassRoutines);
   const [alumniStudents, setAlumniStudents] = useState<AlumniStudent[]>(defaultAlumniStudents);
+  const [students, setStudents] = useState<StudentProfile[]>(defaultStudents);
   const [loggedStudent, setLoggedStudent] = useState<StudentProfile | null>(null);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   const [isLoaded, setIsLoaded] = useState<boolean>(false);
@@ -195,6 +204,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setPrayerConfig(getStoredPrayerConfig());
     setRoutines(getStoredRoutines());
     setAlumniStudents(getStoredAlumni());
+    setStudents(getStoredStudents());
     const storedUsers = getStoredAdminUsers();
     setAdminUsers(storedUsers);
 
@@ -294,6 +304,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
         if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
         if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
+        if (cloud.students) { setStudents(cloud.students); saveStoredStudents(cloud.students); }
         if (cloud.adminUsers) { setAdminUsers(cloud.adminUsers); saveStoredAdminUsers(cloud.adminUsers); }
       } catch (err) {
         console.warn('Supabase sync skipped/failed:', err);
@@ -820,6 +831,38 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveCloudKey('alumniStudents', defaultAlumniStudents);
   };
 
+  const addStudent = (studentData: Omit<StudentProfile, 'id' | 'createdAt'>) => {
+    const newStudent: StudentProfile = {
+      ...studentData,
+      id: `std-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+    const updated = [newStudent, ...students];
+    setStudents(updated);
+    saveStoredStudents(updated);
+    saveCloudKey('students', updated);
+  };
+
+  const updateStudent = (id: string, studentData: Partial<StudentProfile>) => {
+    const updated = students.map(s => s.id === id ? { ...s, ...studentData } : s);
+    setStudents(updated);
+    saveStoredStudents(updated);
+    saveCloudKey('students', updated);
+  };
+
+  const deleteStudent = (id: string) => {
+    const updated = students.filter(s => s.id !== id);
+    setStudents(updated);
+    saveStoredStudents(updated);
+    saveCloudKey('students', updated);
+  };
+
+  const resetStudentsToDefault = () => {
+    setStudents(defaultStudents);
+    saveStoredStudents(defaultStudents);
+    saveCloudKey('students', defaultStudents);
+  };
+
   const uploadAllDataToCloud = async (): Promise<boolean> => {
     const all = {
       info,
@@ -836,6 +879,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       prayerConfig,
       routines,
       alumniStudents,
+      students,
       adminUsers
     };
     const success = await syncAllToCloud(all);
@@ -865,6 +909,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
       if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
       if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
+      if (cloud.students) { setStudents(cloud.students); saveStoredStudents(cloud.students); }
       if (cloud.adminUsers) { setAdminUsers(cloud.adminUsers); saveStoredAdminUsers(cloud.adminUsers); }
     } catch (e) {
       console.error(e);
@@ -888,6 +933,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setAdminUsers(defaultAdminUsers);
     setRoutines(defaultClassRoutines);
     setAlumniStudents(defaultAlumniStudents);
+    setStudents(defaultStudents);
     setCurrentAdminUserState(null);
   };
 
@@ -904,6 +950,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         prayerConfig,
         routines,
         alumniStudents,
+        students,
         loggedStudent,
         teachers,
         applications,
@@ -962,6 +1009,10 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateAlumniStudent,
         deleteAlumniStudent,
         resetAlumniToDefault,
+        addStudent,
+        updateStudent,
+        deleteStudent,
+        resetStudentsToDefault,
         loginAdmin,
         logoutAdmin,
         resetToDefaults,
