@@ -2038,6 +2038,24 @@ export default function AdminDashboardPage() {
       }
     });
 
+    (students || []).forEach(std => {
+      if (!std) return;
+      const stdClass = (std.classYear || '').trim();
+      const filterClass = (attendanceClassFilter || '').trim();
+      const matches = stdClass === filterClass || (filterClass.includes('১০ম') && stdClass.includes('১০ম')) || (filterClass.includes('৯ম') && stdClass.includes('৯ম'));
+      if (matches) {
+        const sName = (std.name || '').trim();
+        if (sName && !list.some(s => s.id === std.id || (s.name || '').toLowerCase() === sName.toLowerCase())) {
+          list.push({
+            id: String(std.id || `std-${Math.random()}`),
+            name: sName,
+            rollNo: String(std.rollNo || '১০১'),
+            phone: std.phone || '017XXXXXXXX'
+          });
+        }
+      }
+    });
+
     (results || []).forEach(res => {
       if (!res) return;
       const resClass = (res.classYear || '').trim();
@@ -2057,7 +2075,7 @@ export default function AdminDashboardPage() {
     });
 
     return list;
-  }, [attendanceClassFilter, applications, results]);
+  }, [attendanceClassFilter, applications, results, students]);
 
   // Load and sync Teacher Attendance from localStorage for the selected date
   useEffect(() => {

@@ -7,6 +7,7 @@ import { Departments } from '@/components/Departments';
 import { Facilities } from '@/components/Facilities';
 import { GalleryPreview } from '@/components/GalleryPreview';
 import { QuickAdmissionCta } from '@/components/QuickAdmissionCta';
+import { ParentAttendanceCta } from '@/components/ParentAttendanceCta';
 
 export default function HomePage() {
   return (
@@ -16,6 +17,7 @@ export default function HomePage() {
         <PrayerTimesWidget />
       </div>
       <NoticeSection />
+      <ParentAttendanceCta />
       <PrincipalMessage />
       <Departments />
       <Facilities />

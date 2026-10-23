@@ -19,7 +19,8 @@ import {
   Calendar,
   LogIn,
   LogOut,
-  Phone
+  Phone,
+  UserCheck
 } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
@@ -33,6 +34,7 @@ export const Navbar: React.FC = () => {
     { name: 'প্রচ্ছদ', href: '/', icon: Home },
     { name: 'পরিচিতি', href: '/about', icon: Info },
     { name: 'ভর্তি আবেদন', href: '/admission', icon: GraduationCap, badge: 'চলছে' },
+    { name: 'উপস্থিতি', href: '/attendance', icon: UserCheck, badge: 'হাজিরা' },
     { name: 'নোটিশ বোর্ড', href: '/notices', icon: FileText },
     { name: 'ফলাফল', href: '/results', icon: Award },
     { name: 'শিক্ষকবৃন্দ', href: '/teachers', icon: Users },
@@ -227,22 +229,30 @@ export const Navbar: React.FC = () => {
       {/* Mobile Drawer */}
       {!isAdminRoute && mobileMenuOpen && (
         <div className="lg:hidden bg-[#004022] border-t border-emerald-800 px-4 py-4 space-y-2 shadow-2xl animate-in slide-in-from-top-2 duration-200">
-          <div className="grid grid-cols-2 gap-2 mb-3">
+          <div className="grid grid-cols-3 gap-2 mb-3">
             <Link
               href="/admission"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-1.5 bg-[#DDAA00] text-slate-950 font-black px-3 py-2.5 rounded-lg text-sm shadow"
+              className="flex items-center justify-center gap-1 bg-[#DDAA00] text-slate-950 font-black px-2 py-2.5 rounded-lg text-xs shadow text-center"
             >
-              <GraduationCap className="w-4 h-4" />
-              <span>ভর্তি আবেদন</span>
+              <GraduationCap className="w-3.5 h-3.5 shrink-0" />
+              <span>ভর্তি</span>
+            </Link>
+            <Link
+              href="/attendance"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center justify-center gap-1 bg-emerald-700 hover:bg-emerald-600 text-white font-bold px-2 py-2.5 rounded-lg text-xs border border-emerald-500 shadow text-center"
+            >
+              <UserCheck className="w-3.5 h-3.5 shrink-0" />
+              <span>হাজিরা</span>
             </Link>
             <Link
               href="/results"
               onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center justify-center gap-1.5 bg-[#003580] text-[#DDAA00] font-bold px-3 py-2.5 rounded-lg text-sm border border-[#DDAA00]/40"
+              className="flex items-center justify-center gap-1 bg-[#003580] text-[#DDAA00] font-bold px-2 py-2.5 rounded-lg text-xs border border-[#DDAA00]/40 text-center"
             >
-              <Award className="w-4 h-4" />
-              <span>ফলাফল দেখুন</span>
+              <Award className="w-3.5 h-3.5 shrink-0" />
+              <span>ফলাফল</span>
             </Link>
           </div>
 

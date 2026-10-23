@@ -1489,3 +1489,24 @@ export const defaultAdminUsers: AdminUser[] = [
     createdAt: '২০২৬-০৩-০১'
   }
 ];
+
+export const academicClassesList = [
+  '১০ম শ্রেণি (দাখিল)',
+  '৯ম শ্রেণি (দাখিল)',
+  '৮ম শ্রেণি (জেডিসি)',
+  '৭ম শ্রেণি',
+  '৬ষ্ঠ শ্রেণি',
+  'ইবতেদায়ী (১ম-৫ম)',
+  'নূরানী ও হিফজ বিভাগ'
+];
+
+export interface StudentDailyAttendanceLog {
+  dayIndex: number;
+  date: string;
+  dateBn: string;
+  dayBn: string;
+  status: 'present' | 'absent' | 'late' | 'leave';
+  inTime?: string;
+  subjects?: string;
+  remarks?: string;
+}

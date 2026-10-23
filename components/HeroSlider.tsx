@@ -17,7 +17,8 @@ import {
   BookOpen,
   Sparkles,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  UserCheck
 } from 'lucide-react';
 
 export const HeroSlider: React.FC = () => {
@@ -202,12 +203,20 @@ export const HeroSlider: React.FC = () => {
                 {hero.showButton2 && (
                   <Link
                     href={hero.button2Link || "/results"}
-                    className="inline-flex items-center gap-2 bg-[#003580] hover:bg-[#002b66] text-white font-bold px-7 py-3.5 rounded-xl border border-[#DDAA00]/40 shadow-lg backdrop-blur-sm transition-all hover:scale-105 text-sm sm:text-base"
+                    className="inline-flex items-center gap-2 bg-[#003580] hover:bg-[#002b66] text-white font-bold px-6 sm:px-7 py-3.5 rounded-xl border border-[#DDAA00]/40 shadow-lg backdrop-blur-sm transition-all hover:scale-105 text-sm sm:text-base"
                   >
                     <Award className="w-5 h-5 text-[#DDAA00]" />
                     <span>{hero.button2Text || "পরীক্ষার ফলাফল অনুসন্ধান"}</span>
                   </Link>
                 )}
+
+                <Link
+                  href="/attendance"
+                  className="inline-flex items-center gap-2 bg-emerald-800/90 hover:bg-emerald-700 text-white font-bold px-6 sm:px-7 py-3.5 rounded-xl border border-emerald-400/50 shadow-lg backdrop-blur-sm transition-all hover:scale-105 text-sm sm:text-base"
+                >
+                  <UserCheck className="w-5 h-5 text-[#DDAA00]" />
+                  <span>উপস্থিতি যাচাই</span>
+                </Link>
               </div>
             )}
 
