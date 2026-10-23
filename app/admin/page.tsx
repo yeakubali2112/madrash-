@@ -27,7 +27,8 @@ import {
   RoutinePeriod,
   defaultClassRoutines,
   AlumniStudent,
-  defaultAlumniStudents
+  defaultAlumniStudents,
+  SubjectResult
 } from '@/lib/data';
 import {
   ShieldCheck,
@@ -98,7 +99,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Database,
-  FileSpreadsheet
+  FileSpreadsheet,
+  BookOpen,
+  FileText,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import {
   getSupabaseConfig,
@@ -153,6 +158,8 @@ export default function AdminDashboardPage() {
     deleteApplication,
     results,
     addResult,
+    updateResult,
+    deleteResult,
     messages,
     markMessageRead,
     deleteMessage,
@@ -791,6 +798,265 @@ export default function AdminDashboardPage() {
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
+  };
+
+  // Results Management State
+  const [resultSearchQuery, setResultSearchQuery] = useState('');
+  const [resultExamFilter, setResultExamFilter] = useState('all');
+  const [resultClassFilter, setResultClassFilter] = useState('all');
+  const [expandedResultIds, setExpandedResultIds] = useState<string[]>([]);
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [editingResultId, setEditingResultId] = useState<string | null>(null);
+  const [viewingResult, setViewingResult] = useState<ResultRecord | null>(null);
+  const [resultToast, setResultToast] = useState<{ show: boolean; message: string }>({ show: false, message: '' });
+
+  // Standard Subject Presets
+  const dakhilSubjectsPreset: SubjectResult[] = [
+    { name: 'কুরআন মাজীদ ও তাজবীদ', fullMarks: 100, obtainedMarks: 85, grade: 'A+', point: 5.0 },
+    { name: 'হাদিস শরীফ ও উসূলে হাদিস', fullMarks: 100, obtainedMarks: 82, grade: 'A+', point: 5.0 },
+    { name: 'আল-আকাইদ ও ফিকাহ্', fullMarks: 100, obtainedMarks: 80, grade: 'A+', point: 5.0 },
+    { name: 'আরবি ১ম পত্র', fullMarks: 100, obtainedMarks: 78, grade: 'A', point: 4.0 },
+    { name: 'আরবি ২য় পত্র', fullMarks: 100, obtainedMarks: 75, grade: 'A', point: 4.0 },
+    { name: 'বাংলা ১ম ও ২য় পত্র', fullMarks: 100, obtainedMarks: 76, grade: 'A', point: 4.0 },
+    { name: 'ইংরেজি ১ম ও ২য় পত্র', fullMarks: 100, obtainedMarks: 72, grade: 'A', point: 4.0 },
+    { name: 'গণিত', fullMarks: 100, obtainedMarks: 84, grade: 'A+', point: 5.0 },
+    { name: 'তথ্য ও যোগাযোগ প্রযুক্তি', fullMarks: 50, obtainedMarks: 45, grade: 'A+', point: 5.0 }
+  ];
+
+  const generalJuniorSubjectsPreset: SubjectResult[] = [
+    { name: 'কুরআন মাজীদ ও আকাইদ-ফিকহ', fullMarks: 100, obtainedMarks: 80, grade: 'A+', point: 5.0 },
+    { name: 'আরবি', fullMarks: 100, obtainedMarks: 75, grade: 'A', point: 4.0 },
+    { name: 'বাংলা', fullMarks: 100, obtainedMarks: 78, grade: 'A', point: 4.0 },
+    { name: 'ইংরেজি', fullMarks: 100, obtainedMarks: 70, grade: 'A', point: 4.0 },
+    { name: 'গণিত', fullMarks: 100, obtainedMarks: 82, grade: 'A+', point: 5.0 },
+    { name: 'বাংলাদেশ ও বিশ্বপরিচয়', fullMarks: 100, obtainedMarks: 76, grade: 'A', point: 4.0 },
+    { name: 'সাধারণ বিজ্ঞান', fullMarks: 100, obtainedMarks: 80, grade: 'A+', point: 5.0 },
+    { name: 'তথ্য ও যোগাযোগ প্রযুক্তি', fullMarks: 50, obtainedMarks: 42, grade: 'A', point: 4.0 }
+  ];
+
+  const initialResultForm: {
+    studentName: string;
+    rollNo: string;
+    regNo: string;
+    examName: string;
+    classYear: string;
+    session: string;
+    publishDate: string;
+    subjects: SubjectResult[];
+    gpa: number;
+    grade: string;
+    resultStatus: 'উত্তীর্ণ' | 'অনুত্তীর্ণ';
+  } = {
+    studentName: '',
+    rollNo: '',
+    regNo: '',
+    examName: 'দাখিল প্রাক-নির্বাচনী পরীক্ষা ২০২৬',
+    classYear: '১০ম শ্রেণি (দাখিল)',
+    session: '২০২৫-২০২৬',
+    publishDate: new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' }),
+    subjects: [
+      { name: 'কুরআন মাজীদ ও তাজবীদ', fullMarks: 100, obtainedMarks: 80, grade: 'A+', point: 5.0 },
+      { name: 'হাদিস শরীফ', fullMarks: 100, obtainedMarks: 75, grade: 'A', point: 4.0 },
+      { name: 'বাংলা', fullMarks: 100, obtainedMarks: 72, grade: 'A', point: 4.0 },
+      { name: 'ইংরেজি', fullMarks: 100, obtainedMarks: 68, grade: 'A-', point: 3.5 },
+      { name: 'গণিত', fullMarks: 100, obtainedMarks: 85, grade: 'A+', point: 5.0 }
+    ],
+    gpa: 4.5,
+    grade: 'A',
+    resultStatus: 'উত্তীর্ণ'
+  };
+
+  const [resultForm, setResultForm] = useState(initialResultForm);
+
+  // Helper to calculate grade and point from marks
+  const calcGradeAndPoint = (obtained: number, full: number): { grade: string; point: number } => {
+    if (full <= 0) return { grade: 'F', point: 0.0 };
+    const pct = (obtained / full) * 100;
+    if (pct >= 80) return { grade: 'A+', point: 5.0 };
+    if (pct >= 70) return { grade: 'A', point: 4.0 };
+    if (pct >= 60) return { grade: 'A-', point: 3.5 };
+    if (pct >= 50) return { grade: 'B', point: 3.0 };
+    if (pct >= 40) return { grade: 'C', point: 2.0 };
+    if (pct >= 33) return { grade: 'D', point: 1.0 };
+    return { grade: 'F', point: 0.0 };
+  };
+
+  // Helper to calculate GPA, Grade and Status from list of subjects
+  const calculateOverallResult = (subs: SubjectResult[]) => {
+    if (!subs || subs.length === 0) {
+      return { gpa: 0, grade: 'F', resultStatus: 'অনুত্তীর্ণ' as const };
+    }
+    const hasFail = subs.some(s => s.point === 0);
+    if (hasFail) {
+      return { gpa: 0.0, grade: 'F', resultStatus: 'অনুত্তীর্ণ' as const };
+    }
+    const totalPoints = subs.reduce((acc, s) => acc + (s.point || 0), 0);
+    const avg = totalPoints / subs.length;
+    const gpa = Math.min(5.0, Math.round(avg * 100) / 100);
+    let grade = 'F';
+    if (gpa >= 5.0) grade = 'A+';
+    else if (gpa >= 4.0) grade = 'A';
+    else if (gpa >= 3.5) grade = 'A-';
+    else if (gpa >= 3.0) grade = 'B';
+    else if (gpa >= 2.0) grade = 'C';
+    else if (gpa >= 1.0) grade = 'D';
+
+    return {
+      gpa,
+      grade,
+      resultStatus: 'উত্তীর্ণ' as const
+    };
+  };
+
+  const showResultNotification = (msg: string) => {
+    setResultToast({ show: true, message: msg });
+    setTimeout(() => {
+      setResultToast({ show: false, message: '' });
+    }, 3500);
+  };
+
+  const handleOpenAddResult = () => {
+    setEditingResultId(null);
+    setResultForm({
+      ...initialResultForm,
+      publishDate: new Date().toLocaleDateString('bn-BD', { day: 'numeric', month: 'long', year: 'numeric' })
+    });
+    setShowResultModal(true);
+  };
+
+  const handleOpenEditResult = (res: ResultRecord) => {
+    setEditingResultId(res.id);
+    setResultForm({
+      studentName: res.studentName,
+      rollNo: res.rollNo,
+      regNo: res.regNo || '',
+      examName: res.examName,
+      classYear: res.classYear,
+      session: res.session,
+      publishDate: res.publishDate,
+      subjects: res.subjects && res.subjects.length > 0 ? JSON.parse(JSON.stringify(res.subjects)) : [],
+      gpa: res.gpa,
+      grade: res.grade,
+      resultStatus: res.resultStatus
+    });
+    setShowResultModal(true);
+  };
+
+  const handleDeleteResult = (id: string, name: string) => {
+    if (confirm(`আপনি কি নিশ্চিত যে "${name}"-এর ফলাফল মুছে ফেলতে চান?`)) {
+      deleteResult(id);
+      showResultNotification('ফলাফল সফলভাবে মুছে ফেলা হয়েছে!');
+    }
+  };
+
+  const handleSubjectChange = (index: number, field: keyof SubjectResult, val: any) => {
+    const updated = [...resultForm.subjects];
+    const item = { ...updated[index], [field]: val };
+    
+    // Auto-update grade and point if fullMarks or obtainedMarks changes
+    if (field === 'obtainedMarks' || field === 'fullMarks') {
+      const full = field === 'fullMarks' ? Number(val) : item.fullMarks;
+      const obtained = field === 'obtainedMarks' ? Number(val) : item.obtainedMarks;
+      const calc = calcGradeAndPoint(obtained, full);
+      item.grade = calc.grade;
+      item.point = calc.point;
+    }
+    updated[index] = item;
+    
+    // Auto calculate overall gpa
+    const overall = calculateOverallResult(updated);
+    setResultForm({
+      ...resultForm,
+      subjects: updated,
+      gpa: overall.gpa,
+      grade: overall.grade,
+      resultStatus: overall.resultStatus
+    });
+  };
+
+  const handleAddSubjectRow = () => {
+    const newSub: SubjectResult = {
+      name: '',
+      fullMarks: 100,
+      obtainedMarks: 0,
+      grade: 'F',
+      point: 0.0
+    };
+    const updated = [...resultForm.subjects, newSub];
+    setResultForm({ ...resultForm, subjects: updated });
+  };
+
+  const handleRemoveSubjectRow = (index: number) => {
+    const updated = resultForm.subjects.filter((_, i) => i !== index);
+    const overall = calculateOverallResult(updated);
+    setResultForm({
+      ...resultForm,
+      subjects: updated,
+      gpa: overall.gpa,
+      grade: overall.grade,
+      resultStatus: overall.resultStatus
+    });
+  };
+
+  const handleLoadSubjectPreset = (preset: SubjectResult[]) => {
+    const clone = JSON.parse(JSON.stringify(preset));
+    const overall = calculateOverallResult(clone);
+    setResultForm({
+      ...resultForm,
+      subjects: clone,
+      gpa: overall.gpa,
+      grade: overall.grade,
+      resultStatus: overall.resultStatus
+    });
+  };
+
+  const handleSaveResult = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resultForm.studentName.trim() || !resultForm.rollNo.trim()) {
+      alert('শিক্ষার্থীর নাম ও রোল নম্বর অবশ্যই পূরণ করতে হবে!');
+      return;
+    }
+
+    if (editingResultId) {
+      updateResult(editingResultId, {
+        studentName: resultForm.studentName.trim(),
+        rollNo: resultForm.rollNo.trim(),
+        regNo: resultForm.regNo.trim(),
+        examName: resultForm.examName.trim(),
+        classYear: resultForm.classYear.trim(),
+        session: resultForm.session.trim(),
+        publishDate: resultForm.publishDate.trim(),
+        subjects: resultForm.subjects,
+        gpa: Number(resultForm.gpa),
+        grade: resultForm.grade.trim(),
+        resultStatus: resultForm.resultStatus
+      });
+      showResultNotification(`"${resultForm.studentName}"-এর ফলাফল সফলভাবে আপডেট হয়েছে!`);
+    } else {
+      addResult({
+        studentName: resultForm.studentName.trim(),
+        rollNo: resultForm.rollNo.trim(),
+        regNo: resultForm.regNo.trim(),
+        examName: resultForm.examName.trim(),
+        classYear: resultForm.classYear.trim(),
+        session: resultForm.session.trim(),
+        publishDate: resultForm.publishDate.trim(),
+        subjects: resultForm.subjects,
+        gpa: Number(resultForm.gpa),
+        grade: resultForm.grade.trim(),
+        resultStatus: resultForm.resultStatus
+      });
+      showResultNotification(`"${resultForm.studentName}"-এর নতুন ফলাফল সফলভাবে যোগ করা হয়েছে!`);
+    }
+
+    setShowResultModal(false);
+    setEditingResultId(null);
+  };
+
+  const toggleResultExpand = (id: string) => {
+    setExpandedResultIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
   };
 
   // Settings Form State
@@ -4297,39 +4563,313 @@ export default function AdminDashboardPage() {
           {/* TAB 5: RESULTS MANAGEMENT */}
           {activeTab === 'results' && (
             <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-slate-200 pb-4">
+              {/* Top Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-5">
                 <div>
-                  <h2 className="text-xl font-bold text-slate-900">ফলাফল ও মার্কস ব্যবস্থাপনা</h2>
-                  <p className="text-xs text-slate-500">অনলাইন পরীক্ষার ফলাফল ডেটাবেজ</p>
+                  <div className="flex items-center gap-2">
+                    <span className="p-2 bg-emerald-100 text-emerald-800 rounded-lg">
+                      <Award className="w-5 h-5" />
+                    </span>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">ফলাফল ও মার্কস ব্যবস্থাপনা</h2>
+                      <p className="text-xs text-slate-500">অনলাইন পরীক্ষার ফলাফল ডেটাবেজ, মার্কশিট তৈরি ও নম্বরপত্র এডিট</p>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleOpenAddResult}
+                    className="px-4 py-2.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন ফলাফল যোগ করুন</span>
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {results.map((res) => (
-                  <div key={res.id} className="p-4 rounded-xl border border-slate-200 bg-slate-50">
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <span className="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                          {res.examName}
-                        </span>
-                        <h4 className="font-bold text-base text-slate-900 mt-1">
-                          {res.studentName} (রোল: {res.rollNo}, রেজি: {res.regNo})
-                        </h4>
-                        <p className="text-xs text-slate-600">{res.classYear} • সেশন: {res.session}</p>
-                      </div>
-                      <div className="text-right">
-                        <span className="text-lg font-black text-emerald-900">GPA {res.gpa.toFixed(2)}</span>
-                        <span className="block text-xs font-bold text-amber-700">গ্রেড: {res.grade} ({res.resultStatus})</span>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-slate-500 pt-2 border-t border-slate-200 flex justify-between">
-                      <span>মোট বিষয়: {res.subjects.length}টি</span>
-                      <span>প্রকাশের তারিখ: {res.publishDate}</span>
-                    </div>
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-2xs">
+                  <div className="text-xs font-semibold text-slate-500">মোট ফলাফল এন্ট্রি</div>
+                  <div className="text-2xl font-black text-slate-900 mt-1">{results.length} জন</div>
+                  <div className="text-[11px] text-slate-400 mt-0.5">ডাটাবেজে সংরক্ষিত রেকর্ড</div>
+                </div>
+                <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-emerald-800">কৃতকার্য / উত্তীর্ণ</div>
+                  <div className="text-2xl font-black text-emerald-900 mt-1">
+                    {results.filter(r => r.resultStatus === 'উত্তীর্ণ').length} জন
                   </div>
-                ))}
+                  <div className="text-[11px] text-emerald-700 mt-0.5">
+                    পাশের হার {results.length > 0 ? Math.round((results.filter(r => r.resultStatus === 'উত্তীর্ণ').length / results.length) * 100) : 0}%
+                  </div>
+                </div>
+                <div className="p-4 rounded-xl border border-amber-200 bg-amber-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-amber-900">জিপিএ ৫.০০ (A+)</div>
+                  <div className="text-2xl font-black text-amber-950 mt-1">
+                    {results.filter(r => r.gpa >= 5.0).length} জন
+                  </div>
+                  <div className="text-[11px] text-amber-800 mt-0.5">সর্বোচ্চ গ্রেড অর্জনকারী</div>
+                </div>
+                <div className="p-4 rounded-xl border border-blue-200 bg-blue-50/60 shadow-2xs">
+                  <div className="text-xs font-semibold text-blue-800">তালিকাভুক্ত পরীক্ষা</div>
+                  <div className="text-2xl font-black text-blue-900 mt-1">
+                    {Array.from(new Set(results.map(r => r.examName))).length} টি
+                  </div>
+                  <div className="text-[11px] text-blue-700 mt-0.5">ভিন্ন ভিন্ন পরীক্ষা সেশন</div>
+                </div>
               </div>
+
+              {/* Filters and Search Bar */}
+              <div className="p-4 rounded-xl border border-slate-200 bg-white space-y-3">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="শিক্ষার্থীর নাম, রোল বা রেজি নম্বর খুঁজুন..."
+                      value={resultSearchQuery}
+                      onChange={(e) => setResultSearchQuery(e.target.value)}
+                      className="w-full pl-9 pr-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    />
+                  </div>
+                  <div>
+                    <select
+                      value={resultExamFilter}
+                      onChange={(e) => setResultExamFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    >
+                      <option value="all">সকল পরীক্ষা</option>
+                      {Array.from(new Set(results.map(r => r.examName))).map((exam) => (
+                        <option key={exam} value={exam}>{exam}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <select
+                      value={resultClassFilter}
+                      onChange={(e) => setResultClassFilter(e.target.value)}
+                      className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-700/20 focus:border-emerald-700 bg-slate-50/50"
+                    >
+                      <option value="all">সকল শ্রেণি</option>
+                      {Array.from(new Set(results.map(r => r.classYear))).map((cls) => (
+                        <option key={cls} value={cls}>{cls}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {(resultSearchQuery || resultExamFilter !== 'all' || resultClassFilter !== 'all') && (
+                  <div className="flex items-center justify-between pt-1 text-xs text-slate-500">
+                    <span>
+                      ফিল্টার অনুযায়ী ফলাফল দেখানো হচ্ছে
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResultSearchQuery('');
+                        setResultExamFilter('all');
+                        setResultClassFilter('all');
+                      }}
+                      className="text-emerald-700 hover:underline font-semibold cursor-pointer"
+                    >
+                      ফিল্টার রিসেট করুন
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Results Cards List */}
+              {(() => {
+                const filteredResults = results.filter((res) => {
+                  const q = resultSearchQuery.trim().toLowerCase();
+                  const matchesQuery = !q ||
+                    res.studentName?.toLowerCase().includes(q) ||
+                    res.rollNo?.toLowerCase().includes(q) ||
+                    res.regNo?.toLowerCase().includes(q) ||
+                    res.examName?.toLowerCase().includes(q);
+                  const matchesExam = resultExamFilter === 'all' || res.examName === resultExamFilter;
+                  const matchesClass = resultClassFilter === 'all' || res.classYear === resultClassFilter;
+                  return matchesQuery && matchesExam && matchesClass;
+                });
+
+                if (filteredResults.length === 0) {
+                  return (
+                    <div className="p-12 text-center rounded-2xl border border-dashed border-slate-300 bg-slate-50/50">
+                      <Award className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+                      <h3 className="font-bold text-slate-700 text-sm">কোনো ফলাফল পাওয়া যায়নি</h3>
+                      <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+                        আপনার অনুসন্ধানের সাথে মিল রেখে কোনো ফলাফল পাওয়া যায়নি অথবা এখনও কোনো ফলাফল যুক্ত করা হয়নি।
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddResult}
+                        className="mt-4 px-4 py-2 rounded-xl bg-emerald-800 text-white font-bold text-xs hover:bg-emerald-900 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>নতুন ফলাফল যোগ করুন</span>
+                      </button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {filteredResults.map((res) => {
+                      const isExpanded = expandedResultIds.includes(res.id);
+                      return (
+                        <div
+                          key={res.id}
+                          className="rounded-2xl border border-slate-200 bg-white shadow-2xs hover:border-emerald-300 transition-all overflow-hidden"
+                        >
+                          <div className="p-4 sm:p-5">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                              <div className="space-y-1.5">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <span className="text-[11px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">
+                                    {res.examName}
+                                  </span>
+                                  <span className="text-[11px] font-semibold bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md">
+                                    {res.classYear}
+                                  </span>
+                                  <span className="text-[11px] text-slate-500">
+                                    সেশন: {res.session}
+                                  </span>
+                                </div>
+
+                                <h3 className="text-lg font-bold text-slate-900 mt-1">
+                                  {res.studentName}
+                                </h3>
+
+                                <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
+                                  <span>রোল: <strong className="font-mono text-slate-900">{res.rollNo}</strong></span>
+                                  <span>•</span>
+                                  <span>রেজিস্ট্রেশন: <strong className="font-mono text-slate-900">{res.regNo || '—'}</strong></span>
+                                  <span>•</span>
+                                  <span>মোট বিষয়: <strong className="text-slate-900">{res.subjects?.length || 0}টি</strong></span>
+                                  <span>•</span>
+                                  <span className="text-slate-400">প্রকাশ: {res.publishDate}</span>
+                                </div>
+                              </div>
+
+                              {/* GPA Badge and Actions */}
+                              <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                                <div className="text-left sm:text-right">
+                                  <div className="text-xl sm:text-2xl font-black text-emerald-900">
+                                    GPA {res.gpa.toFixed(2)}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 justify-start sm:justify-end">
+                                    <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md ${
+                                      res.resultStatus === 'উত্তীর্ণ'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-rose-100 text-rose-800'
+                                    }`}>
+                                      গ্রেড: {res.grade} ({res.resultStatus})
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1.5 mt-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewingResult(res)}
+                                    title="নম্বরপত্র / মার্কশিট দেখুন"
+                                    className="p-2 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                  >
+                                    <FileText className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">মার্কশিট</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditResult(res)}
+                                    title="ফলাফল ও নম্বর সংশোধন করুন"
+                                    className="p-2 rounded-lg bg-amber-50 text-amber-800 hover:bg-amber-100 transition-colors cursor-pointer text-xs font-bold flex items-center gap-1"
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                    <span className="hidden sm:inline">এডিট</span>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteResult(res.id, res.studentName)}
+                                    title="ফলাফল মুছে ফেলুন"
+                                    className="p-2 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 transition-colors cursor-pointer text-xs font-bold"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Subject toggle button */}
+                            <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
+                              <button
+                                type="button"
+                                onClick={() => toggleResultExpand(res.id)}
+                                className="text-xs font-semibold text-emerald-800 hover:text-emerald-900 inline-flex items-center gap-1.5 cursor-pointer"
+                              >
+                                {isExpanded ? (
+                                  <>
+                                    <ChevronUp className="w-3.5 h-3.5" />
+                                    <span>বিষয়ভিত্তিক প্রাপ্ত নম্বর লুকান</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ChevronDown className="w-3.5 h-3.5" />
+                                    <span>বিষয়ভিত্তিক প্রাপ্ত নম্বর দেখুন ({res.subjects?.length || 0}টি বিষয়)</span>
+                                  </>
+                                )}
+                              </button>
+                              <span className="text-[11px] text-slate-400 font-mono">আইডি: {res.id}</span>
+                            </div>
+
+                            {/* Collapsible Subject Table */}
+                            {isExpanded && (
+                              <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/50">
+                                <table className="w-full text-left text-xs">
+                                  <thead className="bg-slate-100/80 text-slate-700 border-b border-slate-200 font-bold">
+                                    <tr>
+                                      <th className="py-2 px-3">বিষয়</th>
+                                      <th className="py-2 px-3 text-center">পূর্ণমান</th>
+                                      <th className="py-2 px-3 text-center">প্রাপ্ত নম্বর</th>
+                                      <th className="py-2 px-3 text-center">লেটার গ্রেড</th>
+                                      <th className="py-2 px-3 text-center">গ্রেড পয়েন্ট</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody className="divide-y divide-slate-200/70 text-slate-700 bg-white">
+                                    {res.subjects && res.subjects.length > 0 ? (
+                                      res.subjects.map((sub, idx) => (
+                                        <tr key={idx} className="hover:bg-slate-50/60">
+                                          <td className="py-2 px-3 font-medium text-slate-900">{sub.name}</td>
+                                          <td className="py-2 px-3 text-center font-mono">{sub.fullMarks}</td>
+                                          <td className="py-2 px-3 text-center font-bold font-mono text-emerald-900">{sub.obtainedMarks}</td>
+                                          <td className="py-2 px-3 text-center">
+                                            <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${
+                                              sub.grade === 'F' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-50 text-emerald-800'
+                                            }`}>
+                                              {sub.grade}
+                                            </span>
+                                          </td>
+                                          <td className="py-2 px-3 text-center font-bold font-mono">{sub.point.toFixed(2)}</td>
+                                        </tr>
+                                      ))
+                                    ) : (
+                                      <tr>
+                                        <td colSpan={5} className="py-3 px-3 text-center text-slate-400">
+                                          কোনো বিষয়ের তালিকা পাওয়া যায়নি
+                                        </td>
+                                      </tr>
+                                    )}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
@@ -9757,6 +10297,510 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Result Add/Edit Modal */}
+      {showResultModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-3xl w-full p-6 shadow-2xl my-8 max-h-[92vh] flex flex-col border border-slate-200">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center pb-4 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl">
+                  <Award className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg text-slate-900">
+                    {editingResultId ? 'ফলাফল ও নম্বর সংশোধন করুন' : 'নতুন পরীক্ষার ফলাফল যোগ করুন'}
+                  </h3>
+                  <p className="text-xs text-slate-500">শিক্ষার্থীর পরীক্ষার ফলাফল, বিষয়ভিত্তিক নম্বর ও জিপিএ তথ্য</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowResultModal(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={handleSaveResult} className="flex-1 overflow-y-auto py-4 space-y-5 pr-1 text-xs">
+              {/* Section 1: Basic Information */}
+              <div className="space-y-3">
+                <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs border-b border-slate-100 pb-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                  <span>মৌলিক তথ্য (শিক্ষার্থী ও পরীক্ষা)</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      শিক্ষার্থীর নাম <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={resultForm.studentName}
+                      onChange={(e) => setResultForm({ ...resultForm, studentName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: মোঃ ওমর ফারুক"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      রোল নম্বর <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={resultForm.rollNo}
+                      onChange={(e) => setResultForm({ ...resultForm, rollNo: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="যেমন: ১০১"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">রেজিস্ট্রেশন নম্বর</label>
+                    <input
+                      type="text"
+                      value={resultForm.regNo}
+                      onChange={(e) => setResultForm({ ...resultForm, regNo: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono"
+                      placeholder="যেমন: ২০২৬১০১০১"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">পরীক্ষার নাম</label>
+                    <input
+                      type="text"
+                      value={resultForm.examName}
+                      onChange={(e) => setResultForm({ ...resultForm, examName: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: দাখিল প্রাক-নির্বাচনী পরীক্ষা ২০২৬"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">শ্রেণি</label>
+                    <input
+                      type="text"
+                      value={resultForm.classYear}
+                      onChange={(e) => setResultForm({ ...resultForm, classYear: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: ১০ম শ্রেণি (দাখিল)"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">শিক্ষাবর্ষ / সেশন</label>
+                    <input
+                      type="text"
+                      value={resultForm.session}
+                      onChange={(e) => setResultForm({ ...resultForm, session: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: ২০২৫-২০২৬"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">ফলাফল প্রকাশের তারিখ</label>
+                    <input
+                      type="text"
+                      value={resultForm.publishDate}
+                      onChange={(e) => setResultForm({ ...resultForm, publishDate: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white"
+                      placeholder="যেমন: ১৮ সেপ্টেম্বর ২০২৬"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Subject-wise marks */}
+              <div className="space-y-3 pt-2">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    <span>বিষয়ভিত্তিক নম্বর ও গ্রেড ({resultForm.subjects.length}টি বিষয়)</span>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSubjectPreset(dakhilSubjectsPreset)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 hover:bg-emerald-100 border border-emerald-200 text-[11px] font-semibold cursor-pointer"
+                    >
+                      দাখিল ১০ম প্রিসেট
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLoadSubjectPreset(generalJuniorSubjectsPreset)}
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 text-[11px] font-semibold cursor-pointer"
+                    >
+                      জুনিয়র প্রিসেট
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleAddSubjectRow}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-800 text-white hover:bg-emerald-900 text-[11px] font-bold inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>বিষয় যোগ করুন</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-700 border-b border-slate-200 font-bold">
+                      <tr>
+                        <th className="py-2 px-3">বিষয়ের নাম</th>
+                        <th className="py-2 px-2 text-center w-20">পূর্ণমান</th>
+                        <th className="py-2 px-2 text-center w-24">প্রাপ্ত নম্বর</th>
+                        <th className="py-2 px-2 text-center w-20">গ্রেড</th>
+                        <th className="py-2 px-2 text-center w-20">পয়েন্ট</th>
+                        <th className="py-2 px-2 text-center w-12">মুছুন</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 bg-white">
+                      {resultForm.subjects.map((sub, idx) => (
+                        <tr key={idx} className="hover:bg-slate-50/50">
+                          <td className="py-1.5 px-3">
+                            <input
+                              type="text"
+                              required
+                              value={sub.name}
+                              onChange={(e) => handleSubjectChange(idx, 'name', e.target.value)}
+                              placeholder="বিষয়ের নাম"
+                              className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white text-xs"
+                            />
+                          </td>
+                          <td className="py-1.5 px-2 text-center">
+                            <input
+                              type="number"
+                              min={1}
+                              max={100}
+                              value={sub.fullMarks}
+                              onChange={(e) => handleSubjectChange(idx, 'fullMarks', e.target.value)}
+                              className="w-full px-2 py-1.5 text-center rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white text-xs font-mono"
+                            />
+                          </td>
+                          <td className="py-1.5 px-2 text-center">
+                            <input
+                              type="number"
+                              min={0}
+                              max={sub.fullMarks || 100}
+                              value={sub.obtainedMarks}
+                              onChange={(e) => handleSubjectChange(idx, 'obtainedMarks', e.target.value)}
+                              className="w-full px-2 py-1.5 text-center font-bold font-mono text-emerald-900 rounded-lg border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-700 bg-white text-xs"
+                            />
+                          </td>
+                          <td className="py-1.5 px-2 text-center">
+                            <span className={`inline-block px-2 py-1 rounded-md text-[11px] font-bold ${
+                              sub.grade === 'F' ? 'bg-rose-100 text-rose-800' : 'bg-emerald-50 text-emerald-800'
+                            }`}>
+                              {sub.grade}
+                            </span>
+                          </td>
+                          <td className="py-1.5 px-2 text-center font-mono font-bold text-slate-800">
+                            {sub.point.toFixed(2)}
+                          </td>
+                          <td className="py-1.5 px-2 text-center">
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSubjectRow(idx)}
+                              title="বিষয় মুছুন"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {/* Section 3: Overall GPA and Grade Summary */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-1.5">
+                  <div className="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
+                    <span>চূড়ান্ত ফলাফল (GPA ও গ্রেড)</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const overall = calculateOverallResult(resultForm.subjects);
+                      setResultForm({
+                        ...resultForm,
+                        gpa: overall.gpa,
+                        grade: overall.grade,
+                        resultStatus: overall.resultStatus
+                      });
+                    }}
+                    className="text-[11px] text-emerald-800 font-bold hover:underline cursor-pointer flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                    <span>স্বয়ংক্রিয় হিসাব রিফ্রেশ করুন</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">জিপিএ (GPA)</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min={0}
+                      max={5}
+                      value={resultForm.gpa}
+                      onChange={(e) => setResultForm({ ...resultForm, gpa: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-mono font-bold text-emerald-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">লেটার গ্রেড</label>
+                    <select
+                      value={resultForm.grade}
+                      onChange={(e) => setResultForm({ ...resultForm, grade: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-bold"
+                    >
+                      <option value="A+">A+ (৫.০০)</option>
+                      <option value="A">A (৪.০০)</option>
+                      <option value="A-">A- (৩.৫০)</option>
+                      <option value="B">B (৩.০০)</option>
+                      <option value="C">C (২.০০)</option>
+                      <option value="D">D (১.০০)</option>
+                      <option value="F">F (অনুত্তীর্ণ)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">ফলাফল স্ট্যাটাস</label>
+                    <select
+                      value={resultForm.resultStatus}
+                      onChange={(e) => setResultForm({ ...resultForm, resultStatus: e.target.value as 'উত্তীর্ণ' | 'অনুত্তীর্ণ' })}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-700 bg-white font-bold"
+                    >
+                      <option value="উত্তীর্ণ">উত্তীর্ণ (Passed)</option>
+                      <option value="অনুত্তীর্ণ">অনুত্তীর্ণ (Failed)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {/* Form Actions */}
+              <div className="flex justify-end gap-2 pt-4 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowResultModal(false)}
+                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold hover:bg-slate-50 transition-colors cursor-pointer text-xs"
+                >
+                  বাতিল করুন
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-800 text-white font-bold hover:bg-emerald-900 transition-colors shadow-sm flex items-center gap-1.5 cursor-pointer text-xs"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{editingResultId ? 'পরিবর্তন সংরক্ষণ করুন' : 'ফলাফল সংরক্ষণ করুন'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Viewing Result / Marksheet Modal */}
+      {viewingResult && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl my-8 border border-slate-200 space-y-4">
+            {/* Modal Header */}
+            <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-emerald-800" />
+                <h3 className="font-bold text-base text-slate-900">নম্বরপত্র ও ফলাফল বিবরণী (Marksheet)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setViewingResult(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Printable Marksheet Container */}
+            <div className="p-6 rounded-2xl border-2 border-emerald-900/20 bg-emerald-50/20 space-y-5 print:border-none print:p-0">
+              {/* Institution Header */}
+              <div className="text-center space-y-1 border-b border-emerald-900/15 pb-4">
+                <div className="flex justify-center mb-1">
+                  <Image
+                    src="/logo.png"
+                    alt="Logo"
+                    width={56}
+                    height={56}
+                    className="h-14 w-auto object-contain"
+                  />
+                </div>
+                <h2 className="text-lg font-black text-emerald-950">
+                  {info.name}
+                </h2>
+                <p className="text-[11px] text-slate-600">
+                  {info.address} • মাদ্রাসা কোড: {info.madrasahCode} • ইআইআইএন: {info.eiin}
+                </p>
+                <div className="inline-block mt-1 px-3 py-1 rounded-full bg-emerald-800 text-white font-bold text-xs tracking-wide">
+                  {viewingResult.examName}
+                </div>
+              </div>
+
+              {/* Student Details Grid */}
+              <div className="grid grid-cols-2 gap-3 p-3.5 bg-white/90 rounded-xl border border-emerald-900/10 text-xs">
+                <div>
+                  <span className="text-slate-500">শিক্ষার্থীর নাম:</span>{' '}
+                  <strong className="text-slate-900 block font-bold mt-0.5">{viewingResult.studentName}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">শ্রেণি:</span>{' '}
+                  <strong className="text-slate-900 block font-bold mt-0.5">{viewingResult.classYear}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">রোল নম্বর:</span>{' '}
+                  <strong className="font-mono text-slate-900 block font-bold mt-0.5">{viewingResult.rollNo}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">রেজিস্ট্রেশন নম্বর:</span>{' '}
+                  <strong className="font-mono text-slate-900 block font-bold mt-0.5">{viewingResult.regNo || '—'}</strong>
+                </div>
+                <div>
+                  <span className="text-slate-500">শিক্ষাবর্ষ:</span>{' '}
+                  <span className="text-slate-800 font-semibold">{viewingResult.session}</span>
+                </div>
+                <div>
+                  <span className="text-slate-500">ফলাফল প্রকাশের তারিখ:</span>{' '}
+                  <span className="text-slate-800 font-semibold">{viewingResult.publishDate}</span>
+                </div>
+              </div>
+
+              {/* Subject Marks Table */}
+              <div className="overflow-x-auto rounded-xl border border-emerald-900/10 bg-white">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-emerald-900/5 text-emerald-950 border-b border-emerald-900/10 font-bold">
+                    <tr>
+                      <th className="py-2 px-3">বিষয়</th>
+                      <th className="py-2 px-2 text-center">পূর্ণমান</th>
+                      <th className="py-2 px-2 text-center">প্রাপ্ত নম্বর</th>
+                      <th className="py-2 px-2 text-center">গ্রেড</th>
+                      <th className="py-2 px-2 text-center">পয়েন্ট</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-emerald-900/5 text-slate-700">
+                    {viewingResult.subjects && viewingResult.subjects.length > 0 ? (
+                      viewingResult.subjects.map((sub, idx) => (
+                        <tr key={idx} className="hover:bg-emerald-50/30">
+                          <td className="py-2 px-3 font-medium text-slate-900">{sub.name}</td>
+                          <td className="py-2 px-2 text-center font-mono">{sub.fullMarks}</td>
+                          <td className="py-2 px-2 text-center font-bold font-mono text-emerald-900">{sub.obtainedMarks}</td>
+                          <td className="py-2 px-2 text-center font-bold">
+                            <span className={sub.grade === 'F' ? 'text-rose-600' : 'text-emerald-800'}>
+                              {sub.grade}
+                            </span>
+                          </td>
+                          <td className="py-2 px-2 text-center font-bold font-mono">{sub.point.toFixed(2)}</td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="py-3 text-center text-slate-400">
+                          কোনো বিষয় তালিকাভুক্ত নেই
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Overall GPA Box */}
+              <div className="p-3.5 rounded-xl bg-white border border-emerald-900/15 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-slate-500 font-semibold">ফলাফলের সার্বিক মূল্যায়ন</div>
+                  <div className="text-sm font-bold text-slate-800 mt-0.5">
+                    স্ট্যাটাস: <span className={viewingResult.resultStatus === 'উত্তীর্ণ' ? 'text-emerald-700' : 'text-rose-600'}>{viewingResult.resultStatus}</span>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-black text-emerald-950 font-mono">
+                    GPA {viewingResult.gpa.toFixed(2)}
+                  </div>
+                  <div className="text-xs font-bold text-amber-800">
+                    লেটার গ্রেড: {viewingResult.grade}
+                  </div>
+                </div>
+              </div>
+
+              {/* Signatures */}
+              <div className="flex justify-between items-end pt-8 mt-4 border-t border-emerald-900/15 text-[11px] text-slate-600">
+                <div className="text-center">
+                  <div className="border-t border-slate-400 pt-1 font-semibold text-slate-800">
+                    শ্রেণি শিক্ষক
+                  </div>
+                </div>
+                <div className="text-center">
+                  <div className="border-t border-slate-400 pt-1 font-bold text-slate-800">
+                    অধ্যক্ষ / সুপারিনটেনডেন্ট
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex justify-between items-center gap-2 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-black transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>প্রিন্ট করুন</span>
+              </button>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const toEdit = viewingResult;
+                    setViewingResult(null);
+                    handleOpenEditResult(toEdit);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-emerald-700 text-emerald-800 text-xs font-bold hover:bg-emerald-50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  <span>তথ্য এডিট করুন</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewingResult(null)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold hover:bg-slate-200 transition-colors cursor-pointer"
+                >
+                  বন্ধ করুন
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Toast Notification */}
+      {resultToast.show && (
+        <div className="fixed bottom-6 right-6 z-50 bg-emerald-900 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-2.5 text-xs font-bold border border-emerald-700 animate-in fade-in slide-in-from-bottom-4">
+          <CheckCircle className="w-4 h-4 text-amber-300 shrink-0" />
+          <span>{resultToast.message}</span>
         </div>
       )}
 

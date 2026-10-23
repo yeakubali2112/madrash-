@@ -121,6 +121,8 @@ interface MadrasahContextType {
   updateApplicationStatus: (id: string, status: 'অপেক্ষমান' | 'অনুমোদিত' | 'বাতিল', remarks?: string) => void;
   deleteApplication: (id: string) => void;
   addResult: (result: Omit<ResultRecord, 'id'>) => void;
+  updateResult: (id: string, result: Partial<ResultRecord>) => void;
+  deleteResult: (id: string) => void;
   submitContactMessage: (msg: Omit<ContactMessage, 'id' | 'date' | 'isRead'>) => void;
   markMessageRead: (id: string) => void;
   deleteMessage: (id: string) => void;
@@ -550,6 +552,20 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveCloudKey('results', updated);
   };
 
+  const updateResult = (id: string, resultData: Partial<ResultRecord>) => {
+    const updated = results.map(r => r.id === id ? { ...r, ...resultData } : r);
+    setResults(updated);
+    saveStoredResults(updated);
+    saveCloudKey('results', updated);
+  };
+
+  const deleteResult = (id: string) => {
+    const updated = results.filter(r => r.id !== id);
+    setResults(updated);
+    saveStoredResults(updated);
+    saveCloudKey('results', updated);
+  };
+
   const submitContactMessage = (msgData: Omit<ContactMessage, 'id' | 'date' | 'isRead'>) => {
     const newMsg: ContactMessage = {
       ...msgData,
@@ -929,6 +945,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         updateApplicationStatus,
         deleteApplication,
         addResult,
+        updateResult,
+        deleteResult,
         submitContactMessage,
         markMessageRead,
         deleteMessage,
