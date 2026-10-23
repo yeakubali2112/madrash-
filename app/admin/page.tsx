@@ -2659,17 +2659,8 @@ export default function AdminDashboardPage() {
 
 
                 {/* Bottom Save Bar */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-200">
-                  <button
-                    type="button"
-                    onClick={handleHeroReset}
-                    className="text-xs text-rose-600 hover:text-rose-800 font-bold hover:underline flex items-center gap-1"
-                  >
-                    <RefreshCw className="w-3.5 h-3.5" />
-                    <span>ডিফল্ট সেটিংসে ফিরিয়ে নিন</span>
-                  </button>
-
-                  <div className="flex items-center gap-3 w-full sm:w-auto">
+                <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-slate-200">
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
                     {heroSettingsSaved && (
                       <span className="text-xs text-emerald-700 font-bold flex items-center gap-1">
                         <Check className="w-4 h-4" /> সংরক্ষিত হয়েছে!
