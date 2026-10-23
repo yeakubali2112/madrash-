@@ -61,13 +61,13 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          "'Kalpurush'",
           "'Google Sans'",
           "'Product Sans'",
           "'Plus Jakarta Sans'",
           "'Noto Sans Bengali'",
           "'Hind Siliguri'",
           "'SolaimanLipi'",
-          "'Kalpurush'",
           "system-ui",
           "-apple-system",
           "sans-serif"
