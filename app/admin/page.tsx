@@ -97,7 +97,8 @@ import {
   Filter,
   ChevronLeft,
   ChevronRight,
-  Database
+  Database,
+  FileSpreadsheet
 } from 'lucide-react';
 import {
   getSupabaseConfig,

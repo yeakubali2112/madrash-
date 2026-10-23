@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useMadrasah } from '@/context/MadrasahContext';
 import { defaultHeroSettings, HeroSettings } from '@/lib/data';
 import { getStoredHeroSettings } from '@/lib/storage';
