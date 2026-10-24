@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMadrasah } from '@/context/MadrasahContext';
-import { VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
+import { VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail, getVideoThumbnail } from '@/lib/data';
 import { Play, Film, Calendar, Clock, X, ExternalLink, Video as VideoIcon } from 'lucide-react';
 
 export const VideoSection: React.FC = () => {
@@ -22,10 +22,7 @@ export const VideoSection: React.FC = () => {
   };
 
   const getDisplayThumbnail = (video: VideoItem) => {
-    if (video.thumbnailUrl) return video.thumbnailUrl;
-    const ytThumb = getYouTubeThumbnail(video.videoUrl);
-    if (ytThumb) return ytThumb;
-    return 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+    return getVideoThumbnail(video);
   };
 
   return (

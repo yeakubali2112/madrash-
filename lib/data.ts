@@ -270,25 +270,157 @@ export interface VideoItem {
   date: string;
 }
 
-export function getYouTubeEmbedUrl(url: string): string | null {
+export function extractYouTubeId(url: string): string | null {
   if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  if (match && match[2] && match[2].length === 11) {
-    return `https://www.youtube-nocookie.com/embed/${match[2]}?autoplay=1&rel=0`;
+  const match = url.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([\w-]{11})/i);
+  return match && match[1] ? match[1] : null;
+}
+
+export function getYouTubeEmbedUrl(url: string): string | null {
+  const id = extractYouTubeId(url);
+  if (id) {
+    return `https://www.youtube-nocookie.com/embed/${id}?autoplay=1&rel=0`;
   }
   return null;
 }
 
 export function getYouTubeThumbnail(url: string): string | null {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  if (match && match[2] && match[2].length === 11) {
-    return `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg`;
+  const id = extractYouTubeId(url);
+  if (id) {
+    return `https://img.youtube.com/vi/${id}/hqdefault.jpg`;
   }
   return null;
 }
+
+export function getVideoThumbnail(video: Partial<VideoItem> | null | undefined): string {
+  if (!video) return '/logo.png';
+
+  // 1. If it's a YouTube video URL, extract real YouTube video thumbnail
+  if (video.videoUrl && (video.videoType === 'youtube' || video.videoUrl.includes('youtu'))) {
+    const ytThumb = getYouTubeThumbnail(video.videoUrl);
+    // If a custom uploaded data-URL thumbnail was explicitly set, use that
+    if (video.thumbnailUrl && video.thumbnailUrl.startsWith('data:image')) {
+      return video.thumbnailUrl;
+    }
+    if (ytThumb) return ytThumb;
+  }
+
+  // 2. If it has a generated or uploaded thumbnail that is NOT the old Unsplash stock photo
+  if (video.thumbnailUrl && !video.thumbnailUrl.includes('unsplash.com') && !video.thumbnailUrl.includes('images.unsplash')) {
+    return video.thumbnailUrl;
+  }
+
+  // 3. Try to get YouTube thumbnail anyway if videoUrl has YouTube ID
+  if (video.videoUrl) {
+    const ytThumb = getYouTubeThumbnail(video.videoUrl);
+    if (ytThumb) return ytThumb;
+  }
+
+  // 4. If thumbnail was set
+  if (video.thumbnailUrl) {
+    return video.thumbnailUrl;
+  }
+
+  // Fallback
+  return '/logo.png';
+}
+
+/**
+ * Capture a frame from an uploaded video file or video object URL
+ */
+export function captureVideoThumbnail(
+  fileOrUrl: File | Blob | string,
+  seekTime: number = 1.5
+): Promise<{ thumbnailUrl: string; durationStr: string; durationSec: number }> {
+  return new Promise((resolve) => {
+    if (typeof window === 'undefined') {
+      resolve({ thumbnailUrl: '', durationStr: '', durationSec: 0 });
+      return;
+    }
+
+    try {
+      const video = document.createElement('video');
+      video.crossOrigin = 'anonymous';
+      video.preload = 'metadata';
+      video.muted = true;
+      video.playsInline = true;
+
+      let isObjectUrl = false;
+      let url = '';
+
+      if (typeof fileOrUrl === 'string') {
+        url = fileOrUrl;
+      } else {
+        url = URL.createObjectURL(fileOrUrl);
+        isObjectUrl = true;
+      }
+
+      video.src = url;
+
+      const cleanup = () => {
+        if (isObjectUrl) {
+          try {
+            URL.revokeObjectURL(url);
+          } catch (e) {}
+        }
+        video.remove();
+      };
+
+      const timer = setTimeout(() => {
+        cleanup();
+        resolve({ thumbnailUrl: '', durationStr: '', durationSec: 0 });
+      }, 10000);
+
+      video.onloadedmetadata = () => {
+        const dur = video.duration || 0;
+        let durStr = '';
+        if (dur > 0 && isFinite(dur)) {
+          const mins = Math.floor(dur / 60);
+          const secs = Math.floor(dur % 60);
+          durStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+        }
+
+        const targetTime = dur > 0 ? (dur > 2 ? seekTime : dur / 2) : 1;
+        video.currentTime = targetTime;
+
+        video.onseeked = () => {
+          clearTimeout(timer);
+          try {
+            const canvas = document.createElement('canvas');
+            const maxW = 640;
+            const w = video.videoWidth || 640;
+            const h = video.videoHeight || 360;
+            const ratio = h / w;
+            canvas.width = maxW;
+            canvas.height = Math.round(maxW * ratio);
+
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+              cleanup();
+              resolve({ thumbnailUrl: dataUrl, durationStr: durStr, durationSec: dur });
+              return;
+            }
+          } catch (e) {
+            console.warn('Failed to capture video frame to canvas:', e);
+          }
+          cleanup();
+          resolve({ thumbnailUrl: '', durationStr: durStr, durationSec: dur });
+        };
+      };
+
+      video.onerror = () => {
+        clearTimeout(timer);
+        cleanup();
+        resolve({ thumbnailUrl: '', durationStr: '', durationSec: 0 });
+      };
+    } catch (e) {
+      resolve({ thumbnailUrl: '', durationStr: '', durationSec: 0 });
+    }
+  });
+}
+
 
 export interface ContactMessage {
   id: string;
@@ -924,7 +1056,7 @@ export const defaultVideos: VideoItem[] = [
     category: "ওয়াজ মাহফিল",
     videoType: "youtube",
     videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80",
+    thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     description: "পশ্চিম আলোহালী ইসলামিয়া আদর্শ বহুমুখী দাখিল মাদ্রাসার বার্ষিক ইসলামী সম্মেলন ও কৃতী শিক্ষার্থীদের দোআ মাহফিল।",
     duration: "১৫:২০",
     date: "২০২৬-১০-১৫"
@@ -935,7 +1067,7 @@ export const defaultVideos: VideoItem[] = [
     category: "কুরআন তিলাওয়াত",
     videoType: "youtube",
     videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1609599006353-e629aaabfeae?w=800&auto=format&fit=crop&q=80",
+    thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     description: "হিফজুল কুরআন বিভাগের শিক্ষার্থীদের হৃদয়স্পর্শী কুরআন তিলাওয়াত।",
     duration: "১০:৪৫",
     date: "২০২৬-০৯-২০"
@@ -946,7 +1078,7 @@ export const defaultVideos: VideoItem[] = [
     category: "বিজ্ঞান মেলা",
     videoType: "youtube",
     videoUrl: "https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-    thumbnailUrl: "https://images.unsplash.com/photo-1577896851231-70ef18881754?w=800&auto=format&fit=crop&q=80",
+    thumbnailUrl: "https://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg",
     description: "মাদ্রাসার শিক্ষার্থীদের বিজ্ঞান প্রজেক্ট প্রদর্শনী ও বার্ষিক ক্রীড়ার আকর্ষণীয় মুহূর্ত।",
     duration: "১২:১০",
     date: "২০২৬-০৮-১২"

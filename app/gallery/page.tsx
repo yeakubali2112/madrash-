@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { GalleryItem, VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
+import { GalleryItem, VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail, getVideoThumbnail } from '@/lib/data';
 import { useMadrasah } from '@/context/MadrasahContext';
 import { Camera, Filter, X, Eye, ImageOff, Play, Film, Calendar, Clock, Video as VideoIcon } from 'lucide-react';
 
@@ -44,10 +44,7 @@ function GalleryContent() {
   };
 
   const getDisplayThumbnail = (video: VideoItem) => {
-    if (video.thumbnailUrl) return video.thumbnailUrl;
-    const ytThumb = getYouTubeThumbnail(video.videoUrl);
-    if (ytThumb) return ytThumb;
-    return 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+    return getVideoThumbnail(video);
   };
 
   return (

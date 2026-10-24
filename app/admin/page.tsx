@@ -19,6 +19,8 @@ import {
   defaultVideos,
   getYouTubeEmbedUrl,
   getYouTubeThumbnail,
+  getVideoThumbnail,
+  captureVideoThumbnail,
   HeroSettings,
   defaultHeroSettings,
   HeroBannerSlide,
@@ -585,6 +587,7 @@ export default function AdminDashboardPage() {
   const [videoSaving, setVideoSaving] = useState(false);
   const [videoCategoryFilter, setVideoCategoryFilter] = useState<string>('সকল');
   const [videoSearchQuery, setVideoSearchQuery] = useState<string>('');
+  const [extractingVideoThumb, setExtractingVideoThumb] = useState(false);
   const [videoForm, setVideoForm] = useState<{
     title: string;
     category: VideoItem['category'];
@@ -617,11 +620,14 @@ export default function AdminDashboardPage() {
     }
 
     let finalThumb = videoForm.thumbnailUrl;
-    if (!finalThumb && (videoForm.videoType === 'youtube' || videoForm.videoUrl.includes('youtu'))) {
-      finalThumb = getYouTubeThumbnail(videoForm.videoUrl) || '';
+    if (videoForm.videoType === 'youtube' || videoForm.videoUrl.includes('youtu')) {
+      const yt = getYouTubeThumbnail(videoForm.videoUrl);
+      if (yt) {
+        finalThumb = yt;
+      }
     }
-    if (!finalThumb) {
-      finalThumb = 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+    if (!finalThumb || finalThumb.includes('unsplash.com') || finalThumb.includes('images.unsplash')) {
+      finalThumb = getVideoThumbnail(videoForm);
     }
 
     setVideoSaving(true);
@@ -644,20 +650,31 @@ export default function AdminDashboardPage() {
     }
   };
 
-  const handleVideoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setVideoForm(prev => ({
-          ...prev,
-          videoType: 'upload',
-          videoUrl: reader.result as string
-        }));
-      }
-    };
-    reader.readAsDataURL(file);
+
+    setExtractingVideoThumb(true);
+    try {
+      const { thumbnailUrl, durationStr } = await captureVideoThumbnail(file, 1.5);
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          setVideoForm(prev => ({
+            ...prev,
+            videoType: 'upload',
+            videoUrl: reader.result as string,
+            thumbnailUrl: thumbnailUrl || prev.thumbnailUrl,
+            duration: prev.duration || durationStr || ''
+          }));
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err) {
+      console.error('Error capturing video thumbnail:', err);
+    } finally {
+      setExtractingVideoThumb(false);
+    }
   };
 
   const handleVideoThumbnailUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -4963,7 +4980,7 @@ export default function AdminDashboardPage() {
                     .filter(v => videoCategoryFilter === 'সকল' || v.category === videoCategoryFilter)
                     .filter(v => !videoSearchQuery.trim() || v.title.toLowerCase().includes(videoSearchQuery.toLowerCase()))
                     .map((video) => {
-                      const thumb = video.thumbnailUrl || getYouTubeThumbnail(video.videoUrl) || 'https://images.unsplash.com/photo-1542810634-71277d95dcbb?w=800&auto=format&fit=crop&q=80';
+                      const thumb = getVideoThumbnail(video);
                       return (
                         <div
                           key={video.id}
@@ -5037,12 +5054,15 @@ export default function AdminDashboardPage() {
                                 type="button"
                                 onClick={() => {
                                   setEditingVideoItem(video);
+                                  const initialThumb = video.thumbnailUrl && !video.thumbnailUrl.includes('unsplash.com')
+                                    ? video.thumbnailUrl
+                                    : getVideoThumbnail(video);
                                   setVideoForm({
                                     title: video.title,
                                     category: video.category,
                                     videoType: video.videoType || 'youtube',
                                     videoUrl: video.videoUrl,
-                                    thumbnailUrl: video.thumbnailUrl || '',
+                                    thumbnailUrl: initialThumb,
                                     description: video.description || '',
                                     duration: video.duration || '',
                                     date: video.date
@@ -10655,6 +10675,66 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                 </div>
               )}
 
+              {/* Dynamic Video Thumbnail Preview */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                  <span>ভিডিও থাম্বনেইল প্রিভিউ (ভিডিও থেকে সংগৃহীত)</span>
+                  {extractingVideoThumb && (
+                    <span className="text-[11px] text-amber-600 font-semibold flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> ফ্রেম তৈরি হচ্ছে...
+                    </span>
+                  )}
+                </label>
+
+                {(() => {
+                  const currentThumb = getVideoThumbnail(videoForm);
+                  const hasRealThumb = currentThumb && !currentThumb.includes('/logo.png');
+
+                  return (
+                    <div className="relative rounded-2xl border border-slate-200 overflow-hidden bg-slate-900 group">
+                      <div className="aspect-video w-full relative flex items-center justify-center overflow-hidden">
+                        {hasRealThumb ? (
+                          <img
+                            src={currentThumb}
+                            alt="ভিডিও থাম্বনেইল"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="text-center p-6 text-slate-400">
+                            <Film className="w-9 h-9 mx-auto mb-2 text-slate-500 opacity-60" />
+                            <p className="text-xs">ইউটিউব লিংক দিলে বা ভিডিও ফাইল আপলোড করলে স্বয়ংক্রিয়ভাবে ভিডিওর ফটো (থাম্বনেইল) এখানে দেখতে পাবেন</p>
+                          </div>
+                        )}
+
+                        {hasRealThumb && (
+                          <div className="absolute inset-0 bg-black/25 flex items-center justify-center pointer-events-none">
+                            <div className="w-11 h-11 rounded-full bg-red-600/90 text-white flex items-center justify-center shadow">
+                              <Play className="w-4 h-4 fill-white ml-0.5" />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {hasRealThumb && (
+                        <div className="p-2.5 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px]">
+                          <span className="text-emerald-700 font-bold flex items-center gap-1">
+                            ✓ ভিডিও থেকে থাম্বনেইল সফলভাবে তৈরি হয়েছে
+                          </span>
+                          <label className="text-blue-600 hover:text-blue-800 font-semibold cursor-pointer underline">
+                            কাস্টম ছবি দিন
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleVideoThumbnailUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">বিবরণ (Description)</label>
