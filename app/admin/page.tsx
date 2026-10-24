@@ -115,7 +115,8 @@ import {
 import {
   getSupabaseConfig,
   saveSupabaseConfig,
-  isSupabaseConfigured
+  isSupabaseConfigured,
+  getLastCloudError
 } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
@@ -196,7 +197,8 @@ export default function AdminDashboardPage() {
     resetStudentsToDefault,
     isCloudConnected,
     uploadAllDataToCloud,
-    refreshFromCloud
+    refreshFromCloud,
+    restoreFullBackup
   } = useMadrasah();
 
   const [activeTab, setActiveTab] = useState<'overview' | 'hero' | 'admissions' | 'notices' | 'urgent-notices' | 'facilities' | 'gallery' | 'teachers' | 'attendance' | 'routine' | 'alumni' | 'students' | 'authorities' | 'results' | 'settings' | 'prayer' | 'messages' | 'users' | 'videos'>('overview');
@@ -751,6 +753,83 @@ export default function AdminDashboardPage() {
       });
     }
     setTimeout(() => setCloudToast({ show: false, message: '' }), 5000);
+  };
+
+  // 1-Click Offline JSON Backup Export
+  const handleExportFullBackup = () => {
+    const allData = {
+      version: '1.0',
+      exportedAt: new Date().toISOString(),
+      info,
+      notices,
+      teachers,
+      applications,
+      results,
+      messages,
+      urgentNotices,
+      tickerSettings,
+      heroSettings,
+      facilities,
+      gallery,
+      videos,
+      prayerConfig,
+      routines,
+      alumniStudents,
+      students,
+      adminUsers
+    };
+    const blob = new Blob([JSON.stringify(allData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `padm_madrasah_backup_${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setCloudToast({
+      show: true,
+      message: 'সম্পূর্ণ সিস্টেম ডাটা ব্যাকআপ ফাইল (.json) সফলভাবে ডাউনলোড হয়েছে!',
+      type: 'success'
+    });
+    setTimeout(() => setCloudToast({ show: false, message: '' }), 4000);
+  };
+
+  // 1-Click Offline JSON Backup Import / Restore
+  const handleImportFullBackup = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const text = event.target?.result as string;
+        const parsed = JSON.parse(text);
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('অবৈধ ব্যাকআপ ফাইল');
+        }
+        const ok = restoreFullBackup(parsed);
+        if (ok) {
+          setCloudToast({
+            show: true,
+            message: 'ব্যাকআপ ফাইল থেকে সকল ডাটা সফলভাবে রিস্টোর করা হয়েছে!',
+            type: 'success'
+          });
+        } else {
+          setCloudToast({
+            show: true,
+            message: 'ডাটা রিস্টোর ব্যর্থ হয়েছে। ফাইল ফরম্যাট সঠিক নয়।',
+            type: 'error'
+          });
+        }
+      } catch (err: any) {
+        setCloudToast({
+          show: true,
+          message: 'ব্যাকআপ ফাইলটি পড়া যায়নি: ' + (err?.message || 'অবৈধ JSON'),
+          type: 'error'
+        });
+      }
+      setTimeout(() => setCloudToast({ show: false, message: '' }), 5000);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   const initialAlumniForm: Omit<AlumniStudent, 'id' | 'createdAt'> = {
@@ -6615,6 +6694,19 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
 
+                {getLastCloudError() && (
+                  <div className="p-4 rounded-xl bg-rose-500/15 border-2 border-rose-500/40 text-rose-200 text-xs flex items-start gap-3 relative z-10 animate-pulse">
+                    <AlertTriangle className="w-5 h-5 text-rose-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <strong className="text-white block font-bold text-sm">সুপাবেজ ক্লাউড সংযোগ ত্রুটি:</strong>
+                      <p className="leading-relaxed text-xs">{getLastCloudError()}</p>
+                      <p className="text-[11px] text-amber-300 font-medium">
+                        💡 সমাধান: supabase.com এ গিয়ে নতুন একটি ফ্রি প্রজেক্ট তৈরি করুন এবং নিচে দেওয়া SQL কোড রান করে নতুন Project URL ও Anon Key এখানে দিয়ে সেভ করুন। অথবা নিচের &quot;সরাসরি ডাটা ব্যাকআপ ডাউনলোড&quot; বাটন দিয়ে ফাইল সেভ করে রাখুন।
+                      </p>
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 relative z-10">
                   <p className="text-[11px] text-slate-400">
                     💡 তথ্য দুটি সেভ করার পর সকল ডিভাইসে একই ডাটা দেখাবে এবং যে কেউ ভর্তি আবেদন করলে সরাসরি অ্যাডমিন প্যানেলে জমা হবে।
@@ -6671,6 +6763,69 @@ ALTER TABLE madrasah_store ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access" ON madrasah_store FOR SELECT USING (true);
 CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true);`}
                   </pre>
+                </div>
+              </div>
+
+              {/* SECTION: DIRECT JSON BACKUP & DEVICE TRANSFER */}
+              <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-2xl p-5 sm:p-6 text-white shadow-xl border-2 border-indigo-500/40 space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-white/10 pb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-500 to-blue-400 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-indigo-500/20">
+                      <Download className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-black tracking-tight text-white">সরাসরি ডাটা ব্যাকআপ ও কম্পিউটার ট্রান্সফার (Offline JSON Backup & Restore)</h3>
+                      <p className="text-xs text-slate-300 mt-0.5">
+                        এক কম্পিউটার থেকে অন্য কম্পিউটারে বা মোবাইলে সকল নোটিশ, শিক্ষক, শিক্ষার্থী ও ফলাফল ১-ক্লিকে ফাইল দিয়ে স্থানান্তর করুন।
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Export Button */}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Download className="w-4 h-4 text-emerald-400" />
+                        <span>১. ব্যাকআপ ফাইল ডাউনলোড (Export)</span>
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        এই কম্পিউটারের সকল তথ্য একটি ফাইলে (.json) সেভ করে পেনড্রাইভ বা মেইলে অন্য কম্পিউটারে নিতে পারবেন।
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExportFullBackup}
+                      className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>সম্পূর্ণ ডাটা ব্যাকআপ ডাউনলোড করুন</span>
+                    </button>
+                  </div>
+
+                  {/* Import Button */}
+                  <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex flex-col justify-between space-y-3">
+                    <div>
+                      <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                        <Upload className="w-4 h-4 text-amber-400" />
+                        <span>২. ব্যাকআপ ফাইল রিস্টোর (Import)</span>
+                      </h4>
+                      <p className="text-xs text-slate-400 mt-1">
+                        পূর্বে ডাউনলোড করা ব্যাকআপ ফাইলটি সিলেক্ট করলে এই কম্পিউটারে সকল তথ্য সাথে সাথে রিস্টোর হয়ে যাবে।
+                      </p>
+                    </div>
+                    <label className="w-full py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md transition-all active:scale-95 cursor-pointer text-center">
+                      <Upload className="w-4 h-4" />
+                      <span>ব্যাকআপ ফাইল নির্বাচন করে রিস্টোর করুন</span>
+                      <input
+                        type="file"
+                        accept=".json,application/json"
+                        onChange={handleImportFullBackup}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 

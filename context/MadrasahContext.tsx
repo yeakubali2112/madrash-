@@ -170,6 +170,7 @@ interface MadrasahContextType {
   isCloudConnected: boolean;
   uploadAllDataToCloud: () => Promise<boolean>;
   refreshFromCloud: () => Promise<void>;
+  restoreFullBackup: (data: any) => boolean;
 }
 
 const MadrasahContext = createContext<MadrasahContextType | undefined>(undefined);
@@ -325,12 +326,14 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
 
     syncFromCloud();
-    const cloudPollInterval = setInterval(syncFromCloud, 15000);
-    window.addEventListener('focus', syncFromCloud);
+    // Only gently poll if on /admin route (every 2 minutes) to prevent exhausting Supabase monthly egress quota
+    let cloudPollInterval: NodeJS.Timeout | null = null;
+    if (typeof window !== 'undefined' && window.location.pathname.startsWith('/admin')) {
+      cloudPollInterval = setInterval(syncFromCloud, 120000);
+    }
 
     return () => {
-      clearInterval(cloudPollInterval);
-      window.removeEventListener('focus', syncFromCloud);
+      if (cloudPollInterval) clearInterval(cloudPollInterval);
       window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('padm_hero_sync', handleHeroSync);
       window.removeEventListener('padm_info_sync', handleInfoSync);
@@ -944,6 +947,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (cloud.heroSettings) { setHeroSettings(cloud.heroSettings); saveStoredHeroSettings(cloud.heroSettings); }
       if (cloud.facilities) { setFacilities(cloud.facilities); saveStoredFacilities(cloud.facilities); }
       if (cloud.gallery) { setGallery(cloud.gallery); saveStoredGallery(cloud.gallery); }
+      if (cloud.videos) { setVideos(cloud.videos); saveStoredVideos(cloud.videos); }
       if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
       if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
       if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
@@ -951,6 +955,33 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (cloud.adminUsers) { setAdminUsers(cloud.adminUsers); saveStoredAdminUsers(cloud.adminUsers); }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const restoreFullBackup = (data: any): boolean => {
+    if (!data || typeof data !== 'object') return false;
+    try {
+      if (data.info) { setInfo(data.info); saveStoredInfo(data.info); }
+      if (data.notices) { setNotices(data.notices); saveStoredNotices(data.notices); }
+      if (data.teachers) { setTeachers(data.teachers); saveStoredTeachers(data.teachers); }
+      if (data.applications) { setApplications(data.applications); saveStoredApplications(data.applications); }
+      if (data.results) { setResults(data.results); saveStoredResults(data.results); }
+      if (data.messages) { setMessages(data.messages); saveStoredMessages(data.messages); }
+      if (data.urgentNotices) { setUrgentNotices(data.urgentNotices); saveStoredUrgentNotices(data.urgentNotices); }
+      if (data.tickerSettings) { setTickerSettings(data.tickerSettings); saveStoredTickerSettings(data.tickerSettings); }
+      if (data.heroSettings) { setHeroSettings(data.heroSettings); saveStoredHeroSettings(data.heroSettings); }
+      if (data.facilities) { setFacilities(data.facilities); saveStoredFacilities(data.facilities); }
+      if (data.gallery) { setGallery(data.gallery); saveStoredGallery(data.gallery); }
+      if (data.videos) { setVideos(data.videos); saveStoredVideos(data.videos); }
+      if (data.prayerConfig) { setPrayerConfig(data.prayerConfig); saveStoredPrayerConfig(data.prayerConfig); }
+      if (data.routines) { setRoutines(data.routines); saveStoredRoutines(data.routines); }
+      if (data.alumniStudents) { setAlumniStudents(data.alumniStudents); saveStoredAlumni(data.alumniStudents); }
+      if (data.students) { setStudents(data.students); saveStoredStudents(data.students); }
+      if (data.adminUsers) { setAdminUsers(data.adminUsers); saveStoredAdminUsers(data.adminUsers); }
+      return true;
+    } catch (err) {
+      console.error('Error restoring full backup:', err);
+      return false;
     }
   };
 
@@ -1061,7 +1092,8 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         resetToDefaults,
         isCloudConnected,
         uploadAllDataToCloud,
-        refreshFromCloud
+        refreshFromCloud,
+        restoreFullBackup
       }}
     >
       {children}

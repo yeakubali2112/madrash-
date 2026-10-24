@@ -42,6 +42,10 @@ export const saveSupabaseConfig = (url: string, anonKey: string) => {
   }
 };
 
+export let lastCloudError: string | null = null;
+
+export const getLastCloudError = (): string | null => lastCloudError;
+
 /**
  * Fetch all stored keys from Supabase `madrasah_store` table
  */
@@ -61,17 +65,25 @@ export async function fetchCloudStore(): Promise<Record<string, any> | null> {
     });
 
     if (!res.ok) {
-      console.warn('Failed to fetch from Supabase:', res.status, res.statusText);
+      if (res.status === 402) {
+        lastCloudError = 'Supabase মাসিক ব্যান্ডউইথ কোটা (Egress Quota) শেষ হয়ে যাওয়ায় সংযোগ স্থগিত রয়েছে (402 Payment Required)। দয়া করে নতুন Supabase প্রজেক্ট সংযোগ করুন।';
+        console.error('Supabase 402 Payment Required: Exceed egress quota.');
+      } else {
+        lastCloudError = `Supabase সার্ভার ত্রুটি (${res.status}: ${res.statusText})`;
+        console.warn('Failed to fetch from Supabase:', res.status, res.statusText);
+      }
       return null;
     }
 
+    lastCloudError = null;
     const rows: Array<{ key: string; data: any }> = await res.json();
     const storeMap: Record<string, any> = {};
     for (const row of rows) {
       storeMap[row.key] = row.data;
     }
     return storeMap;
-  } catch (err) {
+  } catch (err: any) {
+    lastCloudError = err?.message || 'Supabase ক্লাউড সংযোগ ব্যর্থ হয়েছে।';
     console.error('Error fetching Supabase cloud store:', err);
     return null;
   }
