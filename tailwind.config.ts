@@ -61,19 +61,17 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
-          "'Sutonny'",
-          "'SutonnyOMJ'",
-          "'SutonnyMJ'",
-          "'SutonnyBanglaOMJ'",
-          "'Kalpurush'",
-          "'Google Sans'",
-          "'Product Sans'",
-          "'Plus Jakarta Sans'",
           "'Noto Sans Bengali'",
-          "'Hind Siliguri'",
-          "'SolaimanLipi'",
+          "'Plus Jakarta Sans'",
           "system-ui",
           "-apple-system",
+          "BlinkMacSystemFont",
+          "'Segoe UI'",
+          "Roboto",
+          "sans-serif"
+        ],
+        bengali: [
+          "'Noto Sans Bengali'",
           "sans-serif"
         ],
         arabic: [
