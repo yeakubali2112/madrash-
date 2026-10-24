@@ -276,7 +276,9 @@ export const getStoredVideos = (): VideoItem[] => {
   if (typeof window === 'undefined') return defaultVideos;
   try {
     const data = localStorage.getItem(STORAGE_KEYS.VIDEOS);
-    return data ? JSON.parse(data) : defaultVideos;
+    if (!data) return defaultVideos;
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : defaultVideos;
   } catch {
     return defaultVideos;
   }

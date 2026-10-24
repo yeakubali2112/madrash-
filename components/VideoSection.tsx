@@ -4,14 +4,14 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useMadrasah } from '@/context/MadrasahContext';
-import { VideoItem, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
+import { VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
 import { Play, Film, Calendar, Clock, X, ExternalLink, Video as VideoIcon } from 'lucide-react';
 
 export const VideoSection: React.FC = () => {
   const { videos } = useMadrasah();
   const [activeVideo, setActiveVideo] = useState<VideoItem | null>(null);
 
-  const videoList = videos && videos.length > 0 ? videos : defaultVideos;
+  const videoList = (videos && videos.length > 0 ? videos : defaultVideos) || [];
   const displayVideos = videoList.slice(0, 3);
 
   const getEmbedSource = (video: VideoItem) => {

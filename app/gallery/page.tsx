@@ -3,7 +3,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
-import { GalleryItem, VideoItem, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
+import { GalleryItem, VideoItem, defaultVideos, getYouTubeEmbedUrl, getYouTubeThumbnail } from '@/lib/data';
 import { useMadrasah } from '@/context/MadrasahContext';
 import { Camera, Filter, X, Eye, ImageOff, Play, Film, Calendar, Clock, Video as VideoIcon } from 'lucide-react';
 
@@ -31,7 +31,8 @@ function GalleryContent() {
     selectedPhotoCategory === 'সকল' || item.category === selectedPhotoCategory
   );
 
-  const filteredVideos = (videos || []).filter(item =>
+  const videoList = (videos && videos.length > 0 ? videos : defaultVideos) || [];
+  const filteredVideos = videoList.filter(item =>
     selectedVideoCategory === 'সকল' || item.category === selectedVideoCategory
   );
 

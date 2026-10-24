@@ -249,8 +249,8 @@ export const PrayerTimesWidget: React.FC = () => {
                   <div className="text-[10px] text-emerald-200 font-semibold uppercase tracking-wider">
                     বর্তমান স্থানীয় সময়
                   </div>
-                  <div className="text-sm md:text-base font-black font-mono tracking-wide text-white">
-                    {timeStr}
+                  <div suppressHydrationWarning className="text-sm md:text-base font-black font-mono tracking-wide text-white">
+                    {mounted ? timeStr : '--:--:--'}
                   </div>
                 </div>
               </div>
