@@ -284,10 +284,19 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
     };
 
+    const handleVideoSync = (e: any) => {
+      if (e?.detail) {
+        setVideos(e.detail);
+      } else {
+        setVideos(getStoredVideos());
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
     window.addEventListener('padm_hero_sync', handleHeroSync);
     window.addEventListener('padm_info_sync', handleInfoSync);
     window.addEventListener('padm_student_sync', handleStudentSync);
+    window.addEventListener('padm_video_sync', handleVideoSync);
 
     // Initial sync from Supabase cloud store
     const syncFromCloud = async () => {
@@ -313,7 +322,10 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         if (cloud.heroSettings) { setHeroSettings(cloud.heroSettings); saveStoredHeroSettings(cloud.heroSettings); }
         if (cloud.facilities) { setFacilities(cloud.facilities); saveStoredFacilities(cloud.facilities); }
         if (cloud.gallery) { setGallery(cloud.gallery); saveStoredGallery(cloud.gallery); }
-        if (cloud.videos) { setVideos(cloud.videos); saveStoredVideos(cloud.videos); }
+        if (cloud.videos && Array.isArray(cloud.videos) && cloud.videos.length > 0) {
+          setVideos(cloud.videos);
+          saveStoredVideos(cloud.videos);
+        }
         if (cloud.prayerConfig) { setPrayerConfig(cloud.prayerConfig); saveStoredPrayerConfig(cloud.prayerConfig); }
         if (cloud.routines) { setRoutines(cloud.routines); saveStoredRoutines(cloud.routines); }
         if (cloud.alumniStudents) { setAlumniStudents(cloud.alumniStudents); saveStoredAlumni(cloud.alumniStudents); }
@@ -338,6 +350,7 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       window.removeEventListener('padm_hero_sync', handleHeroSync);
       window.removeEventListener('padm_info_sync', handleInfoSync);
       window.removeEventListener('padm_student_sync', handleStudentSync);
+      window.removeEventListener('padm_video_sync', handleVideoSync);
     };
   }, []);
 
@@ -493,6 +506,9 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = [newItem, ...videos];
     setVideos(updated);
     saveStoredVideos(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('padm_video_sync', { detail: updated }));
+    }
     saveCloudKey('videos', updated);
   };
 
@@ -500,6 +516,9 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = videos.map(v => v.id === id ? { ...v, ...updatedFields } : v);
     setVideos(updated);
     saveStoredVideos(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('padm_video_sync', { detail: updated }));
+    }
     saveCloudKey('videos', updated);
   };
 
@@ -507,6 +526,9 @@ export const MadrasahProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const updated = videos.filter(v => v.id !== id);
     setVideos(updated);
     saveStoredVideos(updated);
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('padm_video_sync', { detail: updated }));
+    }
     saveCloudKey('videos', updated);
   };
 

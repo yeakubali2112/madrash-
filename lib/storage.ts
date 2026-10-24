@@ -284,12 +284,32 @@ export const getStoredVideos = (): VideoItem[] => {
   }
 };
 
-export const saveStoredVideos = (videos: VideoItem[]) => {
-  if (typeof window === 'undefined') return;
+export const saveStoredVideos = (videos: VideoItem[]): boolean => {
+  if (typeof window === 'undefined') return false;
   try {
     localStorage.setItem(STORAGE_KEYS.VIDEOS, JSON.stringify(videos));
-  } catch (err) {
+    return true;
+  } catch (err: any) {
     console.error('Error saving videos to storage:', err);
+    // If QuotaExceededError (e.g. user uploaded large direct video file as base64):
+    if (err?.name === 'QuotaExceededError' || err?.code === 22) {
+      try {
+        const safeVideos = videos.map(v => {
+          if (v.videoUrl && v.videoUrl.startsWith('data:video') && v.videoUrl.length > 500000) {
+            return {
+              ...v,
+              videoUrl: '' // stripped to prevent localStorage crash, keep thumbnail & metadata
+            };
+          }
+          return v;
+        });
+        localStorage.setItem(STORAGE_KEYS.VIDEOS, JSON.stringify(safeVideos));
+        return true;
+      } catch (innerErr) {
+        console.error('Failed to save even cleaned videos to localStorage:', innerErr);
+      }
+    }
+    return false;
   }
 };
 

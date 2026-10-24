@@ -654,6 +654,10 @@ export default function AdminDashboardPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    if (file.size > 5 * 1024 * 1024) {
+      alert(`সতর্কতা: নির্বাচিত ভিডিও ফাইলের সাইজ ${(file.size / (1024 * 1024)).toFixed(1)} MB।\n\nব্রাউজার মেমোরির সীমাবদ্ধতার কারণে সরাসরি বড় ভিডিও ফাইল রিলোড দিলে হারিয়ে যেতে পারে।\n\nসব ডিভাইস থেকে চিরস্থায়ী ও নিরবচ্ছিন্নভাবে লাইভ দেখতে ভিডিওটি ইউটিউবে (YouTube) আপলোড করে লিঙ্ক ব্যবহার করুন।`);
+    }
+
     setExtractingVideoThumb(true);
     try {
       const { thumbnailUrl, durationStr } = await captureVideoThumbnail(file, 1.5);
@@ -10672,6 +10676,9 @@ CREATE POLICY "Allow public write access" ON madrasah_store FOR ALL USING (true)
                     onChange={(e) => setVideoForm({ ...videoForm, videoUrl: e.target.value })}
                     className="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-red-600 font-mono"
                   />
+                  <p className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-xl border border-amber-200 leading-relaxed">
+                    💡 <strong>সকল ডিভাইস থেকে লাইভ দেখতে:</strong> বড় ভিডিও ফাইল ব্রাউজার মেমোরিতে রিলোড দিলে মুছে যায়। যেকোনো কম্পিউটার বা মোবাইল থেকে লাইভ দেখতে <strong>&quot;ইউটিউব লিঙ্ক (YouTube)&quot;</strong> ব্যবহার করুন।
+                  </p>
                 </div>
               )}
 
